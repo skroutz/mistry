@@ -1,0 +1,7 @@
+*.swp
+*.test
+*.prof
+
+mistry
+
+vendor/
