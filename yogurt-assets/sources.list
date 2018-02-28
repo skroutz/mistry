@@ -1,0 +1,3 @@
+deb http://debian.anycast-test.mirrors.debian.org/debian/ stretch main non-free contrib
+
+deb http://security.anycast-test.mirrors.debian.org/ stretch/updates main contrib non-free
