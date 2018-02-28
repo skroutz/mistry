@@ -1,0 +1,4 @@
+    $ docker build . --build-arg ssh_key="$(cat ~/.ssh/id_rsa)" -t skroutzassets
+    $ docker run skroutzassets
+
+
