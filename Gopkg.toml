@@ -23,4 +23,4 @@
 
 [[constraint]]
   version = "17.05.0-ce"
-  name = "github.com/docker/docker/client"
+  name = "github.com/docker/docker"
