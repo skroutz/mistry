@@ -32,7 +32,7 @@ cmd = "btrfs subvolume snapshot #{latest_build_link} #{tmp_build_path}"
 res = Kernel.system(cmd)
 # TODO: think about bootstrapping process here
 if !res
-        cmd = "btrfs subvolume create #{tmp_build_path} && mkdir -p #{tmp_build_path}/data/tmp #{tmp_build_path}/data/artifacts"
+        cmd = "btrfs subvolume create #{tmp_build_path} && mkdir -p #{tmp_build_path}/data/cache #{tmp_build_path}/data/artifacts"
         res = Kernel.system(cmd)
         abort("Error executing #{cmd}") if !res
 end

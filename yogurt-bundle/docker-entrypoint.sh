@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "$GEMFILE_CONTENTS" > Gemfile
-echo "$LOCKFILE_CONTENTS" > Gemfile.lock
+echo "$GEMFILE_CONTENTS" > cache/Gemfile
+echo "$LOCKFILE_CONTENTS" > cache/Gemfile.lock
 
-bundle install --deployment --without=test development --path .
+bundle install --gemfile=tmp/Gemfile --deployment --path /data/artifacts
+bundle clean
