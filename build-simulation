@@ -32,13 +32,13 @@ cmd = "btrfs subvolume snapshot #{latest_build_link} #{tmp_build_path}"
 res = Kernel.system(cmd)
 # TODO: think about bootstrapping process here
 if !res
-        cmd = "btrfs subvolume create #{tmp_build_path} && mkdir -p #{tmp_build_path}/tmp #{tmp_build_path}/artifacts"
+        cmd = "btrfs subvolume create #{tmp_build_path} && mkdir -p #{tmp_build_path}/data/tmp #{tmp_build_path}/data/artifacts"
         res = Kernel.system(cmd)
         abort("Error executing #{cmd}") if !res
 end
 
 # prepare docker command to run and run it
-cmd = "docker run --mount type=bind,source=#{tmp_build_path},target=/data "
+cmd = "docker run --mount type=bind,source=#{tmp_build_path}/data,target=/data "
 args.each do |a|
   cmd << "-e #{a} "
 end
