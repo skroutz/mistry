@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+gem "skroutz"
+gem "hola_agis"
+
