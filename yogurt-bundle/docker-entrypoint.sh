@@ -4,5 +4,6 @@ set -e
 echo "$GEMFILE" > cache/Gemfile
 echo "$LOCKFILE" > cache/Gemfile.lock
 
-bundle install --gemfile=tmp/Gemfile --deployment --path /data/artifacts
-bundle clean
+cd cache
+bundle install --deployment --path /data/artifacts
+bundle clean --force
