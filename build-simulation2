@@ -59,3 +59,15 @@ args.each do |a|
   cmd << "-e #{a} "
 end
 cmd << project_name
+
+res = Kernel.system(cmd)
+abort("Error executing #{cmd}") if !res
+
+# move to ready
+res = Kernel.system("mv #{tmp_build_path} #{ready_build_path}")
+abort("Error executing #{cmd}") if !res
+
+# symlink result to latest
+symlink(ready_build_path, latest_build_link)
+# symlink result to group
+symlink(ready_build_path, group_build_link) unless group.nil?
