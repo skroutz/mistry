@@ -1,9 +1,0 @@
-Prototype Dockerfile for yogurt gem bundle.
-
-
-    $ docker build . -t yogurtbundle
-    $ docker run -e GEMFILE_CONTENTS="$(cat Gemfile)" \
-                 -e LOCKFILE_CONTENTS="$(cat Gemfile.lock)" \
-                 yogurtbundle
-
-
