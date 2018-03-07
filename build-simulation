@@ -8,82 +8,77 @@
 #
 # Example:
 #
-# GROUP="skroutz" ./build-simulation2 yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
+#     $ GROUP="skroutz" ./build-simulation yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
 #
-# Tree structure:
-# /data/builds/
-# └── yogurtbundle
-#     ├── groups
-#     │   ├── alve -> /data/builds/yogurtbundle/ready/457ebca2b146e75ae300c851c98803e309cb63389c2ddad4ef79d98cccb3223b
-#     │   └── skroutz -> /data/builds/yogurtbundle/ready/c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
-#     ├── latest -> /data/builds/yogurtbundle/ready/c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
-#     ├── pending
-#     └── ready
-#         ├── 19623d86cd57a90fd6ab912e2b5f516a99fe2557dc6422b82fce42f875a0419a
-#         ├── 457ebca2b146e75ae300c851c98803e309cb63389c2ddad4ef79d98cccb3223b
-#         ├── 638057e0c94d881b7d7f4fd599dfcb0a346d3a3ac7e886389d0168f5b53c4007
-#         ├── 97e22654cc05485f4a8ed36b5ab07aad5e5a1a61dec3bf7970e45f0566d39933
-#         ├── c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
-#         └── e4414d6bc08000caf7de296e351f33da11a89d0c04b73ab9e32fc16f2398d974
 require "securerandom"
 require "digest"
 require "fileutils"
 
-def btrfs_clone(build_link, tmp_build_path)
-  cmd = "btrfs subvolume snapshot #{build_link} #{tmp_build_path}"
-  res = Kernel.system(cmd)
-  # TODO: think about bootstrapping process here
-  if !res
-    cmd = "btrfs subvolume create #{tmp_build_path} && mkdir -p #{tmp_build_path}/data/cache #{tmp_build_path}/data/artifacts"
-    res = Kernel.system(cmd)
-    abort("Error executing #{cmd}") if !res
-  end
+$project_name = ARGV[0]
+$group = ENV['GROUP']
+$args = ARGV[1..-1].sort
+
+def run!(cmd)
+	puts "Executing #{cmd}..."
+    abort("Error executing #{cmd}") if !Kernel.system(cmd)
 end
 
-def symlink(ready_build_path, build_link)
-  FileUtils.safe_unlink(build_link)
-  cmd = "ln -sf #{ready_build_path} #{build_link}"
-  res = Kernel.system(cmd)
-  abort("Error executing #{cmd}") if !res
+def bootstrap_project(latest_link, pending_build_path)
+    puts "Bootstrapping project..."
+
+    path = "/data/builds/#{$project_name}"
+    run!("mkdir #{path}") if !File.exist?(path)
+    run!("mkdir #{path}/pending") if !File.exist?("#{path}/pending")
+    run!("mkdir #{path}/ready") if !File.exist?("#{path}/ready")
+    run!("mkdir #{path}/groups") if $group && !File.exist?("#{path}/groups")
+
+    begin
+        path = File.readlink(latest_link)
+	# TODO: only snapshot if group is given
+  	btrfs_snapshot(path, pending_build_path)
+    rescue => e
+	    puts e
+	    puts "No subvolume to snapshot from. Creating a new one..."
+	    run!("btrfs subvolume create #{pending_build_path}")
+	    run!("mkdir -p #{pending_build_path}/data/cache #{pending_build_path}/data/artifacts")
+    end
 end
 
-project_name = ARGV[0]
-group = ENV['GROUP']
-args = ARGV[1..-1].sort
-
-build_id = Digest::SHA256.hexdigest(project_name + group.to_s + args.join)
-build_path = "/data/builds/#{project_name}"
-
-latest_build_link = build_path + "/latest"
-group_build_link  = build_path + "/groups/#{group}"
-tmp_build_path    = build_path + "/pending/#{build_id}"
-ready_build_path  = build_path + "/ready/#{build_id}"
-
-abort("Build is in progress...") if File.exist?(tmp_build_path)
-
-puts "Scheduling build for #{project_name} with id=#{build_id}"
-
-if group.nil?
-  btrfs_clone(latest_build_link, tmp_build_path)
-else
-  btrfs_clone(group_build_link, tmp_build_path)
+def btrfs_snapshot(source, dest)
+  run!("btrfs subvolume snapshot #{source} #{dest}")
 end
+
+def symlink(target, link_name)
+  FileUtils.safe_unlink(link_name)
+  run!("ln -sf #{target} #{link_name}")
+end
+
+build_id = Digest::SHA256.hexdigest($project_name + $group.to_s + $args.join)
+
+build_path = "/data/builds/#{$project_name}"
+latest_build_link  = $group ? build_path+"/groups/#{$group}" : build_path+"/latest" 
+pending_build_path = build_path + "/pending/#{build_id}"
+ready_build_path   = build_path + "/ready/#{build_id}"
+
+if File.exist?(pending_build_path)
+	abort("Build is in progress. Exiting...") 
+elsif File.exist?(ready_build_path)
+	abort("Build result already exists. Exiting...")
+end
+
+puts "Scheduling build for #{$project_name} with id=#{build_id}"
+
+bootstrap_project(latest_build_link, pending_build_path)
 
 # prepare docker command to run and run it
-cmd = "docker run --mount type=bind,source=#{tmp_build_path}/data,target=/data "
-args.each do |a|
+cmd = "docker run --user #{Process.uid} --mount type=bind,source=#{pending_build_path}/data,target=/data "
+$args.each do |a|
   cmd << "-e #{a} "
 end
-cmd << project_name
-
-res = Kernel.system(cmd)
-abort("Error executing #{cmd}") if !res
+cmd << $project_name
+run!(cmd)
 
 # move to ready
-res = Kernel.system("mv #{tmp_build_path} #{ready_build_path}")
-abort("Error executing #{cmd}") if !res
+run!("mv #{pending_build_path} #{ready_build_path}")
 
-# symlink result to latest
 symlink(ready_build_path, latest_build_link)
-# symlink result to group
-symlink(ready_build_path, group_build_link) unless group.nil?
