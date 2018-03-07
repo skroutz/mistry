@@ -12,5 +12,11 @@ yarn install
 script/lnconfs.rb
 script/mock_ymls.rb
 /bin/bash
+
+if [ -d /data/cache/sprockets_cache ]; then
+	mv /data/cache/sprockets_cache tmp
+fi
+
 #RAILS_ENV=production bundle exec rake assets:precompile
-mv tmp/ /data/cache
+rm -rf /data/cache/sprockets_cache
+mv tmp /data/cache/sprockets_cache
