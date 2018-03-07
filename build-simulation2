@@ -8,7 +8,23 @@
 #
 # Example:
 #
-# GROUP="skroutz" ./build-simulation yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
+# GROUP="skroutz" ./build-simulation2 yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
+#
+# Tree structure:
+# /data/builds/
+# └── yogurtbundle
+#     ├── groups
+#     │   ├── alve -> /data/builds/yogurtbundle/ready/457ebca2b146e75ae300c851c98803e309cb63389c2ddad4ef79d98cccb3223b
+#     │   └── skroutz -> /data/builds/yogurtbundle/ready/c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
+#     ├── latest -> /data/builds/yogurtbundle/ready/c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
+#     ├── pending
+#     └── ready
+#         ├── 19623d86cd57a90fd6ab912e2b5f516a99fe2557dc6422b82fce42f875a0419a
+#         ├── 457ebca2b146e75ae300c851c98803e309cb63389c2ddad4ef79d98cccb3223b
+#         ├── 638057e0c94d881b7d7f4fd599dfcb0a346d3a3ac7e886389d0168f5b53c4007
+#         ├── 97e22654cc05485f4a8ed36b5ab07aad5e5a1a61dec3bf7970e45f0566d39933
+#         ├── c4adcd5ab368899c9c5264686d1bed801137cb5365a0d1f43488e98573bb7ab8
+#         └── e4414d6bc08000caf7de296e351f33da11a89d0c04b73ab9e32fc16f2398d974
 require "securerandom"
 require "digest"
 require "fileutils"
@@ -39,7 +55,7 @@ build_id = Digest::SHA256.hexdigest(project_name + group.to_s + args.join)
 build_path = "/data/builds/#{project_name}"
 
 latest_build_link = build_path + "/latest"
-group_build_link  = build_path + "/#{group}"
+group_build_link  = build_path + "/groups/#{group}"
 tmp_build_path    = build_path + "/pending/#{build_id}"
 ready_build_path  = build_path + "/ready/#{build_id}"
 
