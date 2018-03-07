@@ -1,6 +1,7 @@
 FROM debian:stretch
 
 ARG ssh_key
+ARG uid
 
 COPY sources.list /etc/apt/sources.list
 COPY bpo.list skroutz-stable.list skroutz-pu.list /etc/apt/sources.list.d/
@@ -16,7 +17,6 @@ RUN apt-get install -y build-essential \
                        libxslt1-dev \
                        libsystemd-dev \
                        imagemagick \
-                       wdiff \
                        gettext \
                        libicu-dev \
                        cmake \
@@ -25,24 +25,26 @@ RUN apt-get install -y build-essential \
                        libsqlite3-dev \
                        nodejs \
                        nodejs-legacy \
+								vim \
                        yarn
 
-RUN useradd -ms /bin/bash wowbagger
-USER wowbagger
-WORKDIR /home/wowbagger
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+RUN useradd -ms /bin/bash -u "$uid" builder
+USER builder
+WORKDIR /home/builder
 
 RUN mkdir .ssh
 RUN echo "$ssh_key" > .ssh/id_rsa
 RUN chmod 700 .ssh/id_rsa
-RUN echo "Host github.skroutz.gr\n\tStrictHostKeyChecking no\n" >> .ssh/config
+RUN echo "Host github.skroutz.gr\n\tStrictHostKeyChecking no\n" > .ssh/config
 
+# should probably be in cache/yogurt
 RUN git clone git@github.skroutz.gr:skroutz/yogurt.git
-WORKDIR /home/wowbagger/yogurt
+WORKDIR yogurt
 RUN bundle --deployment --without=development test
 RUN yarn install
 
-COPY --chown=wowbagger docker-entrypoint.sh /home/wowbagger
-RUN chmod +x /home/wowbagger/docker-entrypoint.sh
-
-ENTRYPOINT ["/home/wowbagger/docker-entrypoint.sh"]
-#CMD ["RAILS_ENV=production bundle exec", "rake", "assets:precompile"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+##CMD ["RAILS_ENV=production bundle exec", "rake", "assets:precompile"]

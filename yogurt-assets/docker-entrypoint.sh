@@ -1,9 +1,16 @@
 #!/bin/bash
 set -e
 
-git fetch && git checkout builder-assets && git pull
-bundle install
+## these 2 will go away once we're on master
+git fetch
+git checkout builder-assets
+
+git pull
+
+bundle install # only run if needed
 yarn install
 script/lnconfs.rb
 script/mock_ymls.rb
-RAILS_ENV=production bundle exec rake assets:precompile
+/bin/bash
+#RAILS_ENV=production bundle exec rake assets:precompile
+mv tmp/ /data/cache
