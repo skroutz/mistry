@@ -28,8 +28,6 @@ RUN apt-get install -y build-essential \
 								vim \
                        yarn
 
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 RUN useradd -ms /bin/bash -u "$uid" builder
 USER builder
@@ -46,5 +44,9 @@ WORKDIR yogurt
 RUN bundle --deployment --without=development test
 RUN yarn install
 
+USER root
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER builder
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-##CMD ["RAILS_ENV=production bundle exec", "rake", "assets:precompile"]
