@@ -8,40 +8,42 @@
 #
 # Example:
 #
-#     $ GROUP="skroutz" ./build-simulation yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
+#   $ sudo -u mistry GROUP=skroutz ./build-simulation yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
 #
 require "securerandom"
 require "digest"
 require "fileutils"
+
+abort "Please run as mistry!" if ENV['USER'] != 'mistry'
 
 $project_name = ARGV[0]
 $group = ENV['GROUP']
 $args = ARGV[1..-1].sort
 
 def run!(cmd)
-	puts "Executing #{cmd}..."
-    abort("Error executing #{cmd}") if !Kernel.system(cmd)
+  puts "Executing #{cmd}..."
+  abort("Error executing #{cmd}") if !Kernel.system(cmd)
 end
 
 def bootstrap_project(latest_link, pending_build_path)
-    puts "Bootstrapping project..."
+  puts "Bootstrapping project..."
 
-    path = "/data/builds/#{$project_name}"
-    run!("mkdir #{path}") if !File.exist?(path)
-    run!("mkdir #{path}/pending") if !File.exist?("#{path}/pending")
-    run!("mkdir #{path}/ready") if !File.exist?("#{path}/ready")
-    run!("mkdir #{path}/groups") if $group && !File.exist?("#{path}/groups")
+  path = "/data/builds/#{$project_name}"
+  run!("mkdir #{path}") if !File.exist?(path)
+  run!("mkdir #{path}/pending") if !File.exist?("#{path}/pending")
+  run!("mkdir #{path}/ready") if !File.exist?("#{path}/ready")
+  run!("mkdir #{path}/groups") if $group && !File.exist?("#{path}/groups")
 
-    begin
-        path = File.readlink(latest_link)
-	# TODO: only snapshot if group is given
-  	btrfs_snapshot(path, pending_build_path)
-    rescue => e
-	    puts e
-	    puts "No subvolume to snapshot from. Creating a new one..."
-	    run!("btrfs subvolume create #{pending_build_path}")
-	    run!("mkdir -p #{pending_build_path}/data/cache #{pending_build_path}/data/artifacts")
-    end
+  begin
+    path = File.readlink(latest_link)
+    # TODO: only snapshot if group is given
+    btrfs_snapshot(path, pending_build_path)
+  rescue => e
+    puts e
+    puts "No subvolume to snapshot from. Creating a new one..."
+    run!("btrfs subvolume create #{pending_build_path}")
+    run!("mkdir -p #{pending_build_path}/data/cache #{pending_build_path}/data/artifacts")
+  end
 end
 
 def btrfs_snapshot(source, dest)
@@ -53,17 +55,17 @@ def symlink(target, link_name)
   run!("ln -sf #{target} #{link_name}")
 end
 
-build_id = Digest::SHA256.hexdigest($project_name + $group.to_s + $args.join)
+build_id = Digest::SHA256.hexdigest($project_name + $args.join)
 
 build_path = "/data/builds/#{$project_name}"
-latest_build_link  = $group ? build_path+"/groups/#{$group}" : build_path+"/latest" 
+latest_build_link  = $group ? build_path+"/groups/#{$group}" : build_path+"/latest"
 pending_build_path = build_path + "/pending/#{build_id}"
 ready_build_path   = build_path + "/ready/#{build_id}"
 
 if File.exist?(pending_build_path)
-	abort("Build is in progress. Exiting...") 
+  abort("Build is in progress. Exiting...")
 elsif File.exist?(ready_build_path)
-	abort("Build result already exists. Exiting...")
+  abort("Build result already exists. Exiting...")
 end
 
 puts "Scheduling build for #{$project_name} with id=#{build_id}"
