@@ -8,7 +8,7 @@
 #
 # Example:
 #
-#     $ GROUP="skroutz" ./build-simulation yogurtbundle GEMFILE_CONTENTS='"$(cat Gemfile)"' LOCKFILE_CONTENTS='"$(cat Gemfile.lock)"'
+#     $ GROUP="skroutz" ./build-simulation yogurtbundle GEMFILE='"$(cat Gemfile)"' LOCKFILE='"$(cat Gemfile.lock)"' e=$RANDOM
 #
 require "securerandom"
 require "digest"
