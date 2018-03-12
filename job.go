@@ -4,9 +4,7 @@ import "errors"
 
 type Job struct {
 	Project string
-	//Project *Project
-
-	Params map[string]string
+	Params  map[string]string
 }
 
 func NewJob(project string, params map[string]string) (*Job, error) {
