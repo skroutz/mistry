@@ -62,7 +62,10 @@ func Work(j *Job) error {
 		return err
 	}
 
-	j.BuildImage(client)
+	err := j.BuildImage(client)
+	if err != nil {
+		return err
+	}
 	//	config := container.Config{User: "502", Image: j.Project}
 	//
 	//	mnts := []mount.Mount{

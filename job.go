@@ -5,12 +5,14 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"log"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
+	"github.com/jhoonb/archivex"
 )
 
 type Job struct {
@@ -24,7 +26,8 @@ type Job struct {
 	PendingBuildPath string
 	ReadyBuildPath   string
 	LatestBuildPath  string
-	DockerfilePath   string
+
+	ProjectPath string
 }
 
 func NewJob(project string, group string, params map[string]string) (*Job, error) {
@@ -57,17 +60,42 @@ func NewJob(project string, group string, params map[string]string) (*Job, error
 		j.LatestBuildPath = filepath.Join(cfg.BuildPath, "groups", j.Group)
 	}
 
-	j.DockerfilePath = filepath.Join(cfg.ProjectPath, j.Project, "Dockerfile")
+	j.ProjectPath = filepath.Join(cfg.ProjectPath, j.Project, "Dockerfile")
 
 	return j, nil
 }
 
-func (j *Job) BuildImage(c *docker.Client) {
-	res, err := c.ImageBuild(
-		context.Background(), nil,
-		types.ImageBuildOptions{Dockerfile: j.DockerfilePath})
+func (j *Job) BuildImage(c *docker.Client) error {
+	tar := new(archivex.TarFile)
+	err := tar.Create("/Users/agis/context.tar")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	fmt.Println(res)
+	// j.ProjectPath
+	err = tar.AddAll("/Users/agis/dev/mistry-projects/yogurt-bundle", false)
+	if err != nil {
+		return err
+	}
+	err = tar.Close()
+	if err != nil {
+		return err
+	}
+
+	buildCtx, err := os.Open("/Users/agis/context.tar")
+	if err != nil {
+		return err
+	}
+	defer dockerBuildContext.Close()
+
+	res, err := c.ImageBuild(context.Background(), dockerBuildContext, types.ImageBuildOptions{})
+	if err != nil {
+		return (err)
+	}
+
+	response, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Printf("%s", err.Error())
+	}
+	fmt.Println(string(response))
+	return nil
 }
