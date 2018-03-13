@@ -22,5 +22,10 @@
 
 
 [[constraint]]
+  revision = "6fca8d6e6713acbdf3f9ca40cf6370fc5ee5ee53"
+	name = "github.com/docker/distribution"
+
+[[constraint]]
   version = "17.05.0-ce"
-  name = "github.com/docker/docker"
+	name = "github.com/docker/docker"
+
