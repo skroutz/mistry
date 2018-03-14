@@ -1,18 +1,19 @@
 package main
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
-	"github.com/jhoonb/archivex"
 )
 
 type Job struct {
@@ -66,36 +67,59 @@ func NewJob(project string, group string, params map[string]string) (*Job, error
 }
 
 func (j *Job) BuildImage(c *docker.Client) error {
-	tar := new(archivex.TarFile)
-	err := tar.Create("/Users/agis/context.tar")
-	if err != nil {
-		return err
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		hdr, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+
+		err = tw.WriteHeader(hdr)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(tw, f)
+		if err != nil {
+			return err
+		}
+
+		err = f.Close()
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
-	// j.ProjectPath
-	err = tar.AddAll("/Users/agis/dev/mistry-projects/yogurt-bundle", false)
-	if err != nil {
-		return err
-	}
-	err = tar.Close()
+
+	err := filepath.Walk("/Users/agis/dev/mistry-projects/sample", walkFn)
 	if err != nil {
 		return err
 	}
 
-	buildCtx, err := os.Open("/Users/agis/context.tar")
+	err = tw.Close()
 	if err != nil {
 		return err
 	}
-	defer dockerBuildContext.Close()
 
-	res, err := c.ImageBuild(context.Background(), dockerBuildContext, types.ImageBuildOptions{})
+	_, err = c.ImageBuild(context.Background(), &buf, types.ImageBuildOptions{})
 	if err != nil {
-		return (err)
+		return err
 	}
 
-	response, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Printf("%s", err.Error())
-	}
-	fmt.Println(string(response))
 	return nil
 }

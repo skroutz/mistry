@@ -62,7 +62,7 @@ func Work(j *Job) error {
 		return err
 	}
 
-	err := j.BuildImage(client)
+	err = j.BuildImage(client)
 	if err != nil {
 		return err
 	}

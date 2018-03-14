@@ -40,7 +40,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	job.BuildImage(client)
+	err = job.BuildImage(client)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//	err = Work(job)
 	//	if err != nil {
 	//		log.Fatal(err)
