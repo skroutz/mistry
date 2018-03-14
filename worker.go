@@ -11,7 +11,7 @@ import (
 // x check for in-progress or comleted build
 // x bootstrap project
 // x btrfs snapshot/create
-// - build image
+// x build image
 // - create container
 // - start container
 func Work(j *Job) error {
@@ -66,18 +66,11 @@ func Work(j *Job) error {
 	if err != nil {
 		return err
 	}
-	//	config := container.Config{User: "502", Image: j.Project}
-	//
-	//	mnts := []mount.Mount{
-	//		{Type: mount.TypeBind, Source: "/tmp", Target: "/tmp"},
-	//	}
-	//	hostConfig := container.HostConfig{Mounts: mnts}
-	//
-	//	container, err := cli.ContainerCreate(context.Background(), &config, &hostConfig, nil, "rzec")
-	//	if err != nil {
-	//		return err
-	//	}
-	//fmt.Printf("%#v", container)
+
+	err = j.StartContainer(client)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

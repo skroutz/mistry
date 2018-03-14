@@ -8,11 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 )
 
@@ -106,6 +110,7 @@ func (j *Job) BuildImage(c *docker.Client) error {
 		return nil
 	}
 
+	// TODO: fix path
 	err := filepath.Walk("/Users/agis/dev/mistry-projects/sample", walkFn)
 	if err != nil {
 		return err
@@ -116,10 +121,65 @@ func (j *Job) BuildImage(c *docker.Client) error {
 		return err
 	}
 
-	_, err = c.ImageBuild(context.Background(), &buf, types.ImageBuildOptions{})
+	buildArgs := make(map[string]*string)
+	buildArgs["uid"] = &cfg.UID
+	buildOpts := types.ImageBuildOptions{BuildArgs: buildArgs}
+	res, err := c.ImageBuild(context.Background(), &buf, buildOpts)
 	if err != nil {
 		return err
 	}
+
+	// TODO: REMOVE, just for debugging
+	response, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+		fmt.Printf("%s", err.Error())
+	}
+	fmt.Println(res)
+	fmt.Println(string(response))
+
+	return nil
+}
+
+// StartContainer creates and runs the container.
+func (j *Job) StartContainer(c *docker.Client) error {
+	config := container.Config{User: cfg.UID, Image: j.Project}
+
+	// TODO: maybe "/data" should go in a config?
+	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, "data"), Target: "/data"}}
+	for src, target := range cfg.Mounts {
+		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
+	}
+
+	// TODO: do we want auto-remove?
+	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true}
+
+	// TODO: use an actual ctx for shutting down
+	res, err := c.ContainerCreate(context.Background(), &config, &hostConfig, nil, j.ID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: use an actual ctx for shutting down
+	err = c.ContainerStart(context.Background(), res.ID, types.ContainerStartOptions{})
+	if err != nil {
+		return err
+	}
+
+	// TODO: attach and stream logs somewhere
+	resp, err := c.ContainerAttach(context.Background(), res.ID, types.ContainerAttachOptions{
+		Stream: true, Stdin: true, Stdout: true, Stderr: true, Logs: true})
+	if err != nil {
+		return err
+	}
+
+	// TODO: this goes away. debugging purposes
+	foo, err := ioutil.ReadAll(resp.Reader)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s\n", foo)
 
 	return nil
 }

@@ -1,11 +1,14 @@
 package main
 
 type Config struct {
-	// /var/lib/mistry/projects ?
-	ProjectPath string
+	ProjectPath string // var/lib/mistry/projects ?
 
-	// /var/lib/mistry/data
-	BuildPath string
+	BuildPath string // var/lib/mistry/data
 
-	//Mounts
+	UID string
+
+	// Mounts that apply to all containers
+	//
+	// map[source]target
+	Mounts map[string]string
 }
