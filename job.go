@@ -142,6 +142,8 @@ func (j *Job) BuildImage(c *docker.Client) error {
 }
 
 // StartContainer creates and runs the container.
+//
+// TODO: block until container exits
 func (j *Job) StartContainer(c *docker.Client) error {
 	config := container.Config{User: cfg.UID, Image: j.Project}
 

@@ -8,20 +8,16 @@ import (
 	docker "github.com/docker/docker/client"
 )
 
-// x check for in-progress or comleted build
-// x bootstrap project
-// x btrfs snapshot/create
-// x build image
-// - create container
-// - start container
 func Work(j *Job) error {
 	_, err := os.Stat(j.ReadyBuildPath)
 	if err != nil {
+		// IMPLEMENTME
 		// already built. Just give back the result
 	}
 
 	_, err = os.Stat(j.PendingBuildPath)
 	if err != nil {
+		// IMPLEMENTME
 		// already in progress. Block until ready and return the result.
 	}
 
@@ -30,32 +26,32 @@ func Work(j *Job) error {
 		return err
 	}
 
-	//	src, err := filepath.EvalSymlinks(j.LatestBuildPath())
-	//	if err == nil {
-	//		if j.Group != "" {
-	//			_, err := RunCmd("btrfs", "snapshot", src, j.PendingBuildPath)
-	//			if err != nil {
-	//				return err
-	//			}
-	//		}
-	//	} else {
-	//		if os.IsNotExist(err) {
-	//			_, err := RunCmd("btrfs", "subvolume", "create", j.PendingBuildPath)
-	//			if err != nil {
-	//				return err
-	//			}
-	//			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "cache"))
-	//			if err != nil {
-	//				return err
-	//			}
-	//			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "artifacts"))
-	//			if err != nil {
-	//				return err
-	//			}
-	//		} else {
-	//			return err
-	//		}
-	//	}
+	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
+	if err == nil {
+		if j.Group != "" {
+			_, err := RunCmd("btrfs", "snapshot", src, j.PendingBuildPath)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		if os.IsNotExist(err) {
+			_, err := RunCmd("btrfs", "subvolume", "create", j.PendingBuildPath)
+			if err != nil {
+				return err
+			}
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "cache"))
+			if err != nil {
+				return err
+			}
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "artifacts"))
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
@@ -71,6 +67,7 @@ func Work(j *Job) error {
 	if err != nil {
 		return err
 	}
+	// TODO: we must block until ready
 
 	return nil
 }
