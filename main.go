@@ -8,9 +8,10 @@ import (
 var cfg *Config
 
 const (
-	DataDir      = "/data"
-	CacheDir     = "/cache"
-	ArtifactsDir = "/artifacts"
+	DataDir      = "/data"      //  - data/
+	CacheDir     = "/cache"     //  |- cache/
+	ArtifactsDir = "/artifacts" //  |- artifacts/
+	ParamsDir    = "/params"    //  |- params/
 )
 
 func init() {

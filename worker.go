@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
@@ -29,8 +30,6 @@ func Work(j *Job) error {
 		log.Fatal(err)
 	}
 
-
-	fmt.Println("boostrapping")
 	err = BootstrapProject(j)
 	if err != nil {
 		return err
@@ -40,6 +39,14 @@ func Work(j *Job) error {
 	if err == nil {
 		if j.Group != "" {
 			_, err := RunCmd("btrfs", "snapshot", src, j.PendingBuildPath)
+			if err != nil {
+				return err
+			}
+			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+			if err != nil {
+				return err
+			}
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
 				return err
 			}
@@ -62,7 +69,19 @@ func Work(j *Job) error {
 			if err != nil {
 				return err
 			}
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+			if err != nil {
+				return err
+			}
 		} else {
+			return err
+		}
+	}
+
+	// write params
+	for k, v := range j.Params {
+		err = ioutil.WriteFile(k, []byte(v), 0644)
+		if err != nil {
 			return err
 		}
 	}
