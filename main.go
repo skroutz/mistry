@@ -7,6 +7,12 @@ import (
 
 var cfg *Config
 
+const (
+	DataDir      = "/data"
+	CacheDir     = "/cache"
+	ArtifactsDir = "/artifacts"
+)
+
 func init() {
 	log.SetFlags(log.Lshortfile)
 

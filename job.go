@@ -148,8 +148,7 @@ func (j *Job) BuildImage(c *docker.Client) error {
 func (j *Job) StartContainer(c *docker.Client) error {
 	config := container.Config{User: cfg.UID, Image: j.Project}
 
-	// TODO: maybe "/data" should go in a config?
-	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, "data"), Target: "/data"}}
+	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, DataDir), Target: DataDir}}
 	for src, target := range cfg.Mounts {
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}

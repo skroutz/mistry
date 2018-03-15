@@ -50,15 +50,15 @@ func Work(j *Job) error {
 			if err != nil {
 				return err
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data"))
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 			if err != nil {
 				return err
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data", "cache"))
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
 			if err != nil {
 				return err
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data", "artifacts"))
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
 			if err != nil {
 				return err
 			}
