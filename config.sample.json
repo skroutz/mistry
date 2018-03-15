@@ -1,6 +1,6 @@
 {
-  "projects_path": "/var/lib/mistry/projects",
-  "build_path": "/var/lib/mistry/data",
+  "projects_path": "/Users/agis/dev/mistry-projects",
+  "build_path": "/data",
   "mounts": {
     "/var/lib/mistry/.ssh": "/home/mistry/.ssh"
   }

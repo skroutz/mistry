@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -21,11 +22,13 @@ func Work(j *Job) error {
 		// already in progress. Block until ready and return the result.
 	}
 
+	fmt.Println("boostrapping")
 	err = BootstrapProject(j)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("btrfs")
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
@@ -58,11 +61,13 @@ func Work(j *Job) error {
 		return err
 	}
 
+	fmt.Println("building image")
 	err = j.BuildImage(client)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("starting container")
 	err = j.StartContainer(client)
 	if err != nil {
 		return err

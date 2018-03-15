@@ -152,6 +152,7 @@ func (j *Job) StartContainer(c *docker.Client) error {
 	for src, target := range cfg.Mounts {
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}
+	fmt.Printf("%#v\n", mnts)
 
 	// TODO: do we want auto-remove?
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true}
