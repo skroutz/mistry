@@ -28,7 +28,7 @@ type Job struct {
 	Group   string
 	Params  map[string]string
 
-	RootBuildPath string
+	RootBuildPath    string
 	PendingBuildPath string
 	ReadyBuildPath   string
 	LatestBuildPath  string
@@ -172,6 +172,15 @@ func (j *Job) StartContainer(c *docker.Client) error {
 	// TODO: attach and stream logs somewhere
 	resp, err := c.ContainerAttach(context.Background(), res.ID, types.ContainerAttachOptions{
 		Stream: true, Stdin: true, Stdout: true, Stderr: true, Logs: true})
+	if err != nil {
+		return err
+	}
+
+	log, err := os.Create("foo.log")
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(log, resp.Reader)
 	if err != nil {
 		return err
 	}

@@ -12,6 +12,7 @@ import (
 )
 
 func Work(j *Job) error {
+	// TODO: this is racy; do this using a sync.Map
 	_, err := os.Stat(j.PendingBuildPath)
 	if err == nil {
 		// IMPLEMENTME
