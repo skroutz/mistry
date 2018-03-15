@@ -3,24 +3,25 @@ package main
 import (
 	"log"
 	"os"
-	"strconv"
 
 	docker "github.com/docker/docker/client"
 )
 
-var cfg Config
+var cfg *Config
 
 func init() {
 	log.SetFlags(log.Lshortfile)
 
-	// TODO: these should be read from config.json
-	cfg = Config{ProjectPath: "/var/lib/mistry/projects", BuildPath: "/var/lib/mistry/data"}
-	cfg.UID = strconv.Itoa(os.Getuid())
-	cfg.Mounts = make(map[string]string)
-	// TODO: also support readonly option
-	cfg.Mounts["/var/lib/mistry/.ssh"] = "/home/mistry/.ssh"
+	f, err := os.Open("config.sample.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg, err = ParseConfig(f)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	err := PathIsDir(cfg.ProjectPath)
+	err = PathIsDir(cfg.ProjectsPath)
 	if err != nil {
 		log.Fatal(err)
 	}

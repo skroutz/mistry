@@ -1,14 +1,32 @@
 package main
 
+import (
+	"encoding/json"
+	"io"
+	"os"
+	"strconv"
+)
+
 type Config struct {
-	ProjectPath string // var/lib/mistry/projects ?
+	ProjectsPath string `json:"projects_path"`
+	BuildPath    string `json:"build_path"`
+	UID          string
 
-	BuildPath string // var/lib/mistry/data
-
-	UID string
-
-	// Mounts that apply to all containers
-	//
 	// map[source]target
-	Mounts map[string]string
+	Mounts map[string]string `json:"mounts"`
+}
+
+func ParseConfig(r io.Reader) (*Config, error) {
+	c := new(Config)
+	dec := json.NewDecoder(r)
+	err := dec.Decode(c)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.UID == "" {
+		c.UID = strconv.Itoa(os.Getuid())
+	}
+
+	return c, nil
 }

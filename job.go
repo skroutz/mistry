@@ -65,7 +65,7 @@ func NewJob(project string, group string, params map[string]string) (*Job, error
 		j.LatestBuildPath = filepath.Join(cfg.BuildPath, "groups", j.Group)
 	}
 
-	j.ProjectPath = filepath.Join(cfg.ProjectPath, j.Project, "Dockerfile")
+	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project, "Dockerfile")
 
 	return j, nil
 }

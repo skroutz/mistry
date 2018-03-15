@@ -75,7 +75,7 @@ func Work(j *Job) error {
 // BootstrapProject bootstraps j's project if needed. This function is
 // idempotent.
 func BootstrapProject(j *Job) error {
-	path := filepath.Join(cfg.ProjectPath, j.Project)
+	path := filepath.Join(cfg.ProjectsPath, j.Project)
 	err := EnsureDirExists(path)
 	if err != nil {
 		return err

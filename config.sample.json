@@ -1,0 +1,7 @@
+{
+  "projects_path": "/var/lib/mistry/projects",
+  "build_path": "/var/lib/mistry/data",
+  "mounts": {
+    "/var/lib/mistry/.ssh": "/home/mistry/.ssh"
+  }
+}
