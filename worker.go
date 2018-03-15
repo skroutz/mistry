@@ -4,23 +4,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"log"
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
 )
 
 func Work(j *Job) error {
-	_, err := os.Stat(j.ReadyBuildPath)
-	if err != nil {
+	_, err := os.Stat(j.PendingBuildPath)
+	if err == nil {
 		// IMPLEMENTME
-		// already built. Just give back the result
+		panic("build in progress. block until ready and return the result")
+	} else if !os.IsNotExist(err) {
+		log.Fatal(err)
 	}
 
-	_, err = os.Stat(j.PendingBuildPath)
-	if err != nil {
+	_, err = os.Stat(j.ReadyBuildPath)
+	if err == nil {
 		// IMPLEMENTME
-		// already in progress. Block until ready and return the result.
+		fmt.Println(j.ReadyBuildPath)
+		fmt.Println(err)
+		panic("build ready. give back result")
+	} else if !os.IsNotExist(err) {
+		log.Fatal(err)
 	}
+
 
 	fmt.Println("boostrapping")
 	err = BootstrapProject(j)
@@ -28,7 +36,6 @@ func Work(j *Job) error {
 		return err
 	}
 
-	fmt.Println("btrfs")
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
@@ -43,11 +50,15 @@ func Work(j *Job) error {
 			if err != nil {
 				return err
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "cache"))
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data"))
 			if err != nil {
 				return err
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "artifacts"))
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data", "cache"))
+			if err != nil {
+				return err
+			}
+			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, "data", "artifacts"))
 			if err != nil {
 				return err
 			}
@@ -80,24 +91,23 @@ func Work(j *Job) error {
 // BootstrapProject bootstraps j's project if needed. This function is
 // idempotent.
 func BootstrapProject(j *Job) error {
-	path := filepath.Join(cfg.ProjectsPath, j.Project)
-	err := EnsureDirExists(path)
+	err := EnsureDirExists(j.RootBuildPath)
 	if err != nil {
 		return err
 	}
 
-	err = EnsureDirExists(filepath.Join(path, "pending"))
+	err = EnsureDirExists(filepath.Join(j.RootBuildPath, "pending"))
 	if err != nil {
 		return err
 	}
 
-	err = EnsureDirExists(filepath.Join(path, "ready"))
+	err = EnsureDirExists(filepath.Join(j.RootBuildPath, "ready"))
 	if err != nil {
 		return err
 	}
 
 	if j.Group != "" {
-		err = EnsureDirExists(filepath.Join(path, "groups"))
+		err = EnsureDirExists(filepath.Join(j.RootBuildPath, "groups"))
 		if err != nil {
 			return err
 		}

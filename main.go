@@ -30,7 +30,7 @@ func init() {
 }
 
 func main() {
-	job, err := NewJob("yogurtyarn", "", nil)
+	job, err := NewJob("yogurt-yarn", "", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

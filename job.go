@@ -28,6 +28,7 @@ type Job struct {
 	Group   string
 	Params  map[string]string
 
+	RootBuildPath string
 	PendingBuildPath string
 	ReadyBuildPath   string
 	LatestBuildPath  string
@@ -56,16 +57,17 @@ func NewJob(project string, group string, params map[string]string) (*Job, error
 	j.Project = project
 	j.Group = group
 	j.Params = params
-	j.PendingBuildPath = filepath.Join(cfg.BuildPath, "pending", j.ID)
-	j.ReadyBuildPath = filepath.Join(cfg.BuildPath, "ready", j.ID)
+	j.RootBuildPath = filepath.Join(cfg.BuildPath, j.Project)
+	j.PendingBuildPath = filepath.Join(j.RootBuildPath, "pending", j.ID)
+	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
 
 	if j.Group == "" {
-		j.LatestBuildPath = filepath.Join(cfg.BuildPath, "latest")
+		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "latest")
 	} else {
-		j.LatestBuildPath = filepath.Join(cfg.BuildPath, "groups", j.Group)
+		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "groups", j.Group)
 	}
 
-	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project, "Dockerfile")
+	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project)
 
 	return j, nil
 }
@@ -110,8 +112,7 @@ func (j *Job) BuildImage(c *docker.Client) error {
 		return nil
 	}
 
-	// TODO: fix path
-	err := filepath.Walk("/Users/agis/dev/mistry-projects/sample", walkFn)
+	err := filepath.Walk(j.ProjectPath, walkFn)
 	if err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func (j *Job) BuildImage(c *docker.Client) error {
 
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &cfg.UID
-	buildOpts := types.ImageBuildOptions{BuildArgs: buildArgs}
+	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs}
 	res, err := c.ImageBuild(context.Background(), &buf, buildOpts)
 	if err != nil {
 		return err
