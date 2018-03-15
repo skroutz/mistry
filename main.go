@@ -37,7 +37,10 @@ func init() {
 }
 
 func main() {
-	job, err := NewJob("yogurt-yarn", "", nil)
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	params["asemas"] = "yoyoyo"
+	job, err := NewJob("yogurt-yarn", "", params)
 	if err != nil {
 		log.Fatal(err)
 	}
