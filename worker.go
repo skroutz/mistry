@@ -81,7 +81,7 @@ func Work(j *Job) error {
 
 	// write params
 	for k, v := range j.Params {
-		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath,DataDir,ParamsDir, k), []byte(v), 0644)
+		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
 		if err != nil {
 			return err
 		}

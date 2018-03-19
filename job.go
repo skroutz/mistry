@@ -129,6 +129,7 @@ func (j *Job) BuildImage(c *docker.Client) error {
 	if err != nil {
 		return err
 	}
+	// TODO: close res.Body
 
 	// TODO: REMOVE, just for debugging
 	response, err := ioutil.ReadAll(res.Body)
