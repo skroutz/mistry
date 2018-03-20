@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -193,6 +194,37 @@ func (j *Job) StartContainer(c *docker.Client) error {
 	}
 
 	fmt.Printf("%s\n", foo)
+
+	return nil
+}
+
+func (j *Job) UnmarshalJSON(b []byte) error {
+	var tmp map[string]interface{}
+
+	err := json.Unmarshal(b, &tmp)
+	if err != nil {
+		return err
+	}
+
+	project, ok := tmp["project"].(string)
+	if !ok {
+		return errors.New("project must be a string")
+	}
+	if project == "" {
+		return errors.New("project cannot be empty")
+	}
+	j.Project = project
+
+	group, ok := tmp["group"].(string)
+	if !ok {
+		return errors.New("group must be a string")
+	}
+	j.Group = group
+
+	params, ok := tmp["params"].(map[string]string)
+	if ok {
+		j.Params = params
+	}
 
 	return nil
 }
