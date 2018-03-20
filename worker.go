@@ -16,7 +16,8 @@ import (
 // successful completion.
 //
 // TODO: introduce build type
-func Work(ctx context.Context, j *Job) (string, error) {
+// TODO: log fs command outputs
+func Work(ctx context.Context, j *Job, fs FileSystem) (string, error) {
 	// TODO: this is racy; do this using a map and a mutex
 	_, err := os.Stat(j.PendingBuildPath)
 	if err == nil {
@@ -51,9 +52,9 @@ func Work(ctx context.Context, j *Job) (string, error) {
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
-			_, err := RunCmd("btrfs", "subvolume", "snapshot", src, j.PendingBuildPath)
+			err = fs.Clone(src, j.PendingBuildPath)
 			if err != nil {
-				return "", workErr("could not snapshot subvolume", err)
+				return "", workErr("could not clone latest build result", err)
 			}
 			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
@@ -65,9 +66,9 @@ func Work(ctx context.Context, j *Job) (string, error) {
 			}
 		}
 	} else if os.IsNotExist(err) {
-		_, err := RunCmd("btrfs", "subvolume", "create", j.PendingBuildPath)
+		err = fs.Create(j.PendingBuildPath)
 		if err != nil {
-			return "", workErr("could not create subvolume", err)
+			return "", workErr("could not create pending build path", err)
 		}
 		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {

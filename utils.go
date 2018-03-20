@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
-	"fmt"
 )
 
 // PathIsDir returns an error if p does not exist or is not a directory.
@@ -46,6 +46,7 @@ func EnsureDirExists(path string) error {
 }
 
 func RunCmd(name string, args ...string) (string, error) {
+	// TODO: log instead?
 	fmt.Println("running", name, args)
 	cmd := exec.Command(name, args...)
 	out, err := cmd.CombinedOutput()
