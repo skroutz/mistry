@@ -1,18 +1,22 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 )
 
-var cfg *Config
-
 const (
-	DataDir      = "/data"      //  - data/
-	CacheDir     = "/cache"     //  |- cache/
-	ArtifactsDir = "/artifacts" //  |- artifacts/
-	ParamsDir    = "/params"    //  |- params/
+	DataDir      = "/data"      //     - data/
+	CacheDir     = "/cache"     //     |- cache/
+	ArtifactsDir = "/artifacts" //     |- artifacts/
+	ParamsDir    = "/params"    //     |- params/
+
+	BuildLogName = "out.log"
 )
+
+var cfg *Config
 
 func init() {
 	log.SetFlags(log.Lshortfile)
@@ -37,31 +41,14 @@ func init() {
 }
 
 func main() {
-	params := make(map[string]string)
-	params["foo"] = "bar"
-	params["asemas"] = "yoyoyo"
-	job, err := NewJob("yogurt-yarn", "", params)
+	job, err := NewJob("yogurt-yarn", make(map[string]string), "foo")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//client, err := docker.NewEnvClient()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-
-	//	err = job.BuildImage(client)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//
-	//	err = job.StartContainer(client)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-
-	err = Work(job)
+	res, err := Work(context.TODO(), job)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(res)
 }

@@ -9,8 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,8 +24,8 @@ type Job struct {
 
 	// User-provided
 	Project string
-	Group   string
 	Params  map[string]string
+	Group   string
 
 	RootBuildPath    string
 	PendingBuildPath string
@@ -35,9 +33,13 @@ type Job struct {
 	LatestBuildPath  string
 
 	ProjectPath string
+
+	// NOTE: after a job is complete, this points to an invalid path
+	// (pending)
+	BuildLogPath string
 }
 
-func NewJob(project string, group string, params map[string]string) (*Job, error) {
+func NewJob(project string, params map[string]string, group string) (*Job, error) {
 	if project == "" {
 		return nil, errors.New("No project given")
 	}
@@ -69,11 +71,12 @@ func NewJob(project string, group string, params map[string]string) (*Job, error
 	}
 
 	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project)
+	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogName)
 
 	return j, nil
 }
 
-func (j *Job) BuildImage(c *docker.Client) error {
+func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) error {
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 
@@ -126,20 +129,16 @@ func (j *Job) BuildImage(c *docker.Client) error {
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &cfg.UID
 	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs}
-	res, err := c.ImageBuild(context.Background(), &buf, buildOpts)
+	resp, err := c.ImageBuild(context.Background(), &buf, buildOpts)
 	if err != nil {
 		return err
 	}
-	// TODO: close res.Body
+	defer resp.Body.Close()
 
-	// TODO: REMOVE, just for debugging
-	response, err := ioutil.ReadAll(res.Body)
+	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		log.Fatal(err)
-		fmt.Printf("%s", err.Error())
+		return err
 	}
-	fmt.Println(res)
-	fmt.Println(string(response))
 
 	return nil
 }
@@ -147,53 +146,38 @@ func (j *Job) BuildImage(c *docker.Client) error {
 // StartContainer creates and runs the container.
 //
 // TODO: block until container exits
-func (j *Job) StartContainer(c *docker.Client) error {
+func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Writer) error {
 	config := container.Config{User: cfg.UID, Image: j.Project}
 
 	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, DataDir), Target: DataDir}}
 	for src, target := range cfg.Mounts {
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}
-	fmt.Printf("%#v\n", mnts)
 
-	// TODO: do we want auto-remove?
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true}
 
-	// TODO: use an actual ctx for shutting down
-	res, err := c.ContainerCreate(context.Background(), &config, &hostConfig, nil, j.ID)
+	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.ID)
 	if err != nil {
 		return err
 	}
 
 	// TODO: use an actual ctx for shutting down
-	err = c.ContainerStart(context.Background(), res.ID, types.ContainerStartOptions{})
+	err = c.ContainerStart(ctx, res.ID, types.ContainerStartOptions{})
 	if err != nil {
 		return err
 	}
 
-	// TODO: attach and stream logs somewhere
-	resp, err := c.ContainerAttach(context.Background(), res.ID, types.ContainerAttachOptions{
+	resp, err := c.ContainerAttach(ctx, res.ID, types.ContainerAttachOptions{
 		Stream: true, Stdin: true, Stdout: true, Stderr: true, Logs: true})
 	if err != nil {
 		return err
 	}
+	defer resp.Close()
 
-	log, err := os.Create("foo.log")
+	_, err = io.Copy(out, resp.Reader)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(log, resp.Reader)
-	if err != nil {
-		return err
-	}
-
-	// TODO: this goes away. debugging purposes
-	foo, err := ioutil.ReadAll(resp.Reader)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("%s\n", foo)
 
 	return nil
 }
