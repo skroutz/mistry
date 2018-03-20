@@ -20,17 +20,20 @@ import (
 func Work(ctx context.Context, j *Job, fs FileSystem) (string, error) {
 	// TODO: this is racy; do this using a map and a mutex
 	_, err := os.Stat(j.PendingBuildPath)
+	// TODO: log repetitions
 	if err == nil {
 		t := time.NewTicker(1 * time.Second)
-		select {
-		case <-ctx.Done():
-			return "", workErr("context cancelled while waiting for pending build", nil)
-		case <-t.C:
-			_, err = os.Stat(j.ReadyBuildPath)
-			if err == nil {
-				return j.ReadyBuildPath, nil
-			} else if !os.IsNotExist(err) {
-				return "", workErr("could not wait for ready build", err)
+		for {
+			select {
+			case <-ctx.Done():
+				return "", workErr("context cancelled while waiting for pending build", nil)
+			case <-t.C:
+				_, err = os.Stat(j.ReadyBuildPath)
+				if err == nil {
+					return j.ReadyBuildPath, nil
+				} else if !os.IsNotExist(err) {
+					return "", workErr("could not wait for ready build", err)
+				}
 			}
 		}
 	} else if !os.IsNotExist(err) {

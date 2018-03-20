@@ -45,6 +45,7 @@ func EnsureDirExists(path string) error {
 	return nil
 }
 
+// TODO: do we actually want the output?
 func RunCmd(name string, args ...string) (string, error) {
 	// TODO: log instead?
 	fmt.Println("running", name, args)
