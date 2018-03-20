@@ -23,29 +23,29 @@ func Work(ctx context.Context, j *Job) (string, error) {
 		t := time.NewTicker(1 * time.Second)
 		select {
 		case <-ctx.Done():
-			return "", errors.New("work: context cancelled while waiting for pending build")
+			return "", workErr("context cancelled while waiting for pending build", nil)
 		case <-t.C:
 			_, err = os.Stat(j.ReadyBuildPath)
 			if err == nil {
 				return j.ReadyBuildPath, nil
 			} else if !os.IsNotExist(err) {
-				return "", errors.New("work: could not wait for ready build; " + err.Error())
+				return "", workErr("could not wait for ready build", err)
 			}
 		}
 	} else if !os.IsNotExist(err) {
-		return "", errors.New("work: could not check for pending build; " + err.Error())
+		return "", workErr("could not check for pending build", err)
 	}
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
 		return j.ReadyBuildPath, nil
 	} else if !os.IsNotExist(err) {
-		return "", errors.New("work: could not check for ready path; " + err.Error())
+		return "", workErr("could not check for ready path", err)
 	}
 
 	err = BootstrapProject(j)
 	if err != nil {
-		return "", errors.New("work: could not bootstrap project; " + err.Error())
+		return "", workErr("could not bootstrap project", err)
 	}
 
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
@@ -53,52 +53,52 @@ func Work(ctx context.Context, j *Job) (string, error) {
 		if j.Group != "" {
 			_, err := RunCmd("btrfs", "subvolume", "snapshot", src, j.PendingBuildPath)
 			if err != nil {
-				return "", errors.New("work: could not snapshot subvolume; " + err.Error())
+				return "", workErr("could not snapshot subvolume", err)
 			}
 			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
-				return "", errors.New("work: could not remove params dir; " + err.Error())
+				return "", workErr("could not remove params dir", err)
 			}
 			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
-				return "", errors.New("work: could not ensure directory exists; " + err.Error())
+				return "", workErr("could not ensure directory exists", err)
 			}
 		}
 	} else if os.IsNotExist(err) {
 		_, err := RunCmd("btrfs", "subvolume", "create", j.PendingBuildPath)
 		if err != nil {
-			return "", errors.New("work: could not create subvolume; " + err.Error())
+			return "", workErr("could not create subvolume", err)
 		}
 		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {
-			return "", errors.New("work: could not ensure directory exists; " + err.Error())
+			return "", workErr("could not ensure directory exists", err)
 		}
 		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
 		if err != nil {
-			return "", errors.New("work: could not ensure directory exists; " + err.Error())
+			return "", workErr("could not ensure directory exists", err)
 		}
 		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
 		if err != nil {
-			return "", errors.New("work: could not ensure directory exists; " + err.Error())
+			return "", workErr("could not ensure directory exists", err)
 		}
 		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 		if err != nil {
-			return "", errors.New("work: could not ensure directory exists; " + err.Error())
+			return "", workErr("could not ensure directory exists", err)
 		}
 	} else {
-		return "", errors.New("work: could not read latest build link; " + err.Error())
+		return "", workErr("could not read latest build link", err)
 	}
 
 	for k, v := range j.Params {
 		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
 		if err != nil {
-			return "", errors.New("work: could not write param file; " + err.Error())
+			return "", workErr("could not write param file", err)
 		}
 	}
 
 	out, err := os.Create(j.BuildLogPath)
 	if err != nil {
-		return "", errors.New("work: could not create build log file; " + err.Error())
+		return "", workErr("could not create build log file", err)
 	}
 
 	// TODO: we should check the error here. However, it's not so simple
@@ -107,35 +107,35 @@ func Work(ctx context.Context, j *Job) (string, error) {
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
-		return "", errors.New("work: could not create docker client; " + err.Error())
+		return "", workErr("could not create docker client", err)
 	}
 
 	err = j.BuildImage(ctx, client, out)
 	if err != nil {
-		return "", errors.New("work: could not build docker image; " + err.Error())
+		return "", workErr("could not build docker image", err)
 	}
 
 	err = j.StartContainer(ctx, client, out)
 	if err != nil {
-		return "", errors.New("work: could not start docker container; " + err.Error())
+		return "", workErr("could not start docker container", err)
 	}
 
 	err = os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
 	if err != nil {
-		return "", errors.New("work: could not rename pending to ready path; " + err.Error())
+		return "", workErr("could not rename pending to ready path", err)
 	}
 
 	_, err = os.Lstat(j.LatestBuildPath)
 	if err == nil {
 		err = os.Remove(j.LatestBuildPath)
 		if err != nil {
-			return "", errors.New("work: could not remove latest build link; " + err.Error())
+			return "", workErr("could not remove latest build link", err)
 		}
 	}
 
 	err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
 	if err != nil {
-		return "", errors.New("work: could not create latest build link;" + err.Error())
+		return "", workErr("could not create latest build link", err)
 	}
 
 	return j.ReadyBuildPath, nil
@@ -167,4 +167,12 @@ func BootstrapProject(j *Job) error {
 	}
 
 	return nil
+}
+
+func workErr(s string, e error) error {
+	s = "work: " + s
+	if e != nil {
+		s += "; " + e.Error()
+	}
+	return errors.New(s)
 }
