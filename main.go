@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/urfave/cli"
 )
 
 const (
@@ -37,23 +39,35 @@ func init() {
 		log.Fatal(err)
 	}
 
+	err = PathIsDir(cfg.BuildPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
-	f := make(map[string]string)
-	f["foo"] = "barxz"
-	j, err := NewJob("hello-world", f, "x1xx1xxfoo")
-	if err != nil {
-		panic(err)
+	app := cli.NewApp()
+	app.Name = "mistry"
+	app.Usage = "A powerful building service"
+	app.HideVersion = true
+	app.Action = func(c *cli.Context) error {
+		// TEMP
+		f := make(map[string]string)
+		f["foo"] = "barxz"
+		j, err := NewJob("simple", f, "x1xx1xxfoo")
+		if err != nil {
+			panic(err)
+		}
+
+		out, err := Work(context.TODO(), j, PlainFS{})
+		if err != nil {
+			panic(err)
+
+		}
+		fmt.Println(out)
+		return nil
 	}
 
-	out, err := Work(context.TODO(), j, PlainFS{})
-	if err != nil {
-		panic(err)
+	app.Run(os.Args)
 
-	}
-	fmt.Println(out)
 }
