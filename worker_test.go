@@ -208,6 +208,27 @@ func TestResultCache(t *testing.T) {
 	assert(result2.ExitCode, 0, t)
 }
 
+func TestBuildParams(t *testing.T) {
+	params := map[string]string{"foo": "zxc"}
+
+	j, err := NewJob("params", params, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Work(context.TODO(), j, fs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := readOut(j, ArtifactsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert(out, "zxc", t)
+}
+
 func TestBuildCache(t *testing.T) {
 	params := map[string]string{"foo": "bar"}
 	group := "baz"
