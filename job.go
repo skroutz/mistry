@@ -24,8 +24,9 @@ type Job struct {
 
 	// User-provided
 	Project string
-	Params  map[string]string
-	Group   string
+	// TODO: this should be its own type probably
+	Params map[string]string
+	Group  string
 
 	RootBuildPath    string
 	PendingBuildPath string

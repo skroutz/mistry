@@ -48,7 +48,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 		defer jobs.Delete(j)
 	} else {
 		t := time.NewTicker(1 * time.Second)
-		fmt.Printf("Waiting for %s to complete", j.PendingBuildPath)
+		fmt.Printf("Waiting for %s to complete\n", j.PendingBuildPath)
 		for {
 			select {
 			case <-ctx.Done():
@@ -58,8 +58,12 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 				if err == nil {
 					buildResult.Coalesced = true
 					return buildResult, nil
-				} else if !os.IsNotExist(err) {
-					return nil, workErr("could not wait for ready build", err)
+				} else {
+					if os.IsNotExist(err) {
+						continue
+					} else {
+						return nil, workErr("could not wait for ready build", err)
+					}
 				}
 			}
 		}
