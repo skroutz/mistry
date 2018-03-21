@@ -40,11 +40,13 @@ type BuildResult struct {
 // TODO: log fs command outputs
 // TODO: logs
 func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
+	var err error
 	buildResult := &BuildResult{Path: j.ReadyBuildPath}
 
-	// TODO: this is racy; do this using a map and a mutex
-	_, err := os.Stat(j.PendingBuildPath)
-	if err == nil {
+	added := jobs.Add(j)
+	if added {
+		defer jobs.Delete(j)
+	} else {
 		t := time.NewTicker(1 * time.Second)
 		fmt.Printf("Waiting for %s to complete", j.PendingBuildPath)
 		for {
@@ -61,8 +63,6 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 				}
 			}
 		}
-	} else if !os.IsNotExist(err) {
-		return nil, workErr("could not check for pending build", err)
 	}
 
 	_, err = os.Stat(j.ReadyBuildPath)

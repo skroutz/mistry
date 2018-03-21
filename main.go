@@ -15,7 +15,10 @@ const (
 	BuildLogName = "out.log"    //     - out.log
 )
 
-var cfg *Config
+var (
+	cfg  *Config
+	jobs = NewJobQueue()
+)
 
 func init() {
 	log.SetFlags(log.Lshortfile)
