@@ -31,6 +31,7 @@ type Job struct {
 	PendingBuildPath string
 	ReadyBuildPath   string
 	LatestBuildPath  string
+	ReadyDataPath    string
 
 	ProjectPath string
 
@@ -63,6 +64,7 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 	j.RootBuildPath = filepath.Join(cfg.BuildPath, j.Project)
 	j.PendingBuildPath = filepath.Join(j.RootBuildPath, "pending", j.ID)
 	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
+	j.ReadyDataPath = filepath.Join(j.RootBuildPath, "ready", j.ID, DataDir)
 
 	if j.Group == "" {
 		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "latest")
@@ -153,6 +155,7 @@ func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Write
 	for src, target := range cfg.Mounts {
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}
+	fmt.Println(mnts)
 
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true}
 

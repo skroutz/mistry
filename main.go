@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 )
@@ -10,8 +12,7 @@ const (
 	CacheDir     = "/cache"     //     |- cache/
 	ArtifactsDir = "/artifacts" //     |- artifacts/
 	ParamsDir    = "/params"    //     |- params/
-
-	BuildLogName = "out.log"
+	BuildLogName = "out.log"    //     - out.log
 )
 
 var cfg *Config
@@ -39,4 +40,17 @@ func init() {
 }
 
 func main() {
+	f := make(map[string]string)
+	f["foo"] = "barxz"
+	j, err := NewJob("hello-world", f, "x1xx1xxfoo")
+	if err != nil {
+		panic(err)
+	}
+
+	out, err := Work(context.TODO(), j, PlainFS{})
+	if err != nil {
+		panic(err)
+
+	}
+	fmt.Println(out)
 }
