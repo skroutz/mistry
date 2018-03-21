@@ -1,7 +1,7 @@
 {
-  "projects_path": "/var/lib/mistry/projects",
-  "build_path": "/var/lib/mistry/data",
-  "mounts": {
+  "projects_path": "/Users/agis/dev/go/src/github.com/skroutz/mistry/testdata/projects",
+  "build_path": "/private/var/lib/mistry/data",
+  "!()#@_!mounts": {
     "/var/lib/mistry/.ssh": "/home/mistry/.ssh"
   }
 }
