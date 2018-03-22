@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/skroutz/mistry/btrfs"
 	"github.com/skroutz/mistry/plainfs"
@@ -46,6 +46,11 @@ func main() {
 	app.HideVersion = true
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
+			Name:  "addr, a",
+			Value: "0.0.0.0:8462",
+			Usage: "Host and port to listen to",
+		},
+		cli.StringFlag{
 			Name:  "config, c",
 			Usage: "Load configuration from `FILE`",
 		},
@@ -82,20 +87,19 @@ func main() {
 		return nil
 	}
 	app.Action = func(c *cli.Context) error {
-		// TEMP
-		f := make(map[string]string)
-		f["foo"] = "barxz"
-		j, err := NewJob("simple", f, "x1xx1xxfoo")
-		if err != nil {
-			panic(err)
-		}
-
-		out, err := Work(context.TODO(), j, curfs)
-		if err != nil {
-			panic(err)
-
-		}
-		fmt.Println(out)
+		var wg sync.WaitGroup
+		addr := c.String("addr")
+		s := NewServer(addr, log.New(os.Stderr, "[http] ", log.LstdFlags))
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := s.ListenAndServe()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
+		s.Log.Printf("Listening on %s...", addr)
+		wg.Wait()
 		return nil
 	}
 
@@ -103,5 +107,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }

@@ -8,15 +8,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 )
 
-var server = NewServer("localhost:8934", log.New(os.Stdout, "test", log.Lshortfile))
+// TODO: remove once tests are converted to end-to-end tests
+var server = NewServer("localhost:8462", log.New(os.Stdout, "test", log.Lshortfile))
 var params = make(map[string]string)
 
 func init() {
@@ -27,7 +30,10 @@ func init() {
 func TestMain(m *testing.M) {
 	var err error
 
-	main()
+	go func() {
+		main()
+	}()
+	waitForServer("8462")
 
 	cfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
 	if err != nil {
@@ -305,4 +311,19 @@ func postJob(jr JobRequest) (*BuildResult, error) {
 	}
 
 	return buildResult, nil
+}
+
+func waitForServer(port string) {
+	backoff := 50 * time.Millisecond
+
+	for i := 0; i < 10; i++ {
+		conn, err := net.DialTimeout("tcp", ":"+port, 1*time.Second)
+		if err != nil {
+			time.Sleep(backoff)
+			continue
+		}
+		conn.Close()
+		return
+	}
+	log.Fatalf("Server on port %s not up after 10 retries", port)
 }
