@@ -4,7 +4,11 @@ install: fmt vet test
 	go install -v
 
 test:
-	go test -v -race ./...
+	# TODO: enable -race and -v
+	go test --config config.test.json --filesystem plain
+
+testall: test
+	go test --config config.test.json --filesystem btrfs
 
 lint:
 	golint ./...

@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,29 +13,38 @@ import (
 	"testing"
 )
 
-// TODO: accept config as flag
-
 var (
-	// TODO: control this through CLI args
-	fs     = PlainFS{}
 	params = make(map[string]string)
 )
 
 func init() {
-	path, err := os.Open(cfg.BuildPath)
+	flag.String("config", "", "")
+	flag.String("filesystem", "", "")
+}
+
+func TestMain(m *testing.M) {
+	var err error
+
+	main()
+
+	cfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
 	if err != nil {
-		log.Fatalf("could not check build dir; %s", err)
-	}
-	defer path.Close()
-
-	n, err := path.Readdirnames(1)
-	if err != nil && err != io.EOF {
-		log.Fatalf("could not check build dir; %s", err)
+		panic(err)
 	}
 
-	if len(n) != 0 {
-		log.Fatalf("build dir not empty; %s", n)
+	cfg.BuildPath, err = filepath.EvalSymlinks(cfg.BuildPath)
+	if err != nil {
+		panic(err)
 	}
+
+	result := m.Run()
+
+	err = os.RemoveAll(cfg.BuildPath)
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(result)
 }
 
 func TestSampleBuild(t *testing.T) {
@@ -44,7 +53,7 @@ func TestSampleBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Work(context.TODO(), j, fs)
+	res, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +108,7 @@ func TestConcurrentJobs(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			res, err := Work(context.TODO(), j, fs)
+			res, err := Work(context.TODO(), j, curfs)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -132,13 +141,13 @@ func TestBuildCoalescing(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		result1, err = Work(context.TODO(), j1, PlainFS{})
+		result1, err = Work(context.TODO(), j1, curfs)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	result2, err = Work(context.TODO(), j2, PlainFS{})
+	result2, err = Work(context.TODO(), j2, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +174,7 @@ func TestExitCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := Work(context.TODO(), j, fs)
+	result, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +190,7 @@ func TestResultCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result1, err := Work(context.TODO(), j, fs)
+	result1, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +200,7 @@ func TestResultCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result2, err := Work(context.TODO(), j, fs)
+	result2, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +225,7 @@ func TestBuildParams(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = Work(context.TODO(), j, fs)
+	_, err = Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +247,7 @@ func TestBuildCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result1, err := Work(context.TODO(), j, fs)
+	result1, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +270,7 @@ func TestBuildCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result2, err := Work(context.TODO(), j, fs)
+	result2, err := Work(context.TODO(), j, curfs)
 	if err != nil {
 		t.Fatal(err)
 	}
