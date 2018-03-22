@@ -9,10 +9,10 @@ import (
 	"net/http"
 )
 
-type RequestJob struct {
-	project string
-	params  map[string]string
-	group   string
+type JobRequest struct {
+	Project string
+	Params  map[string]string
+	Group   string
 }
 
 type Server struct {
@@ -33,7 +33,7 @@ func NewServer(addr string, logger *log.Logger) *Server {
 // handleNewJob receives requests for new jobs and schedules their building.
 func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		http.Error(w, "Expected POST, got "+r.Method, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -44,14 +44,14 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	rj := &RequestJob{}
+	rj := &JobRequest{}
 	err = json.Unmarshal(body, rj)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error unmarshalling body '%s' to Job: %s", body, err),
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJob(rj.project, rj.params, rj.group)
+	j, err := NewJob(rj.Project, rj.Params, rj.Group)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", rj, err),
 			http.StatusInternalServerError)
