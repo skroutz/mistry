@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
+	"github.com/skroutz/mistry/utils"
 )
 
 type BuildResult struct {
@@ -93,7 +94,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 			if err != nil {
 				return nil, workErr("could not remove params dir", err)
 			}
-			err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+			err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
 				return nil, workErr("could not ensure directory exists", err)
 			}
@@ -103,19 +104,19 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 		if err != nil {
 			return nil, workErr("could not create pending build path", err)
 		}
-		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
+		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {
 			return nil, workErr("could not ensure directory exists", err)
 		}
-		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
+		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
 		if err != nil {
 			return nil, workErr("could not ensure directory exists", err)
 		}
-		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
+		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
 		if err != nil {
 			return nil, workErr("could not ensure directory exists", err)
 		}
-		err = EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 		if err != nil {
 			return nil, workErr("could not ensure directory exists", err)
 		}
@@ -178,23 +179,23 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 // BootstrapProject bootstraps j's project if needed. This function is
 // idempotent.
 func BootstrapProject(j *Job) error {
-	err := EnsureDirExists(j.RootBuildPath)
+	err := utils.EnsureDirExists(j.RootBuildPath)
 	if err != nil {
 		return err
 	}
 
-	err = EnsureDirExists(filepath.Join(j.RootBuildPath, "pending"))
+	err = utils.EnsureDirExists(filepath.Join(j.RootBuildPath, "pending"))
 	if err != nil {
 		return err
 	}
 
-	err = EnsureDirExists(filepath.Join(j.RootBuildPath, "ready"))
+	err = utils.EnsureDirExists(filepath.Join(j.RootBuildPath, "ready"))
 	if err != nil {
 		return err
 	}
 
 	if j.Group != "" {
-		err = EnsureDirExists(filepath.Join(j.RootBuildPath, "groups"))
+		err = utils.EnsureDirExists(filepath.Join(j.RootBuildPath, "groups"))
 		if err != nil {
 			return err
 		}
