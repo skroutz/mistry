@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -13,9 +16,8 @@ import (
 	"testing"
 )
 
-var (
-	params = make(map[string]string)
-)
+var server = NewServer("localhost:8934", log.New(os.Stdout, "test", log.Lshortfile))
+var params = make(map[string]string)
 
 func init() {
 	flag.String("config", "", "")
@@ -45,20 +47,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(result)
-}
-
-func TestSampleBuild(t *testing.T) {
-	j, err := NewJob("simple", params, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	res, err := Work(context.TODO(), j, curfs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert(res.ExitCode, 0, t)
 }
 
 func TestConcurrentJobs(t *testing.T) {
@@ -124,30 +112,33 @@ func TestConcurrentJobs(t *testing.T) {
 	wg.Wait()
 }
 
+func TestSimpleBuild(t *testing.T) {
+	jr := JobRequest{Project: "simple", Params: params, Group: ""}
+	res, err := postJob(jr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert(res.ExitCode, 0, t)
+}
+
 func TestBuildCoalescing(t *testing.T) {
 	var result1, result2 *BuildResult
 	var wg sync.WaitGroup
 
-	j1, err := NewJob("build-coalescing", make(map[string]string), "foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	j2, err := NewJob("build-coalescing", make(map[string]string), "foo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	jr := JobRequest{"build-coalescing", params, "foo"}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		result1, err = Work(context.TODO(), j1, curfs)
+		var err error
+		result1, err = postJob(jr)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	result2, err = Work(context.TODO(), j2, curfs)
+	var err error
+	result2, err = postJob(jr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +149,7 @@ func TestBuildCoalescing(t *testing.T) {
 		t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
 	}
 
-	out, err := readOut(j2, ArtifactsDir)
+	out, err := readOut(result2, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,12 +160,7 @@ func TestBuildCoalescing(t *testing.T) {
 }
 
 func TestExitCode(t *testing.T) {
-	j, err := NewJob("exit-code", params, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	result, err := Work(context.TODO(), j, curfs)
+	result, err := postJob(JobRequest{"exit-code", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,29 +169,22 @@ func TestExitCode(t *testing.T) {
 }
 
 func TestResultCache(t *testing.T) {
-	params := make(map[string]string)
-
-	j, err := NewJob("result-cache", params, "")
+	result1, err := postJob(JobRequest{"result-cache", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result1, err := Work(context.TODO(), j, curfs)
+	out1, err := readOut(result1, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out1, err := readOut(j, ArtifactsDir)
+	result2, err := postJob(JobRequest{"result-cache", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result2, err := Work(context.TODO(), j, curfs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	out2, err := readOut(j, ArtifactsDir)
+	out2, err := readOut(result2, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,17 +199,12 @@ func TestResultCache(t *testing.T) {
 func TestBuildParams(t *testing.T) {
 	params := map[string]string{"foo": "zxc"}
 
-	j, err := NewJob("params", params, "")
+	result, err := postJob(JobRequest{"params", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = Work(context.TODO(), j, curfs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	out, err := readOut(j, ArtifactsDir)
+	out, err := readOut(result, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,22 +216,17 @@ func TestBuildCache(t *testing.T) {
 	params := map[string]string{"foo": "bar"}
 	group := "baz"
 
-	j, err := NewJob("build-cache", params, group)
+	result1, err := postJob(JobRequest{"build-cache", params, group})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result1, err := Work(context.TODO(), j, curfs)
+	out1, err := readOut(result1, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out1, err := readOut(j, ArtifactsDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cachedOut1, err := readOut(j, CacheDir)
+	cachedOut1, err := readOut(result1, CacheDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,22 +234,17 @@ func TestBuildCache(t *testing.T) {
 	assertEq(out1, cachedOut1, t)
 
 	params["foo"] = "bar2"
-	j, err = NewJob("build-cache", params, group)
+	result2, err := postJob(JobRequest{"build-cache", params, group})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result2, err := Work(context.TODO(), j, curfs)
+	out2, err := readOut(result2, ArtifactsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out2, err := readOut(j, ArtifactsDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cachedOut2, err := readOut(j, CacheDir)
+	cachedOut2, err := readOut(result2, CacheDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,8 +256,8 @@ func TestBuildCache(t *testing.T) {
 	assert(result2.ExitCode, 0, t)
 }
 
-func readOut(j *Job, path string) (string, error) {
-	out, err := ioutil.ReadFile(filepath.Join(j.ReadyDataPath, path, "out.txt"))
+func readOut(br *BuildResult, path string) (string, error) {
+	out, err := ioutil.ReadFile(filepath.Join(br.Path, "data", path, "out.txt"))
 	if err != nil {
 		return "", err
 	}
@@ -316,4 +280,29 @@ func assertNotEq(a, b interface{}, t *testing.T) {
 	if reflect.DeepEqual(a, b) {
 		t.Fatalf("Expected %#v and %#v to not be equal", a, b)
 	}
+}
+
+func postJob(jr JobRequest) (*BuildResult, error) {
+	body, err := json.Marshal(jr)
+	if err != nil {
+		return nil, err
+	}
+
+	req := httptest.NewRequest("POST", "http://example.com/foo", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	server.handleNewJob(w, req)
+
+	resp := w.Result()
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	buildResult := new(BuildResult)
+	err = json.Unmarshal(body, buildResult)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildResult, nil
 }

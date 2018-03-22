@@ -65,7 +65,7 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 	j.RootBuildPath = filepath.Join(cfg.BuildPath, j.Project)
 	j.PendingBuildPath = filepath.Join(j.RootBuildPath, "pending", j.ID)
 	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
-	j.ReadyDataPath = filepath.Join(j.RootBuildPath, "ready", j.ID, DataDir)
+	j.ReadyDataPath = filepath.Join(j.ReadyBuildPath, DataDir)
 
 	if j.Group == "" {
 		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "latest")
