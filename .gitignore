@@ -2,6 +2,7 @@
 *.test
 *.prof
 
+config.json
 mistry
 
 vendor/
