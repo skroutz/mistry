@@ -16,16 +16,16 @@ type JobRequest struct {
 }
 
 type Server struct {
-	*http.Server
 	Log *log.Logger
+	s   *http.Server
 }
 
 func NewServer(addr string, logger *log.Logger) *Server {
-	s := &Server{}
+	s := new(Server)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/jobs", s.handleNewJob)
 
-	s.Server = &http.Server{Handler: mux, Addr: addr}
+	s.s = &http.Server{Handler: mux, Addr: addr}
 	s.Log = logger
 	return s
 }
@@ -80,4 +80,8 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Log.Printf("Error writing response for %s: %s", j, err)
 	}
+}
+
+func (s *Server) ListenAndServe() error {
+	return s.s.ListenAndServe()
 }
