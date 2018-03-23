@@ -16,6 +16,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/skroutz/mistry/types"
 )
 
 // TODO: remove once tests are converted to end-to-end tests
@@ -56,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSimpleBuild(t *testing.T) {
-	jr := JobRequest{Project: "simple", Params: params, Group: ""}
+	jr := types.JobRequest{Project: "simple", Params: params, Group: ""}
 	res, err := postJob(jr)
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +68,7 @@ func TestSimpleBuild(t *testing.T) {
 
 func TestUnknownProject(t *testing.T) {
 	t.Skip("Enable when we convert tests to end-to-end")
-	jr := JobRequest{Project: "idontexist", Params: params, Group: ""}
+	jr := types.JobRequest{Project: "idontexist", Params: params, Group: ""}
 	res, err := postJob(jr)
 	if err != nil {
 		panic(err)
@@ -75,10 +77,10 @@ func TestUnknownProject(t *testing.T) {
 }
 
 func TestBuildCoalescing(t *testing.T) {
-	var result1, result2 *BuildResult
+	var result1, result2 *types.BuildResult
 	var wg sync.WaitGroup
 
-	jr := JobRequest{"build-coalescing", params, "foo"}
+	jr := types.JobRequest{"build-coalescing", params, "foo"}
 
 	wg.Add(1)
 	go func() {
@@ -113,7 +115,7 @@ func TestBuildCoalescing(t *testing.T) {
 }
 
 func TestExitCode(t *testing.T) {
-	result, err := postJob(JobRequest{"exit-code", params, ""})
+	result, err := postJob(types.JobRequest{"exit-code", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +124,7 @@ func TestExitCode(t *testing.T) {
 }
 
 func TestResultCache(t *testing.T) {
-	result1, err := postJob(JobRequest{"result-cache", params, ""})
+	result1, err := postJob(types.JobRequest{"result-cache", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +134,7 @@ func TestResultCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result2, err := postJob(JobRequest{"result-cache", params, ""})
+	result2, err := postJob(types.JobRequest{"result-cache", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +154,7 @@ func TestResultCache(t *testing.T) {
 func TestBuildParams(t *testing.T) {
 	params := map[string]string{"foo": "zxc"}
 
-	result, err := postJob(JobRequest{"params", params, ""})
+	result, err := postJob(types.JobRequest{"params", params, ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +171,7 @@ func TestBuildCache(t *testing.T) {
 	params := map[string]string{"foo": "bar"}
 	group := "baz"
 
-	result1, err := postJob(JobRequest{"build-cache", params, group})
+	result1, err := postJob(types.JobRequest{"build-cache", params, group})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +189,7 @@ func TestBuildCache(t *testing.T) {
 	assertEq(out1, cachedOut1, t)
 
 	params["foo"] = "bar2"
-	result2, err := postJob(JobRequest{"build-cache", params, group})
+	result2, err := postJob(types.JobRequest{"build-cache", params, group})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +214,7 @@ func TestBuildCache(t *testing.T) {
 func TestConcurrentJobs(t *testing.T) {
 	t.Skip("TODO: fix races")
 	var wg sync.WaitGroup
-	results := make(chan *BuildResult, 100)
+	results := make(chan *types.BuildResult, 100)
 
 	jobs := []struct {
 		project string
@@ -272,7 +274,7 @@ func TestConcurrentJobs(t *testing.T) {
 	wg.Wait()
 }
 
-func readOut(br *BuildResult, path string) (string, error) {
+func readOut(br *types.BuildResult, path string) (string, error) {
 	out, err := ioutil.ReadFile(filepath.Join(br.Path, "data", path, "out.txt"))
 	if err != nil {
 		return "", err
@@ -298,7 +300,7 @@ func assertNotEq(a, b interface{}, t *testing.T) {
 	}
 }
 
-func postJob(jr JobRequest) (*BuildResult, error) {
+func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 	body, err := json.Marshal(jr)
 	if err != nil {
 		return nil, err
@@ -314,7 +316,7 @@ func postJob(jr JobRequest) (*BuildResult, error) {
 		return nil, err
 	}
 
-	buildResult := new(BuildResult)
+	buildResult := new(types.BuildResult)
 	err = json.Unmarshal(body, buildResult)
 	if err != nil {
 		return nil, err

@@ -7,13 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-)
 
-type JobRequest struct {
-	Project string
-	Params  map[string]string
-	Group   string
-}
+	"github.com/skroutz/mistry/types"
+)
 
 type Server struct {
 	Log *log.Logger
@@ -44,7 +40,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	rj := &JobRequest{}
+	rj := &types.JobRequest{}
 	err = json.Unmarshal(body, rj)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error unmarshalling body '%s' to Job: %s", body, err),
