@@ -61,7 +61,6 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	// TODO call Work properly
 	ctx, _ := context.WithCancel(context.TODO())
 	buildResult, err := Work(ctx, j, curfs)
-	err = nil
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
 			http.StatusInternalServerError)
