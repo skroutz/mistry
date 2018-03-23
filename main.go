@@ -56,7 +56,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "filesystem",
-			Value: "btrfs",
+			Value: "plain",
 			Usage: "Which filesystem adapter to use",
 		},
 	}
