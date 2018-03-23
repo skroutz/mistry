@@ -1,9 +1,11 @@
 package main
 
 type FileSystem interface {
-	// Create creates path as a directory
-	Create(path string) error
+	// Create returns a command followed by its arguments, that will
+	// create path as a directory.
+	Create(path string) []string
 
-	// Clone clones src to dst
-	Clone(src, dst string) error
+	// Clone returns a command followed by its arguments, that will
+	// clone src to dst.
+	Clone(src, dst string) []string
 }

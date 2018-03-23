@@ -44,10 +44,11 @@ func EnsureDirExists(path string) error {
 	return nil
 }
 
-// RunCmd runs the shell command denoted by name, passing args as the arguments.
+// RunCmd runs the shell command denoted by args, using the first
+// element as the command and the remained as its arguments.
 // It returns the combined stderr/stdout output of the command.
-func RunCmd(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+func RunCmd(args []string) (string, error) {
+	cmd := exec.Command(args[0], args[1:]...)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }

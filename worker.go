@@ -95,7 +95,9 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
-			err = fs.Clone(src, j.PendingBuildPath)
+			out, err := utils.RunCmd(fs.Clone(src, j.PendingBuildPath))
+			// TODO: log out only if there is any
+			fmt.Println(out)
 			if err != nil {
 				return nil, workErr("could not clone latest build result", err)
 			}
@@ -109,7 +111,9 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 			}
 		}
 	} else if os.IsNotExist(err) {
-		err = fs.Create(j.PendingBuildPath)
+		out, err := utils.RunCmd(fs.Create(j.PendingBuildPath))
+		// TODO: log out only if there is any
+		fmt.Println(out)
 		if err != nil {
 			return nil, workErr("could not create pending build path", err)
 		}
