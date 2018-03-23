@@ -22,9 +22,10 @@ import (
 // TODO: introduce build type
 // TODO: log fs command outputs
 // TODO: logs
+// TODO: set BuildResult type correctly
 func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error) {
 	var err error
-	buildResult := &types.BuildResult{Path: j.ReadyBuildPath}
+	buildResult := &types.BuildResult{Path: j.ReadyBuildPath, Type: "rsync"}
 
 	added := jobs.Add(j)
 	if added {
