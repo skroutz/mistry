@@ -55,69 +55,6 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestConcurrentJobs(t *testing.T) {
-	t.Skip("TODO: fix races")
-	var wg sync.WaitGroup
-	results := make(chan *BuildResult, 100)
-
-	jobs := []struct {
-		project string
-		params  map[string]string
-		group   string
-	}{
-		{"concurrent", map[string]string{"foo": "bar"}, ""},
-		{"concurrent", map[string]string{"foo": "bar"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "baz"}, ""},
-		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "abc"}, "bca"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
-		{"concurrent", map[string]string{"foo": "abc"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "1"}, ""},
-		{"concurrent", map[string]string{"foo": "2"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent", map[string]string{"foo": "bar"}, "same"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "bar"}, "same"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
-		{"concurrent2", map[string]string{"foo": "bar"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, ""},
-	}
-
-	for _, j := range jobs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			j, err := NewJob(j.project, j.params, j.group)
-			if err != nil {
-				log.Fatal(err)
-			}
-			res, err := Work(context.TODO(), j, curfs)
-			if err != nil {
-				log.Fatal(err)
-			}
-			results <- res
-		}()
-	}
-
-	for i := 0; i < len(jobs); i++ {
-		res := <-results
-		fmt.Printf("%#v\n", res)
-	}
-
-	wg.Wait()
-}
-
 func TestSimpleBuild(t *testing.T) {
 	jr := JobRequest{Project: "simple", Params: params, Group: ""}
 	res, err := postJob(jr)
@@ -125,6 +62,16 @@ func TestSimpleBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert(res.ExitCode, 0, t)
+}
+
+func TestUnknownProject(t *testing.T) {
+	t.Skip("Enable when we convert tests to end-to-end")
+	jr := JobRequest{Project: "idontexist", Params: params, Group: ""}
+	res, err := postJob(jr)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", res)
 }
 
 func TestBuildCoalescing(t *testing.T) {
@@ -260,6 +207,69 @@ func TestBuildCache(t *testing.T) {
 	assertNotEq(result1.Path, result2.Path, t)
 	assert(result1.ExitCode, 0, t)
 	assert(result2.ExitCode, 0, t)
+}
+
+func TestConcurrentJobs(t *testing.T) {
+	t.Skip("TODO: fix races")
+	var wg sync.WaitGroup
+	results := make(chan *BuildResult, 100)
+
+	jobs := []struct {
+		project string
+		params  map[string]string
+		group   string
+	}{
+		{"concurrent", map[string]string{"foo": "bar"}, ""},
+		{"concurrent", map[string]string{"foo": "bar"}, ""},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{"foo": "baz"}, ""},
+		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{"foo": "abc"}, "bca"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
+		{"concurrent", map[string]string{"foo": "abc"}, ""},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{"foo": "1"}, ""},
+		{"concurrent", map[string]string{"foo": "2"}, ""},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{}, ""},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{}, ""},
+		{"concurrent", map[string]string{}, ""},
+		{"concurrent", map[string]string{"foo": "bar"}, "same"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent", map[string]string{"foo": "bar"}, "same"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
+		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
+		{"concurrent2", map[string]string{"foo": "bar"}, ""},
+		{"concurrent2", map[string]string{"foo": "bar"}, ""},
+	}
+
+	for _, j := range jobs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			j, err := NewJob(j.project, j.params, j.group)
+			if err != nil {
+				log.Fatal(err)
+			}
+			res, err := Work(context.TODO(), j, curfs)
+			if err != nil {
+				log.Fatal(err)
+			}
+			results <- res
+		}()
+	}
+
+	for i := 0; i < len(jobs); i++ {
+		res := <-results
+		fmt.Printf("%#v\n", res)
+	}
+
+	wg.Wait()
 }
 
 func readOut(br *BuildResult, path string) (string, error) {

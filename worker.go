@@ -78,6 +78,15 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
 		return nil, workErr("could not check for ready path", err)
 	}
 
+	_, err = os.Stat(filepath.Join(cfg.ProjectsPath, j.Project))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, workErr("Unknown project", nil)
+		} else {
+			return nil, workErr("could not check for project", err)
+		}
+	}
+
 	err = BootstrapProject(j)
 	if err != nil {
 		return nil, workErr("could not bootstrap project", err)
