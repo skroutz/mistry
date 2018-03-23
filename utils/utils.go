@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 )
@@ -45,14 +44,10 @@ func EnsureDirExists(path string) error {
 	return nil
 }
 
-// TODO: do we actually want the output?
+// RunCmd runs the shell command denoted by name, passing args as the arguments.
+// It returns the combined stderr/stdout output of the command.
 func RunCmd(name string, args ...string) (string, error) {
-	// TODO: log instead?
-	fmt.Println("running", name, args)
 	cmd := exec.Command(name, args...)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
+	return string(out), err
 }
