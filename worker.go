@@ -11,27 +11,9 @@ import (
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
+	"github.com/skroutz/mistry/types"
 	"github.com/skroutz/mistry/utils"
 )
-
-type BuildResult struct {
-	// The path where the build results are located.
-	Path string
-
-	// True if the result was returned from the cache.
-	Cached bool
-
-	// True if the result was returned from another pending build.
-	Coalesced bool
-
-	// The exit code status of the container command.
-	//
-	// NOTE: irrelevant if either Cached or Coalesced is true.
-	ExitCode int
-
-	// The docker error, if any.
-	Err error
-}
 
 // Work performs the work denoted by j and returns the BuildResult upon
 // successful completion.
@@ -40,9 +22,10 @@ type BuildResult struct {
 // TODO: introduce build type
 // TODO: log fs command outputs
 // TODO: logs
-func Work(ctx context.Context, j *Job, fs FileSystem) (*BuildResult, error) {
+// TODO: set BuildResult type correctly
+func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error) {
 	var err error
-	buildResult := &BuildResult{Path: j.ReadyBuildPath}
+	buildResult := &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
 	added := jobs.Add(j)
 	if added {
