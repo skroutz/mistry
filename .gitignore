@@ -1,8 +1,10 @@
 *.swp
 *.test
 *.prof
+*.pyc
 
 config.json
+fabfile.py
 mistry
 
 vendor/
