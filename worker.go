@@ -25,7 +25,7 @@ import (
 // TODO: set BuildResult type correctly
 func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error) {
 	var err error
-	buildResult := &types.BuildResult{Path: j.ReadyBuildPath, Type: "rsync"}
+	buildResult := &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
 	added := jobs.Add(j)
 	if added {
