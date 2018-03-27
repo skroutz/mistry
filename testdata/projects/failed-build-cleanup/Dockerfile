@@ -1,0 +1,3 @@
+FROM debian:stretch
+
+INVALIDCOMMAND

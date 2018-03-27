@@ -23,8 +23,7 @@ import (
 // TODO: log fs command outputs
 // TODO: logs
 // TODO: set BuildResult type correctly
-func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error) {
-	var err error
+func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err error) {
 	buildResult := &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
 	added := jobs.Add(j)
@@ -84,6 +83,12 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error
 			if err != nil {
 				return nil, workErr("could not clone latest build result", err)
 			}
+			defer func() {
+				derr := os.RemoveAll(j.PendingBuildPath)
+				if derr != nil && err == nil {
+					err = workErr("could not clean hanging pending path", derr)
+				}
+			}()
 			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
 				return nil, workErr("could not remove params dir", err)
@@ -100,6 +105,12 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error
 		if err != nil {
 			return nil, workErr("could not create pending build path", err)
 		}
+		defer func() {
+			derr := os.RemoveAll(j.PendingBuildPath)
+			if derr != nil && err == nil {
+				err = workErr("could not clean hanging pending path", derr)
+			}
+		}()
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {
 			return nil, workErr("could not ensure directory exists", err)
@@ -169,7 +180,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (*types.BuildResult, error
 		return nil, workErr("could not create latest build link", err)
 	}
 
-	return buildResult, nil
+	return buildResult, err
 }
 
 // BootstrapProject bootstraps j's project if needed. This function is
