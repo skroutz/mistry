@@ -8,4 +8,7 @@ type FileSystem interface {
 	// Clone returns a command followed by its arguments, that will
 	// clone src to dst.
 	Clone(src, dst string) []string
+
+	// Remove removes path and its children.
+	Remove(path string) error
 }

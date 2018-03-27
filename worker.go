@@ -23,15 +23,16 @@ import (
 // TODO: log fs command outputs
 // TODO: logs
 // TODO: set BuildResult type correctly
-func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err error) {
-	buildResult := &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
+func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildResult, err error) {
+	buildResult = &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
 		buildResult.Cached = true
-		return buildResult, nil
+		return
 	} else if !os.IsNotExist(err) {
-		return nil, workErr("could not check for ready path", err)
+		err = workErr("could not check for ready path", err)
+		return
 	}
 
 	added := jobs.Add(j)
@@ -43,17 +44,19 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 		for {
 			select {
 			case <-ctx.Done():
-				return nil, workErr("context cancelled while waiting for pending build", nil)
+				err = workErr("context cancelled while waiting for pending build", nil)
+				return
 			case <-t.C:
 				_, err = os.Stat(j.ReadyBuildPath)
 				if err == nil {
 					buildResult.Coalesced = true
-					return buildResult, nil
+					return
 				} else {
 					if os.IsNotExist(err) {
 						continue
 					} else {
-						return nil, workErr("could not wait for ready build", err)
+						err = workErr("could not wait for ready build", err)
+						return
 					}
 				}
 			}
@@ -63,15 +66,18 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 	_, err = os.Stat(filepath.Join(cfg.ProjectsPath, j.Project))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, workErr("Unknown project", nil)
+			err = workErr("Unknown project", nil)
+			return
 		} else {
-			return nil, workErr("could not check for project", err)
+			err = workErr("could not check for project", err)
+			return
 		}
 	}
 
 	err = BootstrapProject(j)
 	if err != nil {
-		return nil, workErr("could not bootstrap project", err)
+		err = workErr("could not bootstrap project", err)
+		return
 	}
 
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
@@ -81,21 +87,29 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 			// TODO: log out only if there is any
 			fmt.Println(out)
 			if err != nil {
-				return nil, workErr("could not clone latest build result", err)
+				err = workErr("could not clone latest build result", err)
+				return buildResult, err
 			}
 			defer func() {
-				derr := os.RemoveAll(j.PendingBuildPath)
-				if derr != nil && err == nil {
-					err = workErr("could not clean hanging pending path", derr)
+				derr := fs.Remove(j.PendingBuildPath)
+				if derr != nil {
+					errstr := "could not clean hanging pending path"
+					if err == nil {
+						err = fmt.Errorf("%s; %s", errstr, derr)
+					} else {
+						err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
+					}
 				}
 			}()
 			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
-				return nil, workErr("could not remove params dir", err)
+				err = workErr("could not remove params dir", err)
+				return buildResult, err
 			}
 			err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 			if err != nil {
-				return nil, workErr("could not ensure directory exists", err)
+				err = workErr("could not ensure directory exists", err)
+				return buildResult, err
 			}
 		}
 	} else if os.IsNotExist(err) {
@@ -103,44 +117,57 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 		// TODO: log out only if there is any
 		fmt.Println(out)
 		if err != nil {
-			return nil, workErr("could not create pending build path", err)
+			err = workErr("could not create pending build path", err)
+			return buildResult, err
 		}
 		defer func() {
-			derr := os.RemoveAll(j.PendingBuildPath)
-			if derr != nil && err == nil {
-				err = workErr("could not clean hanging pending path", derr)
+			derr := fs.Remove(j.PendingBuildPath)
+			if derr != nil {
+				errstr := "could not clean hanging pending path"
+				if err == nil {
+					err = fmt.Errorf("%s; %s", errstr, derr)
+				} else {
+					err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
+				}
 			}
 		}()
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {
-			return nil, workErr("could not ensure directory exists", err)
+			err = workErr("could not ensure directory exists", err)
+			return buildResult, err
 		}
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
 		if err != nil {
-			return nil, workErr("could not ensure directory exists", err)
+			err = workErr("could not ensure directory exists", err)
+			return buildResult, err
 		}
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
 		if err != nil {
-			return nil, workErr("could not ensure directory exists", err)
+			err = workErr("could not ensure directory exists", err)
+			return buildResult, err
 		}
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 		if err != nil {
-			return nil, workErr("could not ensure directory exists", err)
+			err = workErr("could not ensure directory exists", err)
+			return buildResult, err
 		}
 	} else {
-		return nil, workErr("could not read latest build link", err)
+		err = workErr("could not read latest build link", err)
+		return
 	}
 
 	for k, v := range j.Params {
 		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
 		if err != nil {
-			return nil, workErr("could not write param file", err)
+			err = workErr("could not write param file", err)
+			return
 		}
 	}
 
 	out, err := os.Create(j.BuildLogPath)
 	if err != nil {
-		return nil, workErr("could not create build log file", err)
+		err = workErr("could not create build log file", err)
+		return
 	}
 
 	// TODO: we should check the error here. However, it's not so simple
@@ -149,38 +176,44 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
-		return nil, workErr("could not create docker client", err)
+		err = workErr("could not create docker client", err)
+		return
 	}
 
 	err = j.BuildImage(ctx, client, out)
 	if err != nil {
-		return nil, workErr("could not build docker image", err)
+		err = workErr("could not build docker image", err)
+		return
 	}
 
 	buildResult.ExitCode, err = j.StartContainer(ctx, client, out)
 	if err != nil {
-		return nil, workErr("could not start docker container", err)
+		err = workErr("could not start docker container", err)
+		return
 	}
 
 	err = os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
 	if err != nil {
-		return nil, workErr("could not rename pending to ready path", err)
+		err = workErr("could not rename pending to ready path", err)
+		return
 	}
 
 	_, err = os.Lstat(j.LatestBuildPath)
 	if err == nil {
 		err = os.Remove(j.LatestBuildPath)
 		if err != nil {
-			return nil, workErr("could not remove latest build link", err)
+			err = workErr("could not remove latest build link", err)
+			return
 		}
 	}
 
 	err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
 	if err != nil {
-		return nil, workErr("could not create latest build link", err)
+		err = workErr("could not create latest build link", err)
+		return
 	}
 
-	return buildResult, err
+	return
 }
 
 // BootstrapProject bootstraps j's project if needed. This function is
