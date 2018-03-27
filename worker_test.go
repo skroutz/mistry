@@ -67,13 +67,15 @@ func TestMain(m *testing.M) {
 
 	result := m.Run()
 
-	err = os.RemoveAll(cfg.BuildPath)
-	if err != nil {
-		panic(err)
-	}
-	err = os.RemoveAll(target)
-	if err != nil {
-		panic(err)
+	if result == 0 {
+		err = os.RemoveAll(cfg.BuildPath)
+		if err != nil {
+			panic(err)
+		}
+		err = os.RemoveAll(target)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	os.Exit(result)
@@ -152,7 +154,7 @@ func TestFailedPendingBuildCleanup(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		_, err = postJob(types.JobRequest{project, params, ""})
 		if !strings.Contains(err.Error(), expected) {
-			t.Fatalf("Expected %s to contain %s", err.Error(), expected)
+			t.Fatalf("Expected '%s' to contain '%s'", err.Error(), expected)
 		}
 	}
 }
