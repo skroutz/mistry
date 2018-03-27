@@ -26,6 +26,14 @@ import (
 func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err error) {
 	buildResult := &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
+	_, err = os.Stat(j.ReadyBuildPath)
+	if err == nil {
+		buildResult.Cached = true
+		return buildResult, nil
+	} else if !os.IsNotExist(err) {
+		return nil, workErr("could not check for ready path", err)
+	}
+
 	added := jobs.Add(j)
 	if added {
 		defer jobs.Delete(j)
@@ -50,14 +58,6 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (_ *types.BuildResult, err
 				}
 			}
 		}
-	}
-
-	_, err = os.Stat(j.ReadyBuildPath)
-	if err == nil {
-		buildResult.Cached = true
-		return buildResult, nil
-	} else if !os.IsNotExist(err) {
-		return nil, workErr("could not check for ready path", err)
 	}
 
 	_, err = os.Stat(filepath.Join(cfg.ProjectsPath, j.Project))
