@@ -143,6 +143,11 @@ func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) e
 		return err
 	}
 
+	_, _, err = c.ImageInspectWithRaw(context.Background(), j.Project)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

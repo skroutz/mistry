@@ -79,6 +79,16 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+// TODO: do this using error types on BuildResult, instead of string comparison
+func TestImageBuildFailure(t *testing.T) {
+	expErr := "could not build docker image"
+
+	_, err := postJob(types.JobRequest{"image-build-failure", params, ""})
+	if !strings.Contains(err.Error(), expErr) {
+		t.Fatalf("Expected '%s' to contain '%s'", err.Error(), expErr)
+	}
+}
+
 // TODO convert to end-to-end. The CLI must know about exit codes in order
 // to do that.
 func TestExitCode(t *testing.T) {
