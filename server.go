@@ -64,7 +64,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
-	s.Log.Println("Enqueued", j.ID)
+	s.Log.Printf("Building %#v ...", jr)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")

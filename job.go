@@ -131,7 +131,7 @@ func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) e
 
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &cfg.UID
-	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs}
+	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), &buf, buildOpts)
 	if err != nil {
 		return err
