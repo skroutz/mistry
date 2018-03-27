@@ -165,7 +165,7 @@ func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Write
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}
 
-	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true}
+	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true, NetworkMode: "host"}
 
 	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.ID)
 	if err != nil {
