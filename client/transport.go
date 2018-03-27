@@ -9,11 +9,12 @@ type Transport interface {
 }
 
 type Scp struct{}
-type Rsync struct{}
 
 func (ts Scp) Copy(user, host, src, dst string) []string {
 	return []string{"scp", "-r", fmt.Sprintf("%s@%s:%s", user, host, src), dst}
 }
+
+type Rsync struct{}
 
 func (ts Rsync) Copy(user, host, src, dst string) []string {
 	// TODO Make the rsync module configurable

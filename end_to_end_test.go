@@ -1,3 +1,5 @@
+// Tests here verify that all components (CLI <-> Server <-> Worker)
+// interact together as expected.
 package main
 
 import (
@@ -11,9 +13,6 @@ import (
 
 	"github.com/skroutz/mistry/utils"
 )
-
-// Tests here verify that all components (CLI <-> Server <-> Worker)
-// interact together as expected.
 
 func TestSimpleBuild(t *testing.T) {
 	cmdOut, err := cliBuildJob("--project", "simple")
@@ -132,7 +131,7 @@ func TestBuildCoalescing(t *testing.T) {
 // cliBuildJob uses the CLI binary to issue a new job request to the server.
 // It returns an error if the request could not be issued.
 func cliBuildJob(args ...string) (string, error) {
-	args = append([]string{"client/client", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
+	args = append([]string{"mistry-cli", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
 	out, err := utils.RunCmd(args)
 
 	if err != nil {

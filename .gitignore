@@ -7,5 +7,6 @@ client/client
 config.json
 fabfile.py
 mistry
+mistry-cli
 
 vendor/

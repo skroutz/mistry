@@ -5,6 +5,7 @@ install: fmt vet test
 
 test:
 	# TODO: enable -race and -v
+	go build -o mistry-cli client/*.go
 	go test --config config.test.json --filesystem plain
 
 testall: test
