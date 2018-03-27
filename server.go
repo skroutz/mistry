@@ -42,16 +42,16 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	rj := &types.JobRequest{}
-	err = json.Unmarshal(body, rj)
+	jr := &types.JobRequest{}
+	err = json.Unmarshal(body, jr)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error unmarshalling body '%s' to Job: %s", body, err),
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJob(rj.Project, rj.Params, rj.Group)
+	j, err := NewJob(jr.Project, jr.Params, jr.Group)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", rj, err),
+		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", jr, err),
 			http.StatusInternalServerError)
 		return
 	}
@@ -60,7 +60,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	ctx, _ := context.WithCancel(context.TODO())
 	buildResult, err := Work(ctx, j, curfs)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
+		http.Error(w, fmt.Sprintf("Error building %#v: %s", j, err),
 			http.StatusInternalServerError)
 		return
 	}
