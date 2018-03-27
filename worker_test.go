@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/user"
@@ -133,6 +134,19 @@ func TestBuildCache(t *testing.T) {
 	assert(result2.ExitCode, 0, t)
 }
 
+func TestFailedPendingBuildCleanup(t *testing.T) {
+	var err error
+	project := "failed-build-cleanup"
+	expected := "unknown instruction: INVALIDCOMMAND"
+
+	for i := 0; i < 3; i++ {
+		_, err = postJob(types.JobRequest{project, params, ""})
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("Expected %s to contain %s", err.Error(), expected)
+		}
+	}
+}
+
 func TestConcurrentJobs(t *testing.T) {
 	t.Skip("TODO: fix races")
 	var wg sync.WaitGroup
@@ -223,11 +237,12 @@ func assertNotEq(a, b interface{}, t *testing.T) {
 	}
 }
 
-// postJob issues an HTTP request with jr to the server
+// postJob issues an HTTP request with jr to the server. It returns an error if
+// the request was not successful.
 func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 	body, err := json.Marshal(jr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot marshal %#v; %s", jr, err)
 	}
 
 	req := httptest.NewRequest("POST", "http://example.com/foo", bytes.NewReader(body))
@@ -235,6 +250,13 @@ func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 	server.handleNewJob(w, req)
 
 	resp := w.Result()
+	if resp.StatusCode != http.StatusCreated {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal("Could not read response body + ", err.Error())
+		}
+		return nil, fmt.Errorf("Expected status=201, got %d | body: %s", resp.StatusCode, body)
+	}
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -243,7 +265,7 @@ func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 	buildResult := new(types.BuildResult)
 	err = json.Unmarshal(body, buildResult)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot unmarshal %#v; %s", string(body), err)
 	}
 
 	return buildResult, nil

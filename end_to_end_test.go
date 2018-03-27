@@ -130,8 +130,11 @@ func TestBuildCoalescing(t *testing.T) {
 
 // cliBuildJob uses the CLI binary to issue a new job request to the server.
 // It returns an error if the request could not be issued.
+//
+// NOTE: The CLI binary is expected to be present in the working
+// directory where the tests are ran from.
 func cliBuildJob(args ...string) (string, error) {
-	args = append([]string{"mistry-cli", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
+	args = append([]string{"./mistry-cli", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
 	out, err := utils.RunCmd(args)
 
 	if err != nil {
