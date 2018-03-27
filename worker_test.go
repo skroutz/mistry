@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/skroutz/mistry/types"
-	"github.com/skroutz/mistry/utils"
 )
 
 const (
@@ -79,58 +78,8 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestSimpleBuild(t *testing.T) {
-	cmdOut, err := build("--project", "simple")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
-	}
-}
-
-func TestUnknownProject(t *testing.T) {
-	expected := "Unknown project"
-
-	cmdOut, err := build("--project", "Idontexist")
-	if !strings.Contains(cmdOut, expected) {
-		t.Fatalf("Error output: %s, actual: %v, expected: %v.", cmdOut, err.Error(), expected)
-	}
-}
-
-func TestBuildCoalescing(t *testing.T) {
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		cmdOut, err := build("--project", "build-coalescing", "--group", "foo")
-		if err != nil {
-			log.Fatalf("Error output: %s, err: %v", cmdOut, err)
-		}
-	}()
-
-	cmdOut, err := build("--project", "build-coalescing", "--group", "foo")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
-	}
-
-	wg.Wait()
-
-	// TODO Enable the Coalesced assertion when the CLI JSON return is implemented
-	// if result1.Coalesced == result2.Coalesced {
-	// 	t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
-	// }
-
-	out, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assertEq(string(out), "coalescing!\n", t)
-	// TODO Enable the ExitCode assertion when the CLI JSON return is implemented
-	// assert(result1.ExitCode, 0, t)
-	// assert(result2.ExitCode, 0, t)
-}
-
-// TODO convert to end-to-end
+// TODO convert to end-to-end. The CLI must know about exit codes in order
+// to do that.
 func TestExitCode(t *testing.T) {
 	result, err := postJob(types.JobRequest{"exit-code", params, ""})
 	if err != nil {
@@ -138,69 +87,6 @@ func TestExitCode(t *testing.T) {
 	}
 
 	assert(result.ExitCode, 77, t)
-}
-
-func TestResultCache(t *testing.T) {
-	cmdOut1, err := build("--project", "result-cache", "--group", "foo")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
-	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmdOut2, err := build("--project", "result-cache", "--group", "foo")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
-	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assertEq(out1, out2, t)
-	// TODO Enable Cached and ExitCode assertions when the CLI JSON return is implemented
-	// assert(result1.Cached, false, t)
-	// assert(result2.Cached, true, t)
-	// assert(result1.ExitCode, 0, t)
-	// assert(result2.ExitCode, 0, t)
-}
-
-func TestSameGroupDifferentParams(t *testing.T) {
-	cmdOut1, err := build("--project", "result-cache", "--group", "foo", "--", "--foo=bar")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
-	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmdOut2, err := build("--project", "result-cache", "--group", "foo", "--", "--foo=bar2")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
-	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assertNotEq(out1, out2, t)
-}
-
-func TestBuildParams(t *testing.T) {
-	cmdOut, err := build("--project", "params", "--", "--foo=zxc")
-	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
-	}
-
-	out, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert(string(out), "zxc", t)
 }
 
 func TestBuildCache(t *testing.T) {
@@ -337,6 +223,7 @@ func assertNotEq(a, b interface{}, t *testing.T) {
 	}
 }
 
+// postJob issues an HTTP request with jr to the server
 func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 	body, err := json.Marshal(jr)
 	if err != nil {
@@ -375,14 +262,4 @@ func waitForServer(port string) {
 		return
 	}
 	log.Fatalf("Server on port %s not up after 10 retries", port)
-}
-
-func build(args ...string) (string, error) {
-	args = append([]string{"client/client", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
-	out, err := utils.RunCmd(args)
-
-	if err != nil {
-		return fmt.Sprintf("out: %s, args: %v", out, args), err
-	}
-	return out, nil
 }
