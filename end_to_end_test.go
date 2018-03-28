@@ -36,7 +36,7 @@ func TestJobParams(t *testing.T) {
 		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
 	}
 
-	out, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestSameGroupDifferentParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
 	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestSameGroupDifferentParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
 	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestResultCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
 	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestResultCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
 	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestBuildCoalescing(t *testing.T) {
 	// 	t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
 	// }
 
-	out, err := ioutil.ReadFile(filepath.Join(target, ArtifactsDir, "out.txt"))
+	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
