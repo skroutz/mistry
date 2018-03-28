@@ -95,8 +95,9 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 	if err == nil {
 		if j.Group != "" {
 			out, err := utils.RunCmd(fs.Clone(src, j.PendingBuildPath))
-			// TODO: log out only if there is any
-			fmt.Println(out)
+			if out != "" {
+				fmt.Println(out)
+			}
 			if err != nil {
 				err = workErr("could not clone latest build result", err)
 				return buildResult, err
@@ -125,8 +126,9 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		}
 	} else if os.IsNotExist(err) {
 		out, err := utils.RunCmd(fs.Create(j.PendingBuildPath))
-		// TODO: log out only if there is any
-		fmt.Println(out)
+		if out != "" {
+			fmt.Println(out)
+		}
 		if err != nil {
 			err = workErr("could not create pending build path", err)
 			return buildResult, err
