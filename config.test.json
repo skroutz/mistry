@@ -1,7 +1,7 @@
 {
   "projects_path": "testdata/projects",
   "build_path": "/tmp",
-  "bind_mounts": {
+  "mounts": {
     "/tmp": "/tmp"
   }
 }
