@@ -12,7 +12,7 @@ type BuildResult struct {
 
 	// The exit code status of the container command.
 	//
-	// NOTE: irrelevant if either Cached or Coalesced is true.
+	// NOTE: irrelevant if Coalesced is true.
 	ExitCode int
 
 	// The docker error, if any.

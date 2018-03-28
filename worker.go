@@ -29,15 +29,12 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
-		cachedResult := new(types.BuildResult)
-		f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildResultFname))
+		i, err := ExitCode(j)
 		if err != nil {
 			return buildResult, err
 		}
-		dec := json.NewDecoder(f)
-		dec.Decode(cachedResult)
 		buildResult.Cached = true
-		buildResult.ExitCode = cachedResult.ExitCode
+		buildResult.ExitCode = i
 		return buildResult, err
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
@@ -58,8 +55,13 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 			case <-t.C:
 				_, err = os.Stat(j.ReadyBuildPath)
 				if err == nil {
+					i, err := ExitCode(j)
+					if err != nil {
+						return buildResult, err
+					}
+					buildResult.ExitCode = i
 					buildResult.Coalesced = true
-					return
+					return buildResult, err
 				} else {
 					if os.IsNotExist(err) {
 						continue
@@ -278,6 +280,19 @@ func BootstrapProject(j *Job) error {
 	}
 
 	return nil
+}
+
+// ExitCode returns the exit code of the job's container build.
+// If an error is returned, the exit code is irrelevant.
+func ExitCode(j *Job) (int, error) {
+	br := new(types.BuildResult)
+	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildResultFname))
+	if err != nil {
+		return -1, err
+	}
+	dec := json.NewDecoder(f)
+	dec.Decode(br)
+	return br.ExitCode, nil
 }
 
 func workErr(s string, e error) error {

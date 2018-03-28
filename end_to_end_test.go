@@ -96,15 +96,39 @@ func TestResultCache(t *testing.T) {
 func TestResultCacheExitCode(t *testing.T) {
 	cmdOut1, err := cliBuildJob("--project", "result-cache-exitcode")
 	if err == nil || !strings.Contains(cmdOut1, "33") {
-		fmt.Println("hi")
 		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut1)
 	}
 
 	cmdOut2, err := cliBuildJob("--project", "result-cache-exitcode")
 	if err == nil || !strings.Contains(cmdOut2, "33") {
-		fmt.Println("yo")
 		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut2)
 	}
+	// TODO: enable the Cached assertion when the CLI json return is implemented
+}
+
+func TestBuildCoalescingExitCode(t *testing.T) {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		cmdOut, err := cliBuildJob("--project", "build-coalescing-exitcode")
+		if err == nil || !strings.Contains(cmdOut, "35") {
+			t.Fatalf("Expected '%s' to contain the exit code 35", cmdOut)
+		}
+	}()
+
+	cmdOut, err := cliBuildJob("--project", "build-coalescing-exitcode")
+	if err == nil || !strings.Contains(cmdOut, "35") {
+		t.Fatalf("Expected '%s' to contain the exit code 35", cmdOut)
+	}
+
+	wg.Wait()
+
+	// TODO Enable the Coalesced assertion when the CLI JSON return is implemented
+	// if result1.Coalesced == result2.Coalesced {
+	// 	t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
+	// }
 }
 
 func TestBuildCoalescing(t *testing.T) {
