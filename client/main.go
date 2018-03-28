@@ -180,7 +180,7 @@ EXAMPLES:
 					return err
 				}
 
-				out, err := utils.RunCmd(ts.Copy(transportUser, host, br.Path, target))
+				out, err := utils.RunCmd(ts.Copy(transportUser, host, br.Path+"/*", target))
 				fmt.Println(out)
 				if err != nil {
 					return err
