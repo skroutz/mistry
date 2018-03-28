@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	DataDir      = "/data"      //     - data/
-	CacheDir     = "/cache"     //     |- cache/
-	ArtifactsDir = "/artifacts" //     |- artifacts/
-	ParamsDir    = "/params"    //     |- params/
-	BuildLogName = "out.log"    //     - out.log
+	DataDir          = "/data"       //     - data/
+	CacheDir         = "/cache"      //     |- cache/
+	ArtifactsDir     = "/artifacts"  //     |- artifacts/
+	ParamsDir        = "/params"     //     |- params/
+	BuildLogFname    = "out.log"     //     - out.log
+	BuildResultFname = "result.json" //     - result.json
 )
 
 var (

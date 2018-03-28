@@ -50,10 +50,13 @@ func TestMain(m *testing.M) {
 	}()
 	waitForServer("8462")
 
+	// TODO: fix race with main() and TestMain() concurrently messing
+	// with cfg
 	cfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Running tests in", cfg.BuildPath)
 
 	cfg.BuildPath, err = filepath.EvalSymlinks(cfg.BuildPath)
 	if err != nil {
@@ -146,6 +149,7 @@ func TestBuildCache(t *testing.T) {
 	assert(result2.ExitCode, 0, t)
 }
 
+// TODO: CHECK FOR PATH, NOT FOR THE ERROR
 func TestFailedPendingBuildCleanup(t *testing.T) {
 	var err error
 	project := "failed-build-cleanup"

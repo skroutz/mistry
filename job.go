@@ -38,7 +38,8 @@ type Job struct {
 
 	// NOTE: after a job is complete, this points to an invalid path
 	// (pending)
-	BuildLogPath string
+	BuildLogPath        string
+	BuildResultFilePath string
 }
 
 func NewJob(project string, params map[string]string, group string) (*Job, error) {
@@ -74,7 +75,8 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 	}
 
 	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project)
-	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogName)
+	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogFname)
+	j.BuildResultFilePath = filepath.Join(j.PendingBuildPath, BuildResultFname)
 
 	return j, nil
 }

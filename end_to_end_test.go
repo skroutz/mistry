@@ -93,6 +93,20 @@ func TestResultCache(t *testing.T) {
 	// assert(result2.ExitCode, 0, t)
 }
 
+func TestResultCacheExitCode(t *testing.T) {
+	cmdOut1, err := cliBuildJob("--project", "result-cache-exitcode")
+	if err == nil || !strings.Contains(cmdOut1, "33") {
+		fmt.Println("hi")
+		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut1)
+	}
+
+	cmdOut2, err := cliBuildJob("--project", "result-cache-exitcode")
+	if err == nil || !strings.Contains(cmdOut2, "33") {
+		fmt.Println("yo")
+		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut2)
+	}
+}
+
 func TestBuildCoalescing(t *testing.T) {
 	var wg sync.WaitGroup
 
@@ -129,7 +143,8 @@ func TestBuildCoalescing(t *testing.T) {
 }
 
 // cliBuildJob uses the CLI binary to issue a new job request to the server.
-// It returns an error if the request could not be issued.
+// It returns an error if the request could not be issued or if the job
+// failed to build.
 //
 // NOTE: The CLI binary is expected to be present in the working
 // directory where the tests are ran from.

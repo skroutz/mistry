@@ -12,7 +12,7 @@ type Config struct {
 	BuildPath    string `json:"build_path"`
 	UID          string
 
-	// map[source]target
+	// [source]target
 	Mounts map[string]string `json:"mounts"`
 }
 

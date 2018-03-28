@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -28,8 +29,16 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
+		cachedResult := new(types.BuildResult)
+		f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildResultFname))
+		if err != nil {
+			return buildResult, err
+		}
+		dec := json.NewDecoder(f)
+		dec.Decode(cachedResult)
 		buildResult.Cached = true
-		return
+		buildResult.ExitCode = cachedResult.ExitCode
+		return buildResult, err
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
 		return
@@ -189,6 +198,33 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 	buildResult.ExitCode, err = j.StartContainer(ctx, client, out)
 	if err != nil {
 		err = workErr("could not start docker container", err)
+		return
+	}
+
+	resultFile, err := os.Create(j.BuildResultFilePath)
+	if err != nil {
+		err = workErr("could not create build result file", err)
+		return
+	}
+	defer func() {
+		ferr := resultFile.Close()
+		errstr := "could not close build result file"
+		if ferr != nil {
+			if err == nil {
+				err = fmt.Errorf("%s; %s", errstr, ferr)
+			} else {
+				err = fmt.Errorf("%s; %s | %s", errstr, ferr, err)
+			}
+		}
+	}()
+	brJson, err := json.Marshal(buildResult)
+	if err != nil {
+		err = workErr("could not serialize build result", err)
+		return
+	}
+	_, err = resultFile.Write(brJson)
+	if err != nil {
+		err = workErr("could not write build result to file", err)
 		return
 	}
 
