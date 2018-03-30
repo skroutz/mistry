@@ -184,7 +184,7 @@ EXAMPLES:
 					return fmt.Errorf("Build failed with exit code %d", br.ExitCode)
 				}
 
-				out, err := utils.RunCmd(ts.Copy(transportUser, host, br.Path+"/*", target))
+				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, br.Path+"/*", target))
 				fmt.Println(out)
 				if err != nil {
 					return err
