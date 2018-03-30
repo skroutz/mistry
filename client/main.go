@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/skroutz/mistry/types"
@@ -35,6 +36,11 @@ func main() {
 		transportUser string
 		transport     string
 	)
+
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatal("Cannot fetch current user; ", err)
+	}
 
 	cli.AppHelpTemplate = fmt.Sprintf(`%s
 WEBSITE: https://github.com/skroutz/mistry
@@ -84,7 +90,7 @@ EXAMPLES:
 					Name:        "transport-user",
 					Usage:       "user to fetch the artifacts with",
 					Destination: &transportUser,
-					Value:       "mistry",
+					Value:       currentUser.Username,
 				},
 				cli.StringFlag{
 					Name:        "project",
@@ -195,7 +201,7 @@ EXAMPLES:
 		},
 	}
 
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
