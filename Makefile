@@ -4,6 +4,10 @@ install: fmt vet test
 	# TODO: also install cli
 	go install -v
 
+build:
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -v -o mistry
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -v -o mistry-cli client/*.go
+
 test:
 	# TODO: enable -race and -v
 	go build -o mistry-cli client/*.go
