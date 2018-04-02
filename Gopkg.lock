@@ -15,47 +15,18 @@
 
 [[projects]]
   name = "github.com/docker/distribution"
-  packages = [
-    ".",
-    "digestset",
-    "reference"
-  ]
+  packages = [".","digestset","reference"]
   revision = "6fca8d6e6713acbdf3f9ca40cf6370fc5ee5ee53"
 
 [[projects]]
   name = "github.com/docker/docker"
-  packages = [
-    "api",
-    "api/types",
-    "api/types/blkiodev",
-    "api/types/container",
-    "api/types/events",
-    "api/types/filters",
-    "api/types/image",
-    "api/types/mount",
-    "api/types/network",
-    "api/types/registry",
-    "api/types/strslice",
-    "api/types/swarm",
-    "api/types/time",
-    "api/types/versions",
-    "api/types/volume",
-    "client",
-    "pkg/ioutils",
-    "pkg/longpath",
-    "pkg/system",
-    "pkg/tlsconfig"
-  ]
+  packages = ["api","api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/image","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/ioutils","pkg/longpath","pkg/system","pkg/tlsconfig"]
   revision = "90d35abf7b3535c1c319c872900fbd76374e521c"
   version = "v17.05.0-ce-rc3"
 
 [[projects]]
   name = "github.com/docker/go-connections"
-  packages = [
-    "nat",
-    "sockets",
-    "tlsconfig"
-  ]
+  packages = ["nat","sockets","tlsconfig"]
   revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
   version = "v0.3.0"
 
@@ -98,25 +69,18 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp",
-    "proxy"
-  ]
+  packages = ["context","context/ctxhttp","proxy"]
   revision = "ae89d30ce0c63142b652837da33d782e2b0a9b25"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows"
-  ]
+  packages = ["unix","windows"]
   revision = "c28acc882ebcbfbe8ce9f0f14b9ac26ee138dd51"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "08d4224456163c3ea8effc811cb8a72a7f783471a095e1d0912e6015d69c021c"
+  inputs-digest = "efb0f741b711d3e9f29afefbe4a82f8bed76cfffac88ef80b9ce5e6e081894e8"
   solver-name = "gps-cdcl"
   solver-version = 1

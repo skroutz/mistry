@@ -35,6 +35,7 @@ func main() {
 		port          string
 		transportUser string
 		transport     string
+		verbose       bool
 	)
 
 	currentUser, err := user.Current()
@@ -81,7 +82,7 @@ EXAMPLES:
 					Destination: &host,
 				},
 				cli.StringFlag{
-					Name:        "port",
+					Name:        "port, p",
 					Usage:       "port to connect to",
 					Destination: &port,
 					Value:       "8462",
@@ -112,6 +113,10 @@ EXAMPLES:
 					Name:        "transport",
 					Destination: &transport,
 					Value:       "scp",
+				},
+				cli.BoolFlag{
+					Name:        "verbose, v",
+					Destination: &verbose,
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -157,15 +162,21 @@ EXAMPLES:
 					}
 				}
 
-				jr, err := json.Marshal(types.JobRequest{Project: project, Group: group, Params: params})
+				jr := types.JobRequest{Project: project, Group: group, Params: params}
+				jrJSON, err := json.Marshal(jr)
 				if err != nil {
 					return err
 				}
 
-				request, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%s/%s", host, port, JobsPath), bytes.NewBuffer(jr))
+				request, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%s/%s", host, port, JobsPath), bytes.NewBuffer(jrJSON))
 				if err != nil {
 					return err
 				}
+
+				if verbose {
+					fmt.Printf("Scheduling %#v...\n", jr)
+				}
+
 				client := &http.Client{}
 				resp, err := client.Do(request)
 				if err != nil {
@@ -176,6 +187,11 @@ EXAMPLES:
 					return err
 				}
 
+				if verbose {
+					fmt.Printf("Server response: %#v\n", resp)
+					fmt.Printf("Body: %s\n", body)
+				}
+
 				if resp.StatusCode != http.StatusCreated {
 					return fmt.Errorf("Error creating job: %s, http code: %v", body, resp.StatusCode)
 				}
@@ -184,6 +200,10 @@ EXAMPLES:
 				err = json.Unmarshal([]byte(body), &br)
 				if err != nil {
 					return err
+				}
+
+				if verbose {
+					fmt.Printf("Result after unmarshalling: %#v\n", br)
 				}
 
 				if br.ExitCode != 0 {
