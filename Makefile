@@ -3,7 +3,7 @@
 # TODO: enable -race and -v
 TESTCMD=go test --config config.test.json
 
-install: fmt test
+install: fmt vet test
 	go install -v
 	cd client && go install -v
 
