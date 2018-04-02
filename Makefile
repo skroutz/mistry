@@ -1,20 +1,25 @@
-.PHONY: install build test lint vet fmt clean
+.PHONY: install build mistry mistry-cli test testall lint vet fmt clean
 
-install: fmt vet test
-	# TODO: also install cli
+# TODO: enable -race and -v
+TESTCMD=go test --config config.test.json
+
+install: fmt test
 	go install -v
+	cd client && go install -v
 
-build:
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -v -o mistry
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -v -o mistry-cli client/*.go
+build: mistry mistry-cli
 
-test:
-	# TODO: enable -race and -v
-	go build -o mistry-cli client/*.go
-	go test --config config.test.json --filesystem plain
+mistry:
+	go build -v -o mistry
+
+mistry-cli:
+	go build -v -o mistry-cli client/*.go
+
+test: mistry-cli
+	$(TESTCMD) --filesystem plain
 
 testall: test
-	go test --config config.test.json --filesystem btrfs
+	$(TESTCMD) --filesystem btrfs
 
 lint:
 	golint ./...
