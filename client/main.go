@@ -61,7 +61,7 @@ EXAMPLES:
       $ mistry-cli build --host example.org --port 9090 --project yarn \
       --group group_name --target /tmp/yarn -- --lockfile=@yarn.lock --foo=bar
 
-   2. The following sequence uses the GROUP environment variable set the project group.
+   2. The following sequence uses the GROUP environment variable to set the project group.
 
       $ GROUP=group_name mistry-cli build --host example.org --port 9090 --project yarn \
       --target /tmp/yarn -- --lockfile=@yarn.lock --foo=bar
