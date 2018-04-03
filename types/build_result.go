@@ -1,10 +1,10 @@
 package types
 
 type BuildResult struct {
-	// The path where the build results are located.
+	// The path where the build artifacts are located.
 	Path string
 
-	// True if the result was returned from the cache.
+	// True if the result was returned from the result cache.
 	Cached bool
 
 	// True if the result was returned from another pending build.
@@ -18,6 +18,6 @@ type BuildResult struct {
 	// The docker error, if any.
 	Err error
 
-	// The distribution method. Only `rsync` is available for now.
-	Type string
+	// The method by which the build artifacts can be fetched.
+	TransportMethod TransportMethod
 }

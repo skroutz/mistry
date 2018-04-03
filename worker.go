@@ -22,7 +22,10 @@ import (
 func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildResult, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
-	buildResult = &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
+	buildResult = &types.BuildResult{
+		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
+		TransportMethod: types.Rsync,
+	}
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {

@@ -25,9 +25,8 @@ type Job struct {
 
 	// User-provided
 	Project string
-	// TODO: this should be its own type probably
-	Params types.Params
-	Group  string
+	Params  types.Params
+	Group   string
 
 	RootBuildPath    string
 	PendingBuildPath string

@@ -17,11 +17,11 @@ import (
 	"github.com/urfave/cli"
 )
 
-var transports = make(map[string]Transport)
+var transports = make(map[types.TransportMethod]Transport)
 
 func init() {
-	transports["scp"] = Scp{}
-	transports["rsync"] = Rsync{}
+	transports[types.Scp] = Scp{}
+	transports[types.Rsync] = Rsync{}
 }
 
 func main() {
@@ -112,7 +112,7 @@ EXAMPLES:
 				cli.StringFlag{
 					Name:        "transport",
 					Destination: &transport,
-					Value:       "scp",
+					Value:       types.Scp,
 				},
 				cli.BoolFlag{
 					Name:        "verbose, v",
@@ -130,7 +130,7 @@ EXAMPLES:
 				if target == "" {
 					return errors.New("target cannot be empty")
 				}
-				ts, ok := transports[transport]
+				ts, ok := transports[types.TransportMethod(transport)]
 				if !ok {
 					return fmt.Errorf("invalid transport argument (%v)", transport)
 				}
