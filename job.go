@@ -12,10 +12,11 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/docker/docker/api/types"
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
+	"github.com/skroutz/mistry/types"
 	"github.com/skroutz/mistry/utils"
 )
 
@@ -25,7 +26,7 @@ type Job struct {
 	// User-provided
 	Project string
 	// TODO: this should be its own type probably
-	Params map[string]string
+	Params types.Params
 	Group  string
 
 	RootBuildPath    string
@@ -45,7 +46,7 @@ type Job struct {
 	ImageTar []byte
 }
 
-func NewJob(project string, params map[string]string, group string) (*Job, error) {
+func NewJob(project string, params types.Params, group string) (*Job, error) {
 	var err error
 
 	if project == "" {
@@ -100,7 +101,7 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) error {
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &cfg.UID
-	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
+	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
 		return err
@@ -142,12 +143,12 @@ func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Write
 	}
 
 	// TODO: use an actual ctx for shutting down
-	err = c.ContainerStart(ctx, res.ID, types.ContainerStartOptions{})
+	err = c.ContainerStart(ctx, res.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := c.ContainerAttach(ctx, res.ID, types.ContainerAttachOptions{
+	resp, err := c.ContainerAttach(ctx, res.ID, dockertypes.ContainerAttachOptions{
 		Stream: true, Stdin: true, Stdout: true, Stderr: true, Logs: true})
 	if err != nil {
 		return 0, err

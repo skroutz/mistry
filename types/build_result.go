@@ -21,15 +21,3 @@ type BuildResult struct {
 	// The distribution method. Only `rsync` is available for now.
 	Type string
 }
-
-type JobRequest struct {
-	// Contains the information for preparing the environment in which its jobs
-	// are to be executed.
-	Project string
-
-	// Any dynamic parameters passed by the user.
-	Params map[string]string
-
-	// The grouping name of the job.
-	Group string
-}

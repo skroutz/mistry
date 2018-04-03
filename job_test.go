@@ -4,11 +4,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/skroutz/mistry/types"
 )
 
 func TestJobID(t *testing.T) {
 	project := "job-id-seeding"
-	params := map[string]string{"foo": "bar"}
+	params := types.Params{"foo": "bar"}
 	group := "zzz"
 
 	j1, err := NewJob(project, params, group)
@@ -23,7 +25,7 @@ func TestJobID(t *testing.T) {
 	assertEq(j1.ID, j2.ID, t)
 
 	// params seeding
-	j3, err := NewJob(project, make(map[string]string), group)
+	j3, err := NewJob(project, make(types.Params), group)
 	if err != nil {
 		t.Fatal(err)
 	}

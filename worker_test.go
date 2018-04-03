@@ -29,7 +29,7 @@ const (
 )
 
 var server = NewServer("localhost:8462", log.New(os.Stdout, "test", log.Lshortfile))
-var params = make(map[string]string)
+var params = make(types.Params)
 var username, target string
 
 func init() {
@@ -108,7 +108,7 @@ func TestExitCode(t *testing.T) {
 }
 
 func TestBuildCache(t *testing.T) {
-	params := map[string]string{"foo": "bar"}
+	params := types.Params{"foo": "bar"}
 	group := "baz"
 
 	result1, err := postJob(
@@ -175,38 +175,38 @@ func TestConcurrentJobs(t *testing.T) {
 
 	type testJob struct {
 		project string
-		params  map[string]string
+		params  types.Params
 		group   string
 	}
 
 	jobs := []testJob{
-		{"concurrent", map[string]string{"foo": "bar"}, ""},
-		{"concurrent", map[string]string{"foo": "bar"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "baz"}, ""},
-		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "abc"}, "bca"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "abc"}, "abc"},
-		{"concurrent", map[string]string{"foo": "abc"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "1"}, ""},
-		{"concurrent", map[string]string{"foo": "2"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent", map[string]string{}, ""},
-		{"concurrent", map[string]string{"foo": "bar"}, "same"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent", map[string]string{"foo": "bar"}, "same"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
-		{"concurrent2", map[string]string{"foo": "bar"}, "bar"},
-		{"concurrent2", map[string]string{"foo": "bar"}, ""},
-		{"concurrent2", map[string]string{"foo": "bar"}, ""},
+		{"concurrent", types.Params{"foo": "bar"}, ""},
+		{"concurrent", types.Params{"foo": "bar"}, ""},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{"foo": "baz"}, ""},
+		{"concurrent", types.Params{"foo": "abc"}, "abc"},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{"foo": "abc"}, "bca"},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{"foo": "abc"}, "abc"},
+		{"concurrent", types.Params{"foo": "abc"}, ""},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{"foo": "1"}, ""},
+		{"concurrent", types.Params{"foo": "2"}, ""},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{}, ""},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{}, ""},
+		{"concurrent", types.Params{}, ""},
+		{"concurrent", types.Params{"foo": "bar"}, "same"},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent", types.Params{"foo": "bar"}, "same"},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent2", types.Params{"foo": "bar"}, "foo"},
+		{"concurrent2", types.Params{"foo": "bar"}, "bar"},
+		{"concurrent2", types.Params{"foo": "bar"}, "bar"},
+		{"concurrent2", types.Params{"foo": "bar"}, ""},
+		{"concurrent2", types.Params{"foo": "bar"}, ""},
 	}
 
 	for _, j := range jobs {
