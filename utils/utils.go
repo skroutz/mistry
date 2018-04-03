@@ -1,9 +1,13 @@
 package utils
 
 import (
+	"archive/tar"
+	"bytes"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // PathIsDir returns an error if p does not exist or is not a directory.
@@ -51,4 +55,59 @@ func RunCmd(args []string) (string, error) {
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+// Tar walks the file tree rooted at root, adding each file or directory in the
+// tree (including root) in a tar archive. The files are walked
+// in lexical order, which makes the output deterministic.
+func Tar(root string) ([]byte, error) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		hdr, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+
+		err = tw.WriteHeader(hdr)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(tw, f)
+		if err != nil {
+			return err
+		}
+
+		err = f.Close()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := filepath.Walk(root, walkFn)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tw.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

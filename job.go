@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -17,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
+	"github.com/skroutz/mistry/utils"
 )
 
 type Job struct {
@@ -40,15 +40,40 @@ type Job struct {
 	// (pending)
 	BuildLogPath        string
 	BuildResultFilePath string
+
+	// docker image tar
+	ImageTar []byte
 }
 
 func NewJob(project string, params map[string]string, group string) (*Job, error) {
+	var err error
+
 	if project == "" {
 		return nil, errors.New("No project given")
 	}
 
 	j := new(Job)
+	j.Project = project
+	j.Group = group
+	j.Params = params
+	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project)
+	j.RootBuildPath = filepath.Join(cfg.BuildPath, j.Project)
 
+	if j.Group == "" {
+		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "latest")
+	} else {
+		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "groups", j.Group)
+	}
+
+	j.ImageTar, err = utils.Tar(j.ProjectPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("Unknown project '%s'", j.Project)
+		}
+		return nil, err
+	}
+
+	// compute ID
 	keys := []string{}
 	for k := range params {
 		keys = append(keys, k)
@@ -59,22 +84,13 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 	for _, v := range keys {
 		seed += v + params[v]
 	}
+	seed += string(j.ImageTar)
+
 	j.ID = fmt.Sprintf("%x", sha256.Sum256([]byte(seed)))
-	j.Project = project
-	j.Group = group
-	j.Params = params
-	j.RootBuildPath = filepath.Join(cfg.BuildPath, j.Project)
+
 	j.PendingBuildPath = filepath.Join(j.RootBuildPath, "pending", j.ID)
 	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
 	j.ReadyDataPath = filepath.Join(j.ReadyBuildPath, DataDir)
-
-	if j.Group == "" {
-		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "latest")
-	} else {
-		j.LatestBuildPath = filepath.Join(j.RootBuildPath, "groups", j.Group)
-	}
-
-	j.ProjectPath = filepath.Join(cfg.ProjectsPath, j.Project)
 	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogFname)
 	j.BuildResultFilePath = filepath.Join(j.PendingBuildPath, BuildResultFname)
 
@@ -82,59 +98,10 @@ func NewJob(project string, params map[string]string, group string) (*Job, error
 }
 
 func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) error {
-	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-
-	walkFn := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.Mode().IsRegular() {
-			return nil
-		}
-
-		hdr, err := tar.FileInfoHeader(info, info.Name())
-		if err != nil {
-			return err
-		}
-
-		err = tw.WriteHeader(hdr)
-		if err != nil {
-			return err
-		}
-
-		f, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(tw, f)
-		if err != nil {
-			return err
-		}
-
-		err = f.Close()
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	err := filepath.Walk(j.ProjectPath, walkFn)
-	if err != nil {
-		return err
-	}
-
-	err = tw.Close()
-	if err != nil {
-		return err
-	}
-
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &cfg.UID
 	buildOpts := types.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
-	resp, err := c.ImageBuild(context.Background(), &buf, buildOpts)
+	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
 		return err
 	}
