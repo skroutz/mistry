@@ -177,3 +177,9 @@ func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Write
 
 	return result.State.ExitCode, nil
 }
+
+func (j *Job) String() string {
+	return fmt.Sprintf(
+		"project=%s params=%s group=%s id=%s",
+		j.Project, j.Params, j.Group, j.ID[:7])
+}
