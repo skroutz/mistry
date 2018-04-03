@@ -303,7 +303,10 @@ func waitForServer(port string) {
 			time.Sleep(backoff)
 			continue
 		}
-		conn.Close()
+		err = conn.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 	log.Fatalf("Server on port %s not up after 10 retries", port)

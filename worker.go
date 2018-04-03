@@ -182,10 +182,17 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		err = workErr("could not create build log file", err)
 		return
 	}
-
-	// TODO: we should check the error here. However, it's not so simple
-	// cause we must always close the file even if eg. BuildImage() failed
-	defer out.Close()
+	defer func() {
+		ferr := out.Close()
+		errstr := "could not close build log file"
+		if ferr != nil {
+			if err == nil {
+				err = fmt.Errorf("%s; %s", errstr, ferr)
+			} else {
+				err = fmt.Errorf("%s; %s | %s", errstr, ferr, err)
+			}
+		}
+	}()
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
@@ -291,10 +298,13 @@ func ExitCode(j *Job) (int, error) {
 	br := new(types.BuildResult)
 	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildResultFname))
 	if err != nil {
-		return -1, err
+		return -999, err
 	}
 	dec := json.NewDecoder(f)
-	dec.Decode(br)
+	err = dec.Decode(br)
+	if err != nil {
+		return -999, err
+	}
 	return br.ExitCode, nil
 }
 

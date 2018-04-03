@@ -27,8 +27,6 @@ func NewServer(addr string, logger *log.Logger) *Server {
 }
 
 // handleNewJob receives requests for new jobs and schedules their building.
-// TODO: also return a JSON report an errors (ideally a BuildResult with Err
-// populated)
 func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Expected POST, got "+r.Method, http.StatusMethodNotAllowed)

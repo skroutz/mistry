@@ -120,12 +120,12 @@ func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) e
 	return nil
 }
 
-// StartContainer creates and runs the container. It blocks until the container exits.
-// It returns the exit code of the container command. If there was an error
+// StartContainer creates and runs the container. It blocks until the container
+// exits and returns the exit code of the container command. If there was an error
 // starting the container, the exit code is irrelevant.
 //
-// NOTE: If there was an error with the user's dockerfile, the returned exit code will be 1 and the error nil.
-// TODO: block until container exits
+// NOTE: If there was an error with the user's dockerfile, the returned exit
+// code will be 1 and the error nil.
 func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Writer) (int, error) {
 	config := container.Config{User: cfg.UID, Image: j.Project}
 

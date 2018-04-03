@@ -15,6 +15,7 @@ Features include:
 - caching and reusing build results
 - efficient use of disk space due to copy-on-write semantics
 - a simple JSON API for interacting with the service
+- (future work) a web view for inspecting the progress and result of builds
 
 For more information take a look at the [wiki](https://github.com/skroutz/mistry/wiki).
 
@@ -53,6 +54,7 @@ The following settings currently exist:
 | `build_path` (string)      | The root path where artifacts will be placed       |   "" |
 | `mounts` (object{string:string}) |  The paths from the host machine that should be mounted inside the execution containers     |    {} |
 
+For a sample configuration file refer to [`config.sample.json`](config.sample.json).
 
 
 Usage
