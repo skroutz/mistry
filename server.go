@@ -56,15 +56,13 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO call Work properly
-	ctx, _ := context.WithCancel(context.TODO())
-	buildResult, err := Work(ctx, j, curfs)
+	s.Log.Printf("Building %s...", j)
+	buildResult, err := Work(context.Background(), j, curfs)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %#v: %s", j, err),
 			http.StatusInternalServerError)
 		return
 	}
-	s.Log.Printf("Building %#v ...", jr)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")

@@ -180,6 +180,6 @@ func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Write
 
 func (j *Job) String() string {
 	return fmt.Sprintf(
-		"project=%s params=%s group=%s id=%s",
+		"{project=%s params=%s group=%s id=%s}",
 		j.Project, j.Params, j.Group, j.ID[:7])
 }

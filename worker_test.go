@@ -88,7 +88,8 @@ func TestMain(m *testing.M) {
 func TestImageBuildFailure(t *testing.T) {
 	expErr := "could not build docker image"
 
-	_, err := postJob(types.JobRequest{"image-build-failure", params, ""})
+	_, err := postJob(
+		types.JobRequest{Project: "image-build-failure", Params: params, Group: ""})
 	if !strings.Contains(err.Error(), expErr) {
 		t.Fatalf("Expected '%s' to contain '%s'", err.Error(), expErr)
 	}
@@ -97,7 +98,8 @@ func TestImageBuildFailure(t *testing.T) {
 // TODO convert to end-to-end. The CLI must know about exit codes in order
 // to do that.
 func TestExitCode(t *testing.T) {
-	result, err := postJob(types.JobRequest{"exit-code", params, ""})
+	result, err := postJob(
+		types.JobRequest{Project: "exit-code", Params: params, Group: ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +111,8 @@ func TestBuildCache(t *testing.T) {
 	params := map[string]string{"foo": "bar"}
 	group := "baz"
 
-	result1, err := postJob(types.JobRequest{"build-cache", params, group})
+	result1, err := postJob(
+		types.JobRequest{Project: "build-cache", Params: params, Group: group})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +130,8 @@ func TestBuildCache(t *testing.T) {
 	assertEq(out1, cachedOut1, t)
 
 	params["foo"] = "bar2"
-	result2, err := postJob(types.JobRequest{"build-cache", params, group})
+	result2, err := postJob(
+		types.JobRequest{Project: "build-cache", Params: params, Group: group})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +160,8 @@ func TestFailedPendingBuildCleanup(t *testing.T) {
 	expected := "unknown instruction: INVALIDCOMMAND"
 
 	for i := 0; i < 3; i++ {
-		_, err = postJob(types.JobRequest{project, params, ""})
+		_, err = postJob(
+			types.JobRequest{Project: project, Params: params, Group: ""})
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("Expected '%s' to contain '%s'", err.Error(), expected)
 		}
@@ -168,11 +173,13 @@ func TestConcurrentJobs(t *testing.T) {
 	var wg sync.WaitGroup
 	results := make(chan *types.BuildResult, 100)
 
-	jobs := []struct {
+	type testJob struct {
 		project string
 		params  map[string]string
 		group   string
-	}{
+	}
+
+	jobs := []testJob{
 		{"concurrent", map[string]string{"foo": "bar"}, ""},
 		{"concurrent", map[string]string{"foo": "bar"}, ""},
 		{"concurrent2", map[string]string{"foo": "bar"}, "foo"},
@@ -204,18 +211,18 @@ func TestConcurrentJobs(t *testing.T) {
 
 	for _, j := range jobs {
 		wg.Add(1)
-		go func() {
+		go func(tj testJob) {
 			defer wg.Done()
-			j, err := NewJob(j.project, j.params, j.group)
+			job, err := NewJob(tj.project, tj.params, tj.group)
 			if err != nil {
 				log.Fatal(err)
 			}
-			res, err := Work(context.TODO(), j, curfs)
+			res, err := Work(context.TODO(), job, curfs)
 			if err != nil {
 				log.Fatal(err)
 			}
 			results <- res
-		}()
+		}(j)
 	}
 
 	for i := 0; i < len(jobs); i++ {
