@@ -9,13 +9,14 @@ builds due to its copy-on-write snapshotting features.
 
 Features include:
 
-- running arbitrary commands provided as Docker images
-- incremental building (using [Btrfs snapshots](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
-- caching results to avoid running the same builds twice
-- efficient use of disk space due to copy-on-write techniques
-- a JSON API for enqueueing jobs
+- running arbitrary commands inside isolated environments
+- providing the build environments as Docker images
+- incremental building (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
+- caching and reusing build results
+- efficient use of disk space due to copy-on-write semantics
+- a simple JSON API for interacting with the service
 
-For more information take a look at the [wiki](/wiki).
+For more information take a look at the [wiki](https://github.com/skroutz/mistry/wiki).
 
 
 
