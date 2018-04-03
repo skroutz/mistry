@@ -22,7 +22,7 @@ func TestSimpleBuild(t *testing.T) {
 }
 
 func TestUnknownProject(t *testing.T) {
-	expected := "Unknown project"
+	expected := "Unknown project 'Idontexist'"
 
 	cmdOut, err := cliBuildJob("--project", "Idontexist")
 	if !strings.Contains(cmdOut, expected) {
