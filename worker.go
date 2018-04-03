@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,13 +19,9 @@ import (
 
 // Work performs the work denoted by j and returns the BuildResult upon
 // successful completion.
-//
-// TODO: return error on unsuccessful command
-// TODO: introduce build type
-// TODO: log fs command outputs
-// TODO: logs
-// TODO: set BuildResult type correctly
 func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildResult, err error) {
+	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
+	start := time.Now()
 	buildResult = &types.BuildResult{Path: filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir), Type: "rsync"}
 
 	_, err = os.Stat(j.ReadyBuildPath)
@@ -46,7 +43,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		defer jobs.Delete(j)
 	} else {
 		t := time.NewTicker(1 * time.Second)
-		fmt.Printf("Waiting for %s to complete\n", j.PendingBuildPath)
+		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
 		for {
 			select {
 			case <-ctx.Done():
@@ -96,7 +93,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		if j.Group != "" {
 			out, err := utils.RunCmd(fs.Clone(src, j.PendingBuildPath))
 			if out != "" {
-				fmt.Println(out)
+				log.Println(out)
 			}
 			if err != nil {
 				err = workErr("could not clone latest build result", err)
@@ -127,7 +124,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 	} else if os.IsNotExist(err) {
 		out, err := utils.RunCmd(fs.Create(j.PendingBuildPath))
 		if out != "" {
-			fmt.Println(out)
+			log.Println(out)
 		}
 		if err != nil {
 			err = workErr("could not create pending build path", err)
@@ -253,6 +250,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		return
 	}
 
+	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
 	return
 }
 
