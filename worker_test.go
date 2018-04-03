@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skroutz/mistry/plainfs"
 	"github.com/skroutz/mistry/types"
 )
 
@@ -28,7 +29,9 @@ const (
 	port = "8462"
 )
 
-var server = NewServer("localhost:8462", log.New(os.Stdout, "test", log.Lshortfile))
+// TODO: accept fs from the flag
+var server = NewServer(fmt.Sprintf("%s:%s", host, port), plainfs.PlainFS{},
+	log.New(os.Stdout, "test", log.Lshortfile))
 var params = make(types.Params)
 var username, target string
 
@@ -48,7 +51,7 @@ func TestMain(m *testing.M) {
 	go func() {
 		main()
 	}()
-	waitForServer("8462")
+	waitForServer(port)
 
 	// TODO: fix race with main() and TestMain() concurrently messing
 	// with cfg

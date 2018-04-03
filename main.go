@@ -67,6 +67,9 @@ func main() {
 			Value: "0.0.0.0:8462",
 			Usage: "Host and port to listen to",
 		},
+		cli.BoolFlag{
+			Name: "test.race",
+		},
 		cli.StringFlag{
 			Name:  "config, c",
 			Usage: "Load configuration from `FILE`",
@@ -112,7 +115,7 @@ func main() {
 	app.Action = func(c *cli.Context) error {
 		var wg sync.WaitGroup
 		addr := c.String("addr")
-		s := NewServer(addr, log.New(os.Stderr, "[http] ", log.LstdFlags))
+		s := NewServer(addr, curfs, log.New(os.Stderr, "[http] ", log.LstdFlags))
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

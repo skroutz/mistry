@@ -13,15 +13,18 @@ import (
 
 type Server struct {
 	Log *log.Logger
-	s   *http.Server
+
+	s  *http.Server
+	fs FileSystem
 }
 
-func NewServer(addr string, logger *log.Logger) *Server {
+func NewServer(addr string, fs FileSystem, logger *log.Logger) *Server {
 	s := new(Server)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/jobs", s.handleNewJob)
 
 	s.s = &http.Server{Handler: mux, Addr: addr}
+	s.fs = fs
 	s.Log = logger
 	return s
 }
@@ -55,7 +58,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Log.Printf("Building %s...", j)
-	buildResult, err := Work(context.Background(), j, curfs)
+	buildResult, err := Work(context.Background(), j, s.fs)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %#v: %s", j, err),
 			http.StatusInternalServerError)
