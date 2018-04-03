@@ -19,7 +19,6 @@ func (ts Scp) Copy(user, host, project, src, dst string) []string {
 type Rsync struct{}
 
 func (ts Rsync) Copy(user, host, project, src, dst string) []string {
-	// TODO: make this configurable
 	module := "mistry"
 
 	idx := strings.Index(src, project)
