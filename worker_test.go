@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -35,12 +34,13 @@ var (
 	server           *Server
 	params           = make(types.Params)
 	username, target string
+
+	configPath string
+	fs         string
+	addr       string
 )
 
 func init() {
-	flag.String("config", "", "")
-	flag.String("filesystem", "", "")
-
 	f, err := os.Open("config.test.json")
 	if err != nil {
 		panic(err)
@@ -49,8 +49,10 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
+	testcfg.Addr = fmt.Sprintf("%s:%s", host, port)
 	testcfg.FileSystem = plainfs.PlainFS{}
+
+	fmt.Println(testcfg)
 
 	user, err := user.Current()
 	if err != nil {
@@ -65,7 +67,15 @@ func TestMain(m *testing.M) {
 	var err error
 
 	go func() {
-		main()
+		err := SetUp(testcfg)
+		if err != nil {
+			panic(err)
+		}
+		err = StartServer(testcfg)
+		if err != nil {
+			panic(err)
+		}
+
 	}()
 	waitForServer(port)
 

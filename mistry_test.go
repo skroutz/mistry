@@ -14,17 +14,17 @@ func TestPruneZombieBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
 	}
-	path := filepath.Join(cfg.BuildPath, project, "pending")
-	_, err = utils.RunCmd(cfg.FileSystem.Create(filepath.Join(path, "foo")))
+	path := filepath.Join(testcfg.BuildPath, project, "pending")
+	_, err = utils.RunCmd(testcfg.FileSystem.Create(filepath.Join(path, "foo")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utils.RunCmd(cfg.FileSystem.Create(filepath.Join(path, "bar")))
+	_, err = utils.RunCmd(testcfg.FileSystem.Create(filepath.Join(path, "bar")))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = PruneZombieBuilds(cfg)
+	err = PruneZombieBuilds(testcfg)
 	if err != nil {
 		t.Fatal(err)
 	}
