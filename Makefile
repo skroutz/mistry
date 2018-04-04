@@ -15,7 +15,7 @@ mistry-cli:
 	go build -v -o mistry-cli client/*.go
 
 test: mistry-cli
-	$(TESTCMD)
+	$(TESTCMD) --filesystem plain
 
 testall: test
 	$(TESTCMD) --filesystem btrfs

@@ -1,22 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/skroutz/mistry/filesystem/plainfs"
+	"github.com/skroutz/mistry/filesystem"
 	"github.com/skroutz/mistry/types"
 	"github.com/skroutz/mistry/utils"
-)
-
-const (
-	host = "localhost"
-	port = "8462"
 )
 
 var (
@@ -25,13 +22,30 @@ var (
 	params  = make(types.Params)
 
 	// mistry-cli args
+	host     string
+	port     string
 	username string
 	target   string
+
+	addrFlag       string
+	configFlag     string
+	filesystemFlag string
 )
 
 func TestMain(m *testing.M) {
-	// TODO: read this from a flag
-	f, err := os.Open("config.test.json")
+	flag.StringVar(&addrFlag, "addr", "localhost:8462", "")
+	flag.StringVar(&configFlag, "config", "config.test.json", "")
+	flag.StringVar(&filesystemFlag, "filesystem", "plain", "")
+	flag.Parse()
+
+	parts := strings.Split(addrFlag, ":")
+	if len(parts) != 2 {
+		panic("invalid addr argument")
+	}
+	host = parts[0]
+	port = parts[1]
+
+	f, err := os.Open(configFlag)
 	if err != nil {
 		panic(err)
 	}
@@ -40,9 +54,13 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// TODO: read this from flag and remove host and port
-	testcfg.Addr = fmt.Sprintf("%s:%s", host, port)
-	testcfg.FileSystem = plainfs.PlainFS{}
+	testcfg.Addr = addrFlag
+
+	fs, ok := filesystem.List[filesystemFlag]
+	if !ok {
+		panic(fmt.Sprintf("invalid filesystem argument (%v)", filesystem.List))
+	}
+	testcfg.FileSystem = fs
 
 	tmpdir, err := ioutil.TempDir("", "mistry-tests")
 	if err != nil {
