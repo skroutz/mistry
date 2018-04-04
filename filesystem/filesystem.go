@@ -1,4 +1,6 @@
-package main
+package filesystem
+
+var List = make(map[string]FileSystem)
 
 type FileSystem interface {
 	// Create returns a command followed by its arguments, that will

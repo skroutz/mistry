@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -22,67 +19,6 @@ import (
 
 	"github.com/skroutz/mistry/types"
 )
-
-const (
-	host = "localhost"
-	port = "8462"
-)
-
-var server = NewServer("localhost:8462", log.New(os.Stdout, "test", log.Lshortfile))
-var params = make(types.Params)
-var username, target string
-
-func init() {
-	flag.String("config", "", "")
-	flag.String("filesystem", "", "")
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-	username = user.Username
-}
-
-func TestMain(m *testing.M) {
-	var err error
-
-	go func() {
-		main()
-	}()
-	waitForServer("8462")
-
-	// TODO: fix race with main() and TestMain() concurrently messing
-	// with cfg
-	cfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Running tests in", cfg.BuildPath)
-
-	cfg.BuildPath, err = filepath.EvalSymlinks(cfg.BuildPath)
-	if err != nil {
-		panic(err)
-	}
-
-	target, err = ioutil.TempDir("", "mistry-tests-results")
-	if err != nil {
-		panic(err)
-	}
-
-	result := m.Run()
-
-	if result == 0 {
-		err = os.RemoveAll(cfg.BuildPath)
-		if err != nil {
-			panic(err)
-		}
-		err = os.RemoveAll(target)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	os.Exit(result)
-}
 
 // TODO: do this using error types on BuildResult, instead of string comparison
 func TestImageBuildFailure(t *testing.T) {
@@ -171,6 +107,7 @@ func TestFailedPendingBuildCleanup(t *testing.T) {
 func TestConcurrentJobs(t *testing.T) {
 	t.Skip("TODO: fix races")
 	var wg sync.WaitGroup
+	jq := NewJobQueue()
 	results := make(chan *types.BuildResult, 100)
 
 	type testJob struct {
@@ -213,11 +150,11 @@ func TestConcurrentJobs(t *testing.T) {
 		wg.Add(1)
 		go func(tj testJob) {
 			defer wg.Done()
-			job, err := NewJob(tj.project, tj.params, tj.group)
+			job, err := NewJob(tj.project, tj.params, tj.group, testcfg)
 			if err != nil {
 				log.Fatal(err)
 			}
-			res, err := Work(context.TODO(), job, curfs)
+			res, err := Work(context.TODO(), job, testcfg, jq)
 			if err != nil {
 				log.Fatal(err)
 			}

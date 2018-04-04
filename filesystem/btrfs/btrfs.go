@@ -1,11 +1,18 @@
 package btrfs
 
-import "github.com/skroutz/mistry/utils"
+import (
+	"github.com/skroutz/mistry/filesystem"
+	"github.com/skroutz/mistry/utils"
+)
 
 // Btrfs implements the FileSystem interface. It is an efficient implementation
 // since it uses Copy-on-Write snapshots to do the cloning. It is the
 // recommended solution for production systems.
 type Btrfs struct{}
+
+func init() {
+	filesystem.List["btrfs"] = Btrfs{}
+}
 
 func (fs Btrfs) Create(path string) []string {
 	return []string{"btrfs", "subvolume", "create", path}

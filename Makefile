@@ -1,7 +1,6 @@
 .PHONY: install build mistry mistry-cli test testall lint vet fmt clean
 
-# TODO: enable -race and -v
-TESTCMD=go test --config config.test.json
+TESTCMD=go test -v -race
 
 install: fmt vet test
 	go install -v
