@@ -1,0 +1,37 @@
+"""
+Deploy mistry
+
+Usage:
+
+$ fab -H <hostname> deploy
+
+"""
+from json import loads as json
+
+from fabric.api import env, settings, parallel
+from fabric.operations import put, sudo, local, run
+from fabric.decorators import runs_once
+from fabric.context_managers import hide
+
+def tail():
+    env.remote_interrupt = True
+    with settings(warn_only=True):
+        sudo('journalctl --unit=mistry --follow --lines=0', pty=True)
+
+@runs_once
+def build():
+    local('GOOS=linux GOARCH=amd64 make build')
+
+def copy():
+    put('mistry', '/usr/bin/', use_sudo=True, mode=0755)
+
+def restart():
+    sudo('systemctl restart mistry.service')
+
+def status():
+    run('systemctl status mistry.service')
+
+def deploy():
+    build()
+    copy()
+    restart()
