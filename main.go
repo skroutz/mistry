@@ -16,8 +16,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/skroutz/mistry/btrfs"
@@ -99,6 +101,12 @@ func main() {
 			return fmt.Errorf("invalid filesystem argument (%v)", fsList)
 		}
 		curfs = fs
+
+		err = PruneZombieBuilds(curfs)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
 	app.Action = func(c *cli.Context) error {
@@ -122,4 +130,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func PruneZombieBuilds(curfs FileSystem) error {
+	projects, err := ioutil.ReadDir(cfg.ProjectsPath)
+	if err != nil {
+		return err
+	}
+	l := log.New(os.Stderr, "[cleanup] ", log.LstdFlags)
+
+	for _, p := range projects {
+		pendingPath := filepath.Join(cfg.BuildPath, p.Name(), "pending")
+		pendingBuilds, err := ioutil.ReadDir(pendingPath)
+		for _, pending := range pendingBuilds {
+			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
+			err = curfs.Remove(pendingBuildPath)
+			if err != nil {
+				return fmt.Errorf("Error pruning zombie build '%s' of project '%s'", pending.Name(), p.Name())
+			}
+			l.Printf("Pruned zombie build '%s' of project '%s'", pending.Name(), p.Name())
+		}
+	}
+
+	return nil
 }
