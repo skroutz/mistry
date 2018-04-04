@@ -1,6 +1,5 @@
 .PHONY: install build mistry mistry-cli test testall lint vet fmt clean
 
-# TODO: enable -race and -v
 TESTCMD=go test -v -race
 
 install: fmt vet test
@@ -16,7 +15,7 @@ mistry-cli:
 	go build -v -o mistry-cli client/*.go
 
 test: mistry-cli
-	$(TESTCMD) --filesystem plain
+	$(TESTCMD)
 
 testall: test
 	$(TESTCMD) --filesystem btrfs

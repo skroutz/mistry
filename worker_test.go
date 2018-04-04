@@ -10,8 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -19,99 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skroutz/mistry/filesystem/plainfs"
 	"github.com/skroutz/mistry/types"
 )
-
-const (
-	host = "localhost"
-	port = "8462"
-)
-
-// TODO: accept fs from the flag
-var (
-	testcfg          *Config
-	server           *Server
-	params           = make(types.Params)
-	username, target string
-
-	configPath string
-	fs         string
-	addr       string
-)
-
-func init() {
-	f, err := os.Open("config.test.json")
-	if err != nil {
-		panic(err)
-	}
-	testcfg, err = ParseConfig(f)
-	if err != nil {
-		panic(err)
-	}
-	testcfg.Addr = fmt.Sprintf("%s:%s", host, port)
-	testcfg.FileSystem = plainfs.PlainFS{}
-
-	fmt.Println(testcfg)
-
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-	username = user.Username
-
-	server = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
-}
-
-func TestMain(m *testing.M) {
-	var err error
-
-	go func() {
-		err := SetUp(testcfg)
-		if err != nil {
-			panic(err)
-		}
-		err = StartServer(testcfg)
-		if err != nil {
-			panic(err)
-		}
-
-	}()
-	waitForServer(port)
-
-	// TODO: fix race with main() and TestMain() concurrently messing
-	// with cfg
-	testcfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Running tests in", testcfg.BuildPath)
-
-	testcfg.BuildPath, err = filepath.EvalSymlinks(testcfg.BuildPath)
-	if err != nil {
-		panic(err)
-	}
-
-	target, err = ioutil.TempDir("", "mistry-tests-results")
-	if err != nil {
-		panic(err)
-	}
-
-	result := m.Run()
-
-	if result == 0 {
-		err = os.RemoveAll(testcfg.BuildPath)
-		if err != nil {
-			panic(err)
-		}
-		err = os.RemoveAll(target)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	os.Exit(result)
-}
 
 // TODO: do this using error types on BuildResult, instead of string comparison
 func TestImageBuildFailure(t *testing.T) {
