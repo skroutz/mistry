@@ -48,6 +48,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		t := time.NewTicker(1 * time.Second)
 		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
 		for {
+			log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
 			select {
 			case <-ctx.Done():
 				err = workErr("context cancelled while waiting for pending build", nil)
