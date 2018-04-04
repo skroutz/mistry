@@ -12,20 +12,23 @@ import (
 )
 
 type Server struct {
+	// TODO: can we embed this?
 	Log *log.Logger
 
-	s  *http.Server
-	fs FileSystem
+	s   *http.Server
+	jq  *JobQueue
+	cfg *Config
 }
 
-func NewServer(addr string, fs FileSystem, logger *log.Logger) *Server {
+func NewServer(cfg *Config, logger *log.Logger) *Server {
 	s := new(Server)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/jobs", s.handleNewJob)
 
-	s.s = &http.Server{Handler: mux, Addr: addr}
-	s.fs = fs
+	s.s = &http.Server{Handler: mux, Addr: cfg.Addr}
+	s.cfg = cfg
 	s.Log = logger
+	s.jq = NewJobQueue()
 	return s
 }
 
@@ -50,7 +53,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJob(jr.Project, jr.Params, jr.Group)
+	j, err := NewJob(jr.Project, jr.Params, jr.Group, s.cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", jr, err),
 			http.StatusInternalServerError)
@@ -58,7 +61,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Log.Printf("Building %s...", j)
-	buildResult, err := Work(context.Background(), j, s.fs)
+	buildResult, err := Work(context.Background(), j, s.cfg, s.jq)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %#v: %s", j, err),
 			http.StatusInternalServerError)

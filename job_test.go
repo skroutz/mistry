@@ -13,26 +13,26 @@ func TestJobID(t *testing.T) {
 	params := types.Params{"foo": "bar"}
 	group := "zzz"
 
-	j1, err := NewJob(project, params, group)
+	j1, err := NewJob(project, params, group, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	j2, err := NewJob(project, params, group)
+	j2, err := NewJob(project, params, group, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertEq(j1.ID, j2.ID, t)
 
 	// params seeding
-	j3, err := NewJob(project, make(types.Params), group)
+	j3, err := NewJob(project, make(types.Params), group, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertNotEq(j1.ID, j3.ID, t)
 
 	// group seeding
-	j4, err := NewJob(project, params, "c")
+	j4, err := NewJob(project, params, "c", cfg)
 	assertNotEq(j1.ID, j4.ID, t)
 
 	// project seeding (new empty file)
@@ -43,7 +43,7 @@ func TestJobID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(path)
-	j5, err := NewJob(project, params, group)
+	j5, err := NewJob(project, params, group, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestJobID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	j6, err := NewJob(project, params, group)
+	j6, err := NewJob(project, params, group, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -22,8 +22,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/skroutz/mistry/btrfs"
-	"github.com/skroutz/mistry/plainfs"
+	"github.com/skroutz/mistry/filesystem"
+	_ "github.com/skroutz/mistry/filesystem/btrfs"
+	_ "github.com/skroutz/mistry/filesystem/plainfs"
 	"github.com/skroutz/mistry/utils"
 	"github.com/urfave/cli"
 )
@@ -37,24 +38,7 @@ const (
 	BuildResultFname = "result.json" //     - result.json
 )
 
-var (
-	cfg *Config
-
-	// current list of pending jobs
-	jobs = NewJobQueue()
-
-	// available filesystem adapters
-	fsList = make(map[string]FileSystem)
-
-	// current filesystem adapter
-	curfs FileSystem
-)
-
-func init() {
-	log.SetFlags(log.Lshortfile)
-	fsList["btrfs"] = btrfs.Btrfs{}
-	fsList["plain"] = plainfs.PlainFS{}
-}
+var cfg *Config
 
 func main() {
 	app := cli.NewApp()
@@ -89,44 +73,20 @@ func main() {
 		if err != nil {
 			return err
 		}
-		err = utils.PathIsDir(cfg.ProjectsPath)
-		if err != nil {
-			return err
-		}
 
-		err = utils.PathIsDir(cfg.BuildPath)
-		if err != nil {
-			return err
-		}
+		cfg.Addr = c.String("addr")
 
-		fs, ok := fsList[c.String("filesystem")]
+		fs, ok := filesystem.List[c.String("filesystem")]
 		if !ok {
-			return fmt.Errorf("invalid filesystem argument (%v)", fsList)
-		}
-		curfs = fs
-
-		err = PruneZombieBuilds(curfs)
-		if err != nil {
-			return err
+			return fmt.Errorf("invalid filesystem argument (%v)", filesystem.List)
 		}
 
-		return nil
+		cfg.FileSystem = fs
+
+		return SetUp(cfg)
 	}
 	app.Action = func(c *cli.Context) error {
-		var wg sync.WaitGroup
-		addr := c.String("addr")
-		s := NewServer(addr, curfs, log.New(os.Stderr, "[http] ", log.LstdFlags))
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err := s.ListenAndServe()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
-		s.Log.Printf("Listening on %s...", addr)
-		wg.Wait()
-		return nil
+		return StartServer(cfg)
 	}
 
 	err := app.Run(os.Args)
@@ -135,7 +95,45 @@ func main() {
 	}
 }
 
-func PruneZombieBuilds(curfs FileSystem) error {
+// SetUp accepts a Config and performs necessary initialization tasks.
+func SetUp(cfg *Config) error {
+	err := utils.PathIsDir(cfg.ProjectsPath)
+	if err != nil {
+		return err
+	}
+
+	err = utils.PathIsDir(cfg.BuildPath)
+	if err != nil {
+		return err
+	}
+
+	err = PruneZombieBuilds(cfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// StartServer sets up and spawns starts the HTTP server
+func StartServer(cfg *Config) error {
+	var wg sync.WaitGroup
+	s := NewServer(cfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := s.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+	s.Log.Printf("Listening on %s...", cfg.Addr)
+	wg.Wait()
+	return nil
+}
+
+func PruneZombieBuilds(cfg *Config) error {
 	projects, err := ioutil.ReadDir(cfg.ProjectsPath)
 	if err != nil {
 		return err
@@ -147,7 +145,7 @@ func PruneZombieBuilds(curfs FileSystem) error {
 		pendingBuilds, err := ioutil.ReadDir(pendingPath)
 		for _, pending := range pendingBuilds {
 			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
-			err = curfs.Remove(pendingBuildPath)
+			err = cfg.FileSystem.Remove(pendingBuildPath)
 			if err != nil {
 				return fmt.Errorf("Error pruning zombie build '%s' of project '%s'", pending.Name(), p.Name())
 			}

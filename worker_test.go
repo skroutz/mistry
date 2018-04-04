@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skroutz/mistry/plainfs"
+	"github.com/skroutz/mistry/filesystem/plainfs"
 	"github.com/skroutz/mistry/types"
 )
 
@@ -30,19 +30,35 @@ const (
 )
 
 // TODO: accept fs from the flag
-var server = NewServer(fmt.Sprintf("%s:%s", host, port), plainfs.PlainFS{},
-	log.New(os.Stdout, "test", log.Lshortfile))
-var params = make(types.Params)
-var username, target string
+var (
+	testcfg          *Config
+	server           *Server
+	params           = make(types.Params)
+	username, target string
+)
 
 func init() {
 	flag.String("config", "", "")
 	flag.String("filesystem", "", "")
+
+	f, err := os.Open("config.test.json")
+	if err != nil {
+		panic(err)
+	}
+	testcfg, err = ParseConfig(f)
+	if err != nil {
+		panic(err)
+	}
+
+	testcfg.FileSystem = plainfs.PlainFS{}
+
 	user, err := user.Current()
 	if err != nil {
 		panic(err)
 	}
 	username = user.Username
+
+	server = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
 }
 
 func TestMain(m *testing.M) {
@@ -55,13 +71,13 @@ func TestMain(m *testing.M) {
 
 	// TODO: fix race with main() and TestMain() concurrently messing
 	// with cfg
-	cfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
+	testcfg.BuildPath, err = ioutil.TempDir("", "mistry-tests")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Running tests in", cfg.BuildPath)
+	fmt.Println("Running tests in", testcfg.BuildPath)
 
-	cfg.BuildPath, err = filepath.EvalSymlinks(cfg.BuildPath)
+	testcfg.BuildPath, err = filepath.EvalSymlinks(testcfg.BuildPath)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +90,7 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 
 	if result == 0 {
-		err = os.RemoveAll(cfg.BuildPath)
+		err = os.RemoveAll(testcfg.BuildPath)
 		if err != nil {
 			panic(err)
 		}
@@ -174,6 +190,7 @@ func TestFailedPendingBuildCleanup(t *testing.T) {
 func TestConcurrentJobs(t *testing.T) {
 	t.Skip("TODO: fix races")
 	var wg sync.WaitGroup
+	jq := NewJobQueue()
 	results := make(chan *types.BuildResult, 100)
 
 	type testJob struct {
@@ -216,11 +233,11 @@ func TestConcurrentJobs(t *testing.T) {
 		wg.Add(1)
 		go func(tj testJob) {
 			defer wg.Done()
-			job, err := NewJob(tj.project, tj.params, tj.group)
+			job, err := NewJob(tj.project, tj.params, tj.group, testcfg)
 			if err != nil {
 				log.Fatal(err)
 			}
-			res, err := Work(context.TODO(), job, curfs)
+			res, err := Work(context.TODO(), job, testcfg, jq)
 			if err != nil {
 				log.Fatal(err)
 			}

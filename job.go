@@ -45,7 +45,7 @@ type Job struct {
 	ImageTar []byte
 }
 
-func NewJob(project string, params types.Params, group string) (*Job, error) {
+func NewJob(project string, params types.Params, group string, cfg *Config) (*Job, error) {
 	var err error
 
 	if project == "" {
@@ -97,9 +97,9 @@ func NewJob(project string, params types.Params, group string) (*Job, error) {
 	return j, nil
 }
 
-func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) error {
+func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out io.Writer) error {
 	buildArgs := make(map[string]*string)
-	buildArgs["uid"] = &cfg.UID
+	buildArgs["uid"] = &uid
 	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
@@ -126,7 +126,7 @@ func (j *Job) BuildImage(ctx context.Context, c *docker.Client, out io.Writer) e
 //
 // NOTE: If there was an error with the user's dockerfile, the returned exit
 // code will be 1 and the error nil.
-func (j *Job) StartContainer(ctx context.Context, c *docker.Client, out io.Writer) (int, error) {
+func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client, out io.Writer) (int, error) {
 	config := container.Config{User: cfg.UID, Image: j.Project}
 
 	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, DataDir), Target: DataDir}}

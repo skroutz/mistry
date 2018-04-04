@@ -19,7 +19,9 @@ import (
 
 // Work performs the work denoted by j and returns the BuildResult upon
 // successful completion.
-func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildResult, err error) {
+//
+// TODO(agis): make this a method on Server(?)
+func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *types.BuildResult, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
 	buildResult = &types.BuildResult{
@@ -41,9 +43,9 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		return
 	}
 
-	added := jobs.Add(j)
+	added := jq.Add(j)
 	if added {
-		defer jobs.Delete(j)
+		defer jq.Delete(j)
 	} else {
 		t := time.NewTicker(1 * time.Second)
 		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
@@ -94,7 +96,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
-			out, err := utils.RunCmd(fs.Clone(src, j.PendingBuildPath))
+			out, err := utils.RunCmd(cfg.FileSystem.Clone(src, j.PendingBuildPath))
 			if out != "" {
 				log.Println(out)
 			}
@@ -103,7 +105,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 				return buildResult, err
 			}
 			defer func() {
-				derr := fs.Remove(j.PendingBuildPath)
+				derr := cfg.FileSystem.Remove(j.PendingBuildPath)
 				if derr != nil {
 					errstr := "could not clean hanging pending path"
 					if err == nil {
@@ -125,7 +127,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 			}
 		}
 	} else if os.IsNotExist(err) {
-		out, err := utils.RunCmd(fs.Create(j.PendingBuildPath))
+		out, err := utils.RunCmd(cfg.FileSystem.Create(j.PendingBuildPath))
 		if out != "" {
 			log.Println(out)
 		}
@@ -134,7 +136,7 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 			return buildResult, err
 		}
 		defer func() {
-			derr := fs.Remove(j.PendingBuildPath)
+			derr := cfg.FileSystem.Remove(j.PendingBuildPath)
 			if derr != nil {
 				errstr := "could not clean hanging pending path"
 				if err == nil {
@@ -200,13 +202,13 @@ func Work(ctx context.Context, j *Job, fs FileSystem) (buildResult *types.BuildR
 		return
 	}
 
-	err = j.BuildImage(ctx, client, out)
+	err = j.BuildImage(ctx, cfg.UID, client, out)
 	if err != nil {
 		err = workErr("could not build docker image", err)
 		return
 	}
 
-	buildResult.ExitCode, err = j.StartContainer(ctx, client, out)
+	buildResult.ExitCode, err = j.StartContainer(ctx, cfg, client, out)
 	if err != nil {
 		err = workErr("could not start docker container", err)
 		return
