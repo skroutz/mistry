@@ -81,7 +81,10 @@ func TestMain(m *testing.M) {
 	}
 	username = user.Username
 
-	server = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	server, err = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		err := SetUp(testcfg)

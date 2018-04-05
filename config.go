@@ -10,6 +10,8 @@ import (
 	"github.com/skroutz/mistry/filesystem"
 )
 
+// Config holds the configuration values that the Server needs in order to
+// function.
 type Config struct {
 	Addr       string
 	FileSystem filesystem.FileSystem
@@ -20,6 +22,9 @@ type Config struct {
 	Mounts       map[string]string `json:"mounts"`
 }
 
+// ParseConfig accepts the listening address, a filesystem adapter and a
+// reader from which to parse the configuration, and returns a valid
+// Config or an error.
 func ParseConfig(addr string, fs filesystem.FileSystem, r io.Reader) (*Config, error) {
 	if addr == "" {
 		return nil, errors.New("addr must be provided")

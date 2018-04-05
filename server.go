@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,6 +12,9 @@ import (
 	"github.com/skroutz/mistry/types"
 )
 
+// Server is the component that performs the actual work (builds images, runs
+// commands etc.). It also exposes the JSON API by which users interact with
+// mistry.
 type Server struct {
 	Log *log.Logger
 
@@ -19,7 +23,18 @@ type Server struct {
 	cfg *Config
 }
 
-func NewServer(cfg *Config, logger *log.Logger) *Server {
+// NewServer accepts a non-nil configuration and an optional logger, and
+// returns a new Server.
+// If logger is nil, server logs are disabled.
+func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
+	if cfg == nil {
+		return nil, errors.New("config cannot be nil")
+	}
+
+	if logger == nil {
+		logger = log.New(ioutil.Discard, "", 0)
+	}
+
 	s := new(Server)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/jobs", s.HandleNewJob)
@@ -28,7 +43,7 @@ func NewServer(cfg *Config, logger *log.Logger) *Server {
 	s.cfg = cfg
 	s.Log = logger
 	s.jq = NewJobQueue()
-	return s
+	return s, nil
 }
 
 // HandleNewJob receives requests for new jobs and builds them.
@@ -80,6 +95,9 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ListenAndServe listens on the TCP network address s.s.Addr and handle
+// requests on incoming connections. ListenAndServe always returns a
+// non-nil error.
 func (s *Server) ListenAndServe() error {
 	s.Log.Printf("Configuration: %#v", s.cfg)
 	return s.s.ListenAndServe()

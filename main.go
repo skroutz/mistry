@@ -30,12 +30,28 @@ import (
 )
 
 const (
-	DataDir          = "/data"       //     - data/
-	CacheDir         = "/cache"      //     |- cache/
-	ArtifactsDir     = "/artifacts"  //     |- artifacts/
-	ParamsDir        = "/params"     //     |- params/
-	BuildLogFname    = "out.log"     //     - out.log
-	BuildResultFname = "result.json" //     - result.json
+	// DataDir is the root path where all the data of a given project
+	// are placed.
+	DataDir = "/data"
+
+	// CacheDir is the directory inside DataDir, containing
+	// user-generated files that should be persisted between builds.
+	CacheDir = "/cache"
+
+	// ArtifactsDir is the directory inside DataDir, containing the build
+	// artifacts.
+	ArtifactsDir = "/artifacts"
+
+	// ParamsDir is the directory inside Datadir, containing the job
+	// parameters of the build.
+	ParamsDir = "/params"
+
+	// BuildLogFname is the file inside DataDir, containing the build log.
+	BuildLogFname = "out.log"
+
+	// BuildResultFname is the file inside DataDir, containing the build
+	// result.
+	BuildResultFname = "result.json"
 )
 
 func main() {
@@ -111,7 +127,10 @@ func SetUp(cfg *Config) error {
 // StartServer sets up and spawns starts the HTTP server
 func StartServer(cfg *Config) error {
 	var wg sync.WaitGroup
-	s := NewServer(cfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	s, err := NewServer(cfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	if err != nil {
+		return err
+	}
 
 	wg.Add(1)
 	go func() {
@@ -126,6 +145,7 @@ func StartServer(cfg *Config) error {
 	return nil
 }
 
+// PruneZombieBuilds removes any pending builds from the filesystem.
 func PruneZombieBuilds(cfg *Config) error {
 	projects, err := ioutil.ReadDir(cfg.ProjectsPath)
 	if err != nil {

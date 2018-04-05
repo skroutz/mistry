@@ -20,10 +20,12 @@ import (
 	"github.com/skroutz/mistry/utils"
 )
 
+// Job is the core unit of work. It is essentially something that needs to
+// be executed in order to produce the desired artifacts.
 type Job struct {
 	ID string
 
-	// User-provided
+	// user-provided
 	Project string
 	Params  types.Params
 	Group   string
@@ -36,8 +38,8 @@ type Job struct {
 
 	ProjectPath string
 
-	// NOTE: after a job is complete, this points to an invalid path
-	// (pending)
+	// NOTE: after a job is complete, this points to an invalid (pending)
+	// path
 	BuildLogPath        string
 	BuildResultFilePath string
 
@@ -45,11 +47,17 @@ type Job struct {
 	ImageTar []byte
 }
 
+// NewJob returns a new Job for the given project. project and cfg cannot be
+// empty.
 func NewJob(project string, params types.Params, group string, cfg *Config) (*Job, error) {
 	var err error
 
 	if project == "" {
-		return nil, errors.New("No project given")
+		return nil, errors.New("no project given")
+	}
+
+	if cfg == nil {
+		return nil, errors.New("invalid configuration")
 	}
 
 	j := new(Job)

@@ -62,13 +62,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 					buildResult.ExitCode = i
 					buildResult.Coalesced = true
 					return buildResult, err
+				}
+				if os.IsNotExist(err) {
+					continue
 				} else {
-					if os.IsNotExist(err) {
-						continue
-					} else {
-						err = workErr("could not wait for ready build", err)
-						return
-					}
+					err = workErr("could not wait for ready build", err)
+					return
 				}
 			}
 		}
@@ -79,10 +78,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		if os.IsNotExist(err) {
 			err = workErr("Unknown project", nil)
 			return
-		} else {
-			err = workErr("could not check for project", err)
-			return
 		}
+		err = workErr("could not check for project", err)
+		return
 	}
 
 	err = BootstrapProject(j)
@@ -227,12 +225,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 			}
 		}
 	}()
-	brJson, err := json.Marshal(buildResult)
+	brJSON, err := json.Marshal(buildResult)
 	if err != nil {
 		err = workErr("could not serialize build result", err)
 		return
 	}
-	_, err = resultFile.Write(brJson)
+	_, err = resultFile.Write(brJSON)
 	if err != nil {
 		err = workErr("could not write build result to file", err)
 		return

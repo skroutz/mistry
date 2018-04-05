@@ -4,11 +4,13 @@ import (
 	"sync"
 )
 
+// JobQueue holds the jobs that are enqueued currently in the server.
 type JobQueue struct {
 	j map[string]bool
 	sync.Mutex
 }
 
+// NewJobQueue returns a new JobQueue ready for use.
 func NewJobQueue() *JobQueue {
 	return &JobQueue{j: make(map[string]bool)}
 }
@@ -27,6 +29,7 @@ func (q *JobQueue) Add(j *Job) bool {
 	return true
 }
 
+// Delete removes j from q.
 func (q *JobQueue) Delete(j *Job) {
 	q.Lock()
 	defer q.Unlock()
