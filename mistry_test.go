@@ -190,7 +190,7 @@ func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 
 	req := httptest.NewRequest("POST", "http://example.com/foo", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	server.handleNewJob(w, req)
+	server.HandleNewJob(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusCreated {

@@ -17,11 +17,9 @@ import (
 	"github.com/skroutz/mistry/utils"
 )
 
-// Work performs the work denoted by j and returns the BuildResult upon
-// successful completion.
-//
-// TODO(agis): make this a method on Server(?)
-func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *types.BuildResult, err error) {
+// Work performs the work denoted by j and returns a BuildResult upon
+// successful completion, or an error.
+func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResult, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
 	buildResult = &types.BuildResult{
@@ -43,9 +41,9 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 		return
 	}
 
-	added := jq.Add(j)
+	added := s.jq.Add(j)
 	if added {
-		defer jq.Delete(j)
+		defer s.jq.Delete(j)
 	} else {
 		t := time.NewTicker(1 * time.Second)
 		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
@@ -76,7 +74,7 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 		}
 	}
 
-	_, err = os.Stat(filepath.Join(cfg.ProjectsPath, j.Project))
+	_, err = os.Stat(filepath.Join(s.cfg.ProjectsPath, j.Project))
 	if err != nil {
 		if os.IsNotExist(err) {
 			err = workErr("Unknown project", nil)
@@ -96,7 +94,7 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
 	if err == nil {
 		if j.Group != "" {
-			out, err := utils.RunCmd(cfg.FileSystem.Clone(src, j.PendingBuildPath))
+			out, err := utils.RunCmd(s.cfg.FileSystem.Clone(src, j.PendingBuildPath))
 			if out != "" {
 				log.Println(out)
 			}
@@ -105,7 +103,7 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 				return buildResult, err
 			}
 			defer func() {
-				derr := cfg.FileSystem.Remove(j.PendingBuildPath)
+				derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
 				if derr != nil {
 					errstr := "could not clean hanging pending path"
 					if err == nil {
@@ -127,7 +125,7 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 			}
 		}
 	} else if os.IsNotExist(err) {
-		out, err := utils.RunCmd(cfg.FileSystem.Create(j.PendingBuildPath))
+		out, err := utils.RunCmd(s.cfg.FileSystem.Create(j.PendingBuildPath))
 		if out != "" {
 			log.Println(out)
 		}
@@ -136,7 +134,7 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 			return buildResult, err
 		}
 		defer func() {
-			derr := cfg.FileSystem.Remove(j.PendingBuildPath)
+			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
 			if derr != nil {
 				errstr := "could not clean hanging pending path"
 				if err == nil {
@@ -202,12 +200,12 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 		return
 	}
 
-	err = j.BuildImage(ctx, cfg.UID, client, out)
+	err = j.BuildImage(ctx, s.cfg.UID, client, out)
 	if err != nil {
 		return
 	}
 
-	buildResult.ExitCode, err = j.StartContainer(ctx, cfg, client, out)
+	buildResult.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
 	if err != nil {
 		err = workErr("could not start docker container", err)
 		return

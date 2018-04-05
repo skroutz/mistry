@@ -22,7 +22,7 @@ type Server struct {
 func NewServer(cfg *Config, logger *log.Logger) *Server {
 	s := new(Server)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/jobs", s.handleNewJob)
+	mux.HandleFunc("/jobs", s.HandleNewJob)
 
 	s.s = &http.Server{Handler: mux, Addr: cfg.Addr}
 	s.cfg = cfg
@@ -31,8 +31,8 @@ func NewServer(cfg *Config, logger *log.Logger) *Server {
 	return s
 }
 
-// handleNewJob receives requests for new jobs and schedules their building.
-func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
+// HandleNewJob receives requests for new jobs and builds them.
+func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Expected POST, got "+r.Method, http.StatusMethodNotAllowed)
 		return
@@ -60,7 +60,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Log.Printf("Building %s...", j)
-	buildResult, err := Work(context.Background(), j, s.cfg, s.jq)
+	buildResult, err := s.Work(context.Background(), j)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
 			http.StatusInternalServerError)
