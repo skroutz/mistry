@@ -1,0 +1,30 @@
+sudo: required
+
+language: go
+
+before_install:
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  - yes id_rsa | ssh-keygen -t rsa -N ""
+  - cat id_rsa.pub > ~/.ssh/authorized_keys
+  - mv id_rsa* /home/travis/.ssh/
+  - chmod g-rw,o-rw /home/travis/.ssh/*
+
+go:
+  - "1.10.x"
+    #  - "1.9.x"
+    #  - master
+
+services:
+  - docker
+
+install:
+  - dep ensure -v
+
+script:
+  - make test
+
+addons:
+  ssh_known_hosts:
+    - localhost
+    - 127.0.0.1
+    - 0.0.0.0
