@@ -3,37 +3,40 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
 	"io/ioutil"
-	"log"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/skroutz/mistry/utils"
+	"github.com/skroutz/mistry/types"
 )
 
 func TestSimpleBuild(t *testing.T) {
-	cmdOut, err := cliBuildJob("--project", "simple")
+	cmdout, cmderr, err := cliBuildJob("--project", "simple")
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 }
 
 func TestUnknownProject(t *testing.T) {
 	expected := "Unknown project 'Idontexist'"
 
-	cmdOut, err := cliBuildJob("--project", "Idontexist")
-	if !strings.Contains(cmdOut, expected) {
-		t.Fatalf("Error output: %s, actual: %v, expected: %v", cmdOut, err.Error(), expected)
+	_, cmderr, err := cliBuildJob("--project", "Idontexist")
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+	if !strings.Contains(cmderr, expected) {
+		t.Fatalf("Expected '%s' to contain '%s'", cmderr, expected)
 	}
 }
 
 func TestJobParams(t *testing.T) {
-	cmdOut, err := cliBuildJob("--project", "params", "--", "--foo=zxc")
+	cmdout, cmderr, err := cliBuildJob("--project", "params", "--", "--foo=zxc")
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 
 	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
@@ -44,19 +47,46 @@ func TestJobParams(t *testing.T) {
 	assert(string(out), "zxc", t)
 }
 
-func TestSameGroupDifferentParams(t *testing.T) {
-	cmdOut1, err := cliBuildJob("--project", "result-cache", "--group", "foo", "--", "--foo=bar")
+func TestImageBuildFailure(t *testing.T) {
+	expErr := "could not build docker image"
+
+	_, cmderr, err := cliBuildJob("--project", "image-build-failure")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !strings.Contains(cmderr, expErr) {
+		t.Fatalf("Expected '%s' to contain '%s'", cmderr, expErr)
+	}
+}
+
+func TestExitCode(t *testing.T) {
+	cmdout, _, err := cliBuildJob("--json-result", "--project", "exit-code")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	br, err := parseClientJSON(cmdout)
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
+		t.Fatal(err)
+	}
+
+	assert(br.ExitCode, 77, t)
+}
+
+func TestSameGroupDifferentParams(t *testing.T) {
+	cmdout1, cmderr1, err := cliBuildJob("--project", "result-cache", "--group", "foo", "--", "--foo=bar")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout1, cmderr1, err)
 	}
 	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cmdOut2, err := cliBuildJob("--project", "result-cache", "--group", "foo", "--", "--foo=bar2")
+	cmdout2, cmderr2, err := cliBuildJob("--project", "result-cache", "--group", "foo", "--", "--foo=bar2")
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout2, cmderr2, err)
 	}
 	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
@@ -67,93 +97,127 @@ func TestSameGroupDifferentParams(t *testing.T) {
 }
 
 func TestResultCache(t *testing.T) {
-	cmdOut1, err := cliBuildJob("--project", "result-cache", "--group", "foo")
+	cmdout1, cmderr1, err := cliBuildJob("--json-result", "--project", "result-cache", "--group", "foo")
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut1, err)
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout1, cmderr1, err)
 	}
 	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	cmdOut2, err := cliBuildJob("--project", "result-cache", "--group", "foo")
+	br1, err := parseClientJSON(cmdout1)
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut2, err)
+		t.Fatal(err)
+	}
+
+	cmdout2, cmderr2, err := cliBuildJob("--json-result", "--project", "result-cache", "--group", "foo")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout2, cmderr2, err)
 	}
 	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	br2, err := parseClientJSON(cmdout2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assertEq(out1, out2, t)
-	// TODO Enable Cached and ExitCode assertions when the CLI JSON return is implemented
-	// assert(result1.Cached, false, t)
-	// assert(result2.Cached, true, t)
-	// assert(result1.ExitCode, 0, t)
-	// assert(result2.ExitCode, 0, t)
+	assert(br1.Cached, false, t)
+	assert(br2.Cached, true, t)
+	assert(br1.ExitCode, 0, t)
+	assert(br2.ExitCode, 0, t)
 }
 
 func TestResultCacheExitCode(t *testing.T) {
-	cmdOut1, err := cliBuildJob("--project", "result-cache-exitcode")
-	if err == nil || !strings.Contains(cmdOut1, "33") {
-		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut1)
+	cmdout1, _, err := cliBuildJob("--json-result", "--project", "result-cache-exitcode")
+	if err == nil {
+		t.Fatal("Expected error")
 	}
+	br, err := parseClientJSON(cmdout1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEq(br.ExitCode, 33, t)
+	assertEq(br.Cached, false, t)
 
-	cmdOut2, err := cliBuildJob("--project", "result-cache-exitcode")
-	if err == nil || !strings.Contains(cmdOut2, "33") {
-		t.Fatalf("Expected '%s' to contain the exit code 33", cmdOut2)
+	cmdout2, _, err := cliBuildJob("--json-result", "--project", "result-cache-exitcode")
+	if err == nil {
+		t.Fatal("Expected error")
 	}
-	// TODO: enable the Cached assertion when the CLI json return is implemented
+	br, err = parseClientJSON(cmdout2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEq(br.ExitCode, 33, t)
+	assertEq(br.Cached, true, t)
 }
 
 func TestBuildCoalescingExitCode(t *testing.T) {
 	var wg sync.WaitGroup
+	var br1, br2 *types.BuildResult
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		cmdOut, err := cliBuildJob("--project", "build-coalescing-exitcode")
-		if err == nil || !strings.Contains(cmdOut, "35") {
-			t.Fatalf("Expected '%s' to contain the exit code 35", cmdOut)
+		cmdout, _, err := cliBuildJob("--json-result", "--project", "build-coalescing-exitcode")
+		if err == nil {
+			panic("Expected error")
+		}
+		br1, err = parseClientJSON(cmdout)
+		if err != nil {
+			panic(err)
 		}
 	}()
 
-	cmdOut, err := cliBuildJob("--project", "build-coalescing-exitcode")
-	if err == nil || !strings.Contains(cmdOut, "35") {
-		t.Fatalf("Expected '%s' to contain the exit code 35", cmdOut)
+	cmdout, _, err := cliBuildJob("--json-result", "--project", "build-coalescing-exitcode")
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+	br2, err = parseClientJSON(cmdout)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	wg.Wait()
 
-	// TODO Enable the Coalesced assertion when the CLI JSON return is implemented
-	// if result1.Coalesced == result2.Coalesced {
-	// 	t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
-	// }
+	assert(br1.ExitCode, 35, t)
+	assertEq(br1.ExitCode, br2.ExitCode, t)
+
+	assert(br1.Cached, false, t)
+	assertEq(br1.Cached, br2.Cached, t)
+
+	assertNotEq(br1.Coalesced, br2.Coalesced, t)
 }
 
 func TestBuildCoalescing(t *testing.T) {
 	var wg sync.WaitGroup
+	var br1, br2 *types.BuildResult
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		cmdOut, err := cliBuildJob("--project", "build-coalescing", "--group", "foo")
+		cmdout, _, err := cliBuildJob("--json-result", "--project", "build-coalescing", "--group", "foo")
 		if err != nil {
-			log.Fatalf("Error output: %s, err: %v", cmdOut, err)
+			panic(err)
+		}
+		br1, err = parseClientJSON(cmdout)
+		if err != nil {
+			panic(err)
 		}
 	}()
 
-	cmdOut, err := cliBuildJob("--project", "build-coalescing", "--group", "foo")
+	cmdout, _, err := cliBuildJob("--json-result", "--project", "build-coalescing", "--group", "foo")
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
+		t.Fatal(err)
+	}
+	br2, err = parseClientJSON(cmdout)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	wg.Wait()
-
-	// TODO Enable the Coalesced assertion when the CLI JSON return is implemented
-	// if result1.Coalesced == result2.Coalesced {
-	// 	t.Fatalf("Expected exactly one of both builds to be coalesced, both were %v", result1.Coalesced)
-	// }
 
 	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
 	if err != nil {
@@ -161,9 +225,10 @@ func TestBuildCoalescing(t *testing.T) {
 	}
 
 	assertEq(string(out), "coalescing!\n", t)
-	// TODO Enable the ExitCode assertion when the CLI JSON return is implemented
-	// assert(result1.ExitCode, 0, t)
-	// assert(result2.ExitCode, 0, t)
+
+	assertNotEq(br1.Coalesced, br2.Coalesced, t)
+	assert(br1.ExitCode, 0, t)
+	assertEq(br1.ExitCode, br2.ExitCode, t)
 }
 
 // cliBuildJob uses the CLI binary to issue a new job request to the server.
@@ -172,12 +237,16 @@ func TestBuildCoalescing(t *testing.T) {
 //
 // NOTE: The CLI binary is expected to be present in the working
 // directory where the tests are ran from.
-func cliBuildJob(args ...string) (string, error) {
+func cliBuildJob(args ...string) (string, string, error) {
 	args = append([]string{"./mistry-cli", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
-	out, err := utils.RunCmd(args)
 
-	if err != nil {
-		return fmt.Sprintf("out: %s, args: %v", out, args), err
-	}
-	return out, nil
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }

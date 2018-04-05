@@ -7,29 +7,6 @@ import (
 	"github.com/skroutz/mistry/types"
 )
 
-// TODO: do this using error types on BuildResult, instead of string comparison
-func TestImageBuildFailure(t *testing.T) {
-	expErr := "could not build docker image"
-
-	_, err := postJob(
-		types.JobRequest{Project: "image-build-failure", Params: params, Group: ""})
-	if !strings.Contains(err.Error(), expErr) {
-		t.Fatalf("Expected '%s' to contain '%s'", err.Error(), expErr)
-	}
-}
-
-// TODO convert to end-to-end. The CLI must know about exit codes in order
-// to do that.
-func TestExitCode(t *testing.T) {
-	result, err := postJob(
-		types.JobRequest{Project: "exit-code", Params: params, Group: ""})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert(result.ExitCode, 77, t)
-}
-
 func TestBuildCache(t *testing.T) {
 	params := types.Params{"foo": "bar"}
 	group := "baz"
@@ -76,7 +53,6 @@ func TestBuildCache(t *testing.T) {
 	assert(result2.ExitCode, 0, t)
 }
 
-// TODO: CHECK FOR PATH, NOT FOR THE ERROR
 func TestFailedPendingBuildCleanup(t *testing.T) {
 	var err error
 	project := "failed-build-cleanup"

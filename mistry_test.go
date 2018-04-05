@@ -119,9 +119,9 @@ func TestMain(m *testing.M) {
 
 func TestPruneZombieBuilds(t *testing.T) {
 	project := "hanging-pending"
-	cmdOut, err := cliBuildJob("--project", project)
+	cmdout, cmderr, err := cliBuildJob("--project", project)
 	if err != nil {
-		t.Fatalf("Error output: %s, err: %v", cmdOut, err)
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 	path := filepath.Join(testcfg.BuildPath, project, "pending")
 	_, err = utils.RunCmd(testcfg.FileSystem.Create(filepath.Join(path, "foo")))
@@ -224,4 +224,13 @@ func waitForServer(port string) {
 		return
 	}
 	log.Fatalf("Server on port %s not up after 10 retries", port)
+}
+
+func parseClientJSON(s string) (*types.BuildResult, error) {
+	br := new(types.BuildResult)
+	err := json.Unmarshal([]byte(s), br)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't unmarshall '%s'", s)
+	}
+	return br, nil
 }
