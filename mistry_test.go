@@ -40,7 +40,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	flag.StringVar(&addrFlag, "addr", "localhost:8462", "")
+	flag.StringVar(&addrFlag, "addr", "127.0.0.1:8462", "")
 	flag.StringVar(&configFlag, "config", "config.test.json", "")
 	flag.StringVar(&filesystemFlag, "filesystem", "plain", "")
 	flag.Parse()
