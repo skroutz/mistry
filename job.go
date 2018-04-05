@@ -105,18 +105,18 @@ func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out 
 	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
-		return types.ErrImageBuild{j.Project, err}
+		return types.ErrImageBuild{Image: j.Project, Err: err}
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return types.ErrImageBuild{j.Project, err}
+		return types.ErrImageBuild{Image: j.Project, Err: err}
 	}
 
 	_, _, err = c.ImageInspectWithRaw(context.Background(), j.Project)
 	if err != nil {
-		return types.ErrImageBuild{j.Project, err}
+		return types.ErrImageBuild{Image: j.Project, Err: err}
 	}
 
 	return nil
