@@ -50,6 +50,7 @@ func main() {
 		transportUser string
 		transport     string
 		verbose       bool
+		jsonResult    bool
 	)
 
 	currentUser, err := user.Current()
@@ -132,6 +133,11 @@ EXAMPLES:
 					Name:        "verbose, v",
 					Destination: &verbose,
 				},
+				cli.BoolFlag{
+					Name:        "json-result",
+					Usage:       "Output the build result in JSON format to STDOUT (implies verbose: false)",
+					Destination: &jsonResult,
+				},
 			},
 			Action: func(c *cli.Context) error {
 				// Validate existence of mandatory arguments
@@ -147,6 +153,10 @@ EXAMPLES:
 				ts, ok := transports[types.TransportMethod(transport)]
 				if !ok {
 					return fmt.Errorf("invalid transport argument (%v)", transport)
+				}
+
+				if jsonResult {
+					verbose = false
 				}
 
 				// Normalize dynamic arguments by trimming the `--` and
@@ -218,6 +228,10 @@ EXAMPLES:
 
 				if verbose {
 					fmt.Printf("Result after unmarshalling: %#v\n", br)
+				}
+
+				if jsonResult {
+					fmt.Printf("%s", body)
 				}
 
 				if br.ExitCode != 0 {
