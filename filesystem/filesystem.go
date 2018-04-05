@@ -1,5 +1,9 @@
 package filesystem
 
+import (
+	"fmt"
+)
+
 var List = make(map[string]FileSystem)
 
 type FileSystem interface {
@@ -13,4 +17,14 @@ type FileSystem interface {
 
 	// Remove removes path and its children.
 	Remove(path string) error
+}
+
+// Get returns the registered filesystem denoted by s. If it doesn't exist,
+// an error is returned.
+func Get(s string) (FileSystem, error) {
+	fs, ok := List[s]
+	if !ok {
+		return nil, fmt.Errorf("unknown filesystem '%s' (%v)", s, List)
+	}
+	return fs, nil
 }

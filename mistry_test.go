@@ -52,22 +52,18 @@ func TestMain(m *testing.M) {
 	host = parts[0]
 	port = parts[1]
 
+	fs, err := filesystem.Get(filesystemFlag)
+	if err != nil {
+		panic(err)
+	}
 	f, err := os.Open(configFlag)
 	if err != nil {
 		panic(err)
 	}
-	testcfg, err = ParseConfig(f)
+	testcfg, err = ParseConfig(addrFlag, fs, f)
 	if err != nil {
 		panic(err)
 	}
-
-	testcfg.Addr = addrFlag
-
-	fs, ok := filesystem.List[filesystemFlag]
-	if !ok {
-		panic(fmt.Sprintf("invalid filesystem argument (%v)", filesystem.List))
-	}
-	testcfg.FileSystem = fs
 
 	tmpdir, err := ioutil.TempDir("", "mistry-tests")
 	if err != nil {
@@ -99,8 +95,6 @@ func TestMain(m *testing.M) {
 
 	}()
 	waitForServer(port)
-
-	fmt.Printf("Configuration: %#v\n", testcfg)
 
 	target, err = ioutil.TempDir("", "mistry-test-artifacts")
 	if err != nil {

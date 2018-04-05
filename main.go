@@ -38,8 +38,6 @@ const (
 	BuildResultFname = "result.json" //     - result.json
 )
 
-var cfg *Config
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "mistry"
@@ -61,28 +59,26 @@ func main() {
 			Usage: "Which filesystem adapter to use",
 		},
 	}
-	app.Before = func(c *cli.Context) error {
+	app.Action = func(c *cli.Context) error {
+		fs, err := filesystem.Get(c.String("filesystem"))
+		if err != nil {
+			return err
+		}
+
 		f, err := os.Open(c.String("config"))
 		if err != nil {
 			return err
 		}
-		cfg, err = ParseConfig(f)
+		cfg, err := ParseConfig(c.String("addr"), fs, f)
 		if err != nil {
 			return err
 		}
 
-		cfg.Addr = c.String("addr")
-
-		fs, ok := filesystem.List[c.String("filesystem")]
-		if !ok {
-			return fmt.Errorf("invalid filesystem argument (%v)", filesystem.List)
+		err = SetUp(cfg)
+		if err != nil {
+			return err
 		}
 
-		cfg.FileSystem = fs
-
-		return SetUp(cfg)
-	}
-	app.Action = func(c *cli.Context) error {
 		return StartServer(cfg)
 	}
 

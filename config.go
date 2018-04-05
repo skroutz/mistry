@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"strconv"
@@ -19,18 +20,24 @@ type Config struct {
 	Mounts       map[string]string `json:"mounts"`
 }
 
-// TODO: we should somehow make sure that FileSystem and Addr is set
-func ParseConfig(r io.Reader) (*Config, error) {
-	c := new(Config)
+func ParseConfig(addr string, fs filesystem.FileSystem, r io.Reader) (*Config, error) {
+	if addr == "" {
+		return nil, errors.New("addr must be provided")
+	}
+
+	cfg := new(Config)
+	cfg.Addr = addr
+	cfg.FileSystem = fs
+
 	dec := json.NewDecoder(r)
-	err := dec.Decode(c)
+	err := dec.Decode(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.UID == "" {
-		c.UID = strconv.Itoa(os.Getuid())
+	if cfg.UID == "" {
+		cfg.UID = strconv.Itoa(os.Getuid())
 	}
 
-	return c, nil
+	return cfg, nil
 }

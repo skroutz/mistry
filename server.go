@@ -81,5 +81,6 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ListenAndServe() error {
+	s.Log.Printf("Configuration: %#v", s.cfg)
 	return s.s.ListenAndServe()
 }
