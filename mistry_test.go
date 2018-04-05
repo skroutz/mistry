@@ -1,15 +1,22 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/skroutz/mistry/filesystem"
 	"github.com/skroutz/mistry/types"
@@ -144,4 +151,83 @@ func TestPruneZombieBuilds(t *testing.T) {
 	if len(hangingPendingBuilds) != 0 {
 		t.Fatalf("Expected to have cleaned up all zombie pending builds, found %d", len(hangingPendingBuilds))
 	}
+}
+
+func readOut(br *types.BuildResult, path string) (string, error) {
+	s := strings.Replace(br.Path, "/data/artifacts", "", -1)
+	out, err := ioutil.ReadFile(filepath.Join(s, "data", path, "out.txt"))
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+func assertEq(a, b interface{}, t *testing.T) {
+	if !reflect.DeepEqual(a, b) {
+		t.Fatalf("Expected %#v and %#v to be equal", a, b)
+	}
+}
+
+func assert(act, exp interface{}, t *testing.T) {
+	if !reflect.DeepEqual(act, exp) {
+		t.Fatalf("Expected %#v to be %#v", act, exp)
+	}
+}
+
+func assertNotEq(a, b interface{}, t *testing.T) {
+	if reflect.DeepEqual(a, b) {
+		t.Fatalf("Expected %#v and %#v to not be equal", a, b)
+	}
+}
+
+// postJob issues an HTTP request with jr to the server. It returns an error if
+// the request was not successful.
+func postJob(jr types.JobRequest) (*types.BuildResult, error) {
+	body, err := json.Marshal(jr)
+	if err != nil {
+		return nil, fmt.Errorf("cannot marshal %#v; %s", jr, err)
+	}
+
+	req := httptest.NewRequest("POST", "http://example.com/foo", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	server.handleNewJob(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusCreated {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal("Could not read response body + ", err.Error())
+		}
+		return nil, fmt.Errorf("Expected status=201, got %d | body: %s", resp.StatusCode, body)
+	}
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	buildResult := new(types.BuildResult)
+	err = json.Unmarshal(body, buildResult)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal %#v; %s", string(body), err)
+	}
+
+	return buildResult, nil
+}
+
+func waitForServer(port string) {
+	backoff := 50 * time.Millisecond
+
+	for i := 0; i < 10; i++ {
+		conn, err := net.DialTimeout("tcp", ":"+port, 1*time.Second)
+		if err != nil {
+			time.Sleep(backoff)
+			continue
+		}
+		err = conn.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	log.Fatalf("Server on port %s not up after 10 retries", port)
 }

@@ -62,7 +62,7 @@ func (s *Server) handleNewJob(w http.ResponseWriter, r *http.Request) {
 	s.Log.Printf("Building %s...", j)
 	buildResult, err := Work(context.Background(), j, s.cfg, s.jq)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error building %#v: %s", j, err),
+		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
 			http.StatusInternalServerError)
 		return
 	}

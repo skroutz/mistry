@@ -97,24 +97,26 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	return j, nil
 }
 
+// BuildImage builds the Docker image denoted by j.Project. If there is an
+// error, it will be of type types.ErrImageBuild.
 func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out io.Writer) error {
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &uid
 	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
-		return err
+		return types.ErrImageBuild{j.Project, err}
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		return types.ErrImageBuild{j.Project, err}
 	}
 
 	_, _, err = c.ImageInspectWithRaw(context.Background(), j.Project)
 	if err != nil {
-		return err
+		return types.ErrImageBuild{j.Project, err}
 	}
 
 	return nil

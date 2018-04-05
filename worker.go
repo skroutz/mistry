@@ -204,7 +204,6 @@ func Work(ctx context.Context, j *Job, cfg *Config, jq *JobQueue) (buildResult *
 
 	err = j.BuildImage(ctx, cfg.UID, client, out)
 	if err != nil {
-		err = workErr("could not build docker image", err)
 		return
 	}
 

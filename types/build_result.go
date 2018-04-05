@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 type BuildResult struct {
 	// The path where the build artifacts are located.
 	Path string
@@ -15,9 +19,17 @@ type BuildResult struct {
 	// NOTE: irrelevant if Coalesced is true.
 	ExitCode int
 
-	// The docker error, if any.
 	Err error
 
 	// The method by which the build artifacts can be fetched.
 	TransportMethod TransportMethod
+}
+
+type ErrImageBuild struct {
+	Image string
+	Err   error
+}
+
+func (e ErrImageBuild) Error() string {
+	return fmt.Sprintf("could not build docker image '%s': %s", e.Image, e.Err)
 }
