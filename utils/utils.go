@@ -21,7 +21,6 @@ func PathIsDir(p string) error {
 		return errors.New("Path " + p + " is not a directory")
 	}
 
-	// TODO: maybe check the permissions too?
 	return nil
 }
 
@@ -43,7 +42,6 @@ func EnsureDirExists(path string) error {
 			return err
 		}
 	}
-	// TODO: also check permissions
 
 	return nil
 }

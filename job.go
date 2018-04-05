@@ -141,7 +141,6 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 		return 0, err
 	}
 
-	// TODO: use an actual ctx for shutting down
 	err = c.ContainerStart(ctx, res.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {
 		return 0, err

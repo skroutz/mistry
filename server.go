@@ -12,7 +12,6 @@ import (
 )
 
 type Server struct {
-	// TODO: can we embed this?
 	Log *log.Logger
 
 	s   *http.Server
