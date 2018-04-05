@@ -1,5 +1,5 @@
 """
-Deploy mistry with fabric
+Deploy mistry
 
 Usage:
 
@@ -16,11 +16,11 @@ from fabric.context_managers import hide
 def tail():
     env.remote_interrupt = True
     with settings(warn_only=True):
-        run('journalctl --unit=mistry --follow --lines=0', pty=True)
+        sudo('journalctl --unit=mistry --follow --lines=0', pty=True)
 
 @runs_once
 def build():
-    local('GOARCH=amd64 GOOS=linux go build -v -o mistry')
+    local('GOOS=linux GOARCH=amd64 make build')
 
 def copy():
     put('mistry', '/usr/bin/', use_sudo=True, mode=0755)
