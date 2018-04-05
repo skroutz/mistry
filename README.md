@@ -1,5 +1,6 @@
 mistry - a powerful building service
 ====================================
+[![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
 
 mistry executes commands in pre-defined, isolated environments and
 makes the results available for later consumption.
