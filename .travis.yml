@@ -11,8 +11,6 @@ before_install:
 
 go:
   - "1.10.x"
-    #  - "1.9.x"
-    #  - master
 
 services:
   - docker
