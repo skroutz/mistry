@@ -83,7 +83,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		return
 	}
 
-	err = BootstrapProject(j)
+	err = s.BootstrapProject(j)
 	if err != nil {
 		err = workErr("could not bootstrap project", err)
 		return
@@ -261,9 +261,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 	return
 }
 
-// BootstrapProject bootstraps j's project if needed. This function is
+// BootstrapProject bootstraps j's project if needed. BootstrapProject is
 // idempotent.
-func BootstrapProject(j *Job) error {
+func (s *Server) BootstrapProject(j *Job) error {
+	s.pq.Lock(j.Project)
+	defer s.pq.Unlock(j.Project)
+
 	err := utils.EnsureDirExists(j.RootBuildPath)
 	if err != nil {
 		return err

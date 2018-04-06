@@ -18,8 +18,9 @@ import (
 type Server struct {
 	Log *log.Logger
 
-	s   *http.Server
+	srv *http.Server
 	jq  *JobQueue
+	pq  *ProjectQueue
 	cfg *Config
 }
 
@@ -39,10 +40,11 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/jobs", s.HandleNewJob)
 
-	s.s = &http.Server{Handler: mux, Addr: cfg.Addr}
+	s.srv = &http.Server{Handler: mux, Addr: cfg.Addr}
 	s.cfg = cfg
 	s.Log = logger
 	s.jq = NewJobQueue()
+	s.pq = NewProjectQueue()
 	return s, nil
 }
 
@@ -95,10 +97,10 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ListenAndServe listens on the TCP network address s.s.Addr and handle
+// ListenAndServe listens on the TCP network address s.srv.Addr and handle
 // requests on incoming connections. ListenAndServe always returns a
 // non-nil error.
 func (s *Server) ListenAndServe() error {
 	s.Log.Printf("Configuration: %#v", s.cfg)
-	return s.s.ListenAndServe()
+	return s.srv.ListenAndServe()
 }

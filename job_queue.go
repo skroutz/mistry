@@ -6,8 +6,8 @@ import (
 
 // JobQueue holds the jobs that are enqueued currently in the server.
 type JobQueue struct {
-	j map[string]bool
 	sync.Mutex
+	j map[string]bool
 }
 
 // NewJobQueue returns a new JobQueue ready for use.
