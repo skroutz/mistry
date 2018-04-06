@@ -56,6 +56,8 @@ const (
 	// ImgCntPrefix is the common prefix added to the names of all
 	// Docker images/containers created by mistry.
 	ImgCntPrefix = "mistry-"
+
+	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
 
 func main() {
