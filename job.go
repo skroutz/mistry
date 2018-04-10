@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -144,7 +145,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 		mnts = append(mnts, mount.Mount{Type: mount.TypeBind, Source: src, Target: target})
 	}
 
-	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: true, NetworkMode: "host"}
+	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: false, NetworkMode: "host"}
 
 	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.ID)
 	if err != nil {
@@ -155,6 +156,13 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 	if err != nil {
 		return 0, err
 	}
+
+	defer func(id string) {
+		err = c.ContainerRemove(ctx, id, dockertypes.ContainerRemoveOptions{})
+		if err != nil {
+			log.Printf("[%s] cannot remove container: %s", j, err)
+		}
+	}(res.ID)
 
 	logs, err := c.ContainerLogs(ctx, res.ID,
 		dockertypes.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true,
