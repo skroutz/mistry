@@ -1,3 +1,3 @@
 #!/bin/bash
-echo 0
+echo 3
 exit 0
