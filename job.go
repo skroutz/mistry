@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/skroutz/mistry/types"
 	"github.com/skroutz/mistry/utils"
 )
@@ -171,7 +172,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 		return 0, err
 	}
 
-	_, err = io.Copy(out, logs)
+	_, err = stdcopy.StdCopy(out, out, logs)
 	if err != nil {
 		return 0, err
 	}
