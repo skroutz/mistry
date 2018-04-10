@@ -71,6 +71,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "config, c",
+			Value: "config.json",
 			Usage: "Load configuration from `FILE`",
 		},
 		cli.StringFlag{
@@ -87,7 +88,7 @@ func main() {
 
 		f, err := os.Open(c.String("config"))
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot parse configuration; %s", err)
 		}
 		cfg, err := ParseConfig(c.String("addr"), fs, f)
 		if err != nil {
