@@ -45,7 +45,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 	if added {
 		defer s.jq.Delete(j)
 	} else {
-		t := time.NewTicker(1 * time.Second)
+		t := time.NewTicker(2 * time.Second)
 		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
 		for {
 			select {
