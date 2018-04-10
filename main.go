@@ -52,6 +52,10 @@ const (
 	// BuildResultFname is the file inside DataDir, containing the build
 	// result.
 	BuildResultFname = "result.json"
+
+	// ImgCntPrefix is the common prefix added to the names of all
+	// Docker images/containers created by mistry.
+	ImgCntPrefix = "mistry-"
 )
 
 func main() {

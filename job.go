@@ -45,8 +45,10 @@ type Job struct {
 	BuildLogPath        string
 	BuildResultFilePath string
 
-	// docker image tar
-	ImageTar []byte
+	// docker-related
+	Image     string
+	ImageTar  []byte
+	Container string
 }
 
 // NewJob returns a new Job for the given project. project and cfg cannot be
@@ -104,29 +106,32 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogFname)
 	j.BuildResultFilePath = filepath.Join(j.PendingBuildPath, BuildResultFname)
 
+	j.Image = ImgCntPrefix + j.ID
+	j.Container = ImgCntPrefix + j.ID
+
 	return j, nil
 }
 
-// BuildImage builds the Docker image denoted by j.Project. If there is an
+// BuildImage builds the Docker image denoted by j.Image. If there is an
 // error, it will be of type types.ErrImageBuild.
 func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out io.Writer) error {
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &uid
-	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Project}, BuildArgs: buildArgs, NetworkMode: "host"}
+	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Image}, BuildArgs: buildArgs, NetworkMode: "host"}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
-		return types.ErrImageBuild{Image: j.Project, Err: err}
+		return types.ErrImageBuild{Image: j.Image, Err: err}
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return types.ErrImageBuild{Image: j.Project, Err: err}
+		return types.ErrImageBuild{Image: j.Image, Err: err}
 	}
 
-	_, _, err = c.ImageInspectWithRaw(context.Background(), j.Project)
+	_, _, err = c.ImageInspectWithRaw(context.Background(), j.Image)
 	if err != nil {
-		return types.ErrImageBuild{Image: j.Project, Err: err}
+		return types.ErrImageBuild{Image: j.Image, Err: err}
 	}
 
 	return nil
@@ -139,7 +144,7 @@ func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out 
 // NOTE: If there was an error with the user's dockerfile, the returned exit
 // code will be 1 and the error nil.
 func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client, out io.Writer) (int, error) {
-	config := container.Config{User: cfg.UID, Image: j.Project}
+	config := container.Config{User: cfg.UID, Image: j.Image}
 
 	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, DataDir), Target: DataDir}}
 	for src, target := range cfg.Mounts {
@@ -148,7 +153,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: false, NetworkMode: "host"}
 
-	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.ID)
+	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.Container)
 	if err != nil {
 		return 0, err
 	}
