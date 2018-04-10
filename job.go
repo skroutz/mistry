@@ -156,17 +156,18 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 		return 0, err
 	}
 
-	resp, err := c.ContainerAttach(ctx, res.ID, dockertypes.ContainerAttachOptions{
-		Stream: true, Stdin: true, Stdout: true, Stderr: true, Logs: true})
+	logs, err := c.ContainerLogs(ctx, res.ID,
+		dockertypes.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true,
+			Details: true})
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Close()
 
-	_, err = io.Copy(out, resp.Reader)
+	_, err = io.Copy(out, logs)
 	if err != nil {
 		return 0, err
 	}
+	logs.Close()
 
 	var result struct {
 		State struct {
