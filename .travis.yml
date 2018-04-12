@@ -13,7 +13,7 @@ services:
 install:
 - dep ensure -v
 script:
-- make test
+- make install && make test
 addons:
   ssh_known_hosts:
   - localhost
