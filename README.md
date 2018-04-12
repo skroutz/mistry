@@ -71,7 +71,7 @@ be created and writable.
 The `projects_path` path should contain all the projects known to mistry.
 These are the projects for which jobs can be built.
 
-Refer to ["File system layout - Projects directory"](containing all the projects) for more info.
+Refer to [File system layout - Projects directory](https://github.com/skroutz/mistry/wiki/File-system-layout#projects-directory) for more info.
 
 ### API
 
