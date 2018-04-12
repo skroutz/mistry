@@ -1,0 +1,5 @@
+mistry (0.0.1-1+git1.b55adba) stretch; urgency=low
+
+  * Initial debian packaging.
+
+ -- Christos Trochalakis <ctrochalakis@debian.org>  Thu, 12 Apr 2018 14:58:04 +0300

@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+export DH_VERBOSE=1
+export DH_GOPKG := github.com/skroutz/mistry
+export DH_GOLANG_INSTALL_ALL := 1
+export DH_GOLANG_GO_GENERATE := 1
+
+ARCH := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+%:
+	dh $@ --buildsystem=golang --without autoreconf
+
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=golang
+	cd $(CURDIR)/obj-${ARCH}/src/${DH_GOPKG} && GOPATH=$(CURDIR)/obj-${ARCH} dep ensure
+
+# Disabling tests during build as they require a docker service
+override_dh_auto_test:

@@ -1,0 +1,52 @@
+Source: mistry
+Section: devel
+Priority: optional
+Maintainer: Christos Trochalakis <ctrochalakis@debian.org>
+Build-Depends: ca-certificates,
+               debhelper (>= 11),
+               dh-exec,
+               dh-golang,
+               git,
+               go-dep,
+               golang-any,
+               golang-statik (>= 0.1.1~),
+Standards-Version: 4.1.4
+Vcs-Git: https://github.com/skroutz/mistry
+Vcs-Browser: https://github.com/skroutz/mistry
+Homepage: https://github.com/skroutz/mistry
+XS-Go-Import-Path: github.com/skroutz/mistry
+
+Package: mistry-server
+Architecture: any
+Depends: adduser,
+         ${misc:Depends},
+         ${shlibs:Depends},
+Built-Using: ${misc:Built-Using},
+Description: Mistry Buider Service
+ Mistry is a service that builds things so you don't have to.
+ .
+ Mistry executes user-provided build jobs inside pre-defined, isolated
+ environments and makes the results available for later consumption.
+ .
+ It enables fast workflows by employing caching techniques and incremental
+ builds due to its copy-on-write snapshotting features.
+ .
+ Features include:
+ .
+  o running arbitrary commands inside isolated environments
+  o providing the build environments as Docker images
+  o incremental building (using Btrfs snapshotting)
+  o caching and reusing build results
+  o efficient use of disk space due to copy-on-write semantics
+  o a simple JSON API for interacting with the service
+
+Package: mistry-client
+Architecture: any
+Depends: adduser,
+         ${misc:Depends},
+         ${shlibs:Depends},
+Built-Using: ${misc:Built-Using},
+Description: Mistry command line client
+ Mistry is a builder service.
+ .
+ This package contains the command line client.

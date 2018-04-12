@@ -1,0 +1,3 @@
+Packaging Go for debian can be hard! Since we depend on specific docker version
+which is not the one packaged in Debian we use dep to get dependencies using
+the network, fortunately those dependencies are locked making the build reproducible.

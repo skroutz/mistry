@@ -1,0 +1,14 @@
+[Unit]
+Description=Powerful building service
+After=network.target
+Documentation=https://github.com/skroutz/mistry
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mistryd --config /etc/mistry/config.json --filesystem btrfs
+Restart=on-failure
+User=mistry
+Group=mistry
+
+[Install]
+WantedBy=multi-user.target

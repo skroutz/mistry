@@ -1,0 +1,15 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: mistry
+Source: https://github.com/skroutz/mistry
+
+Files: *
+Copyright: 2018 Skroutz S.A.
+License: GPL-3+
+
+Files: debian/*
+Copyright: 2018 Skroutz S.A.
+License: GPL-3+
+
+License: GPL-3+
+ On Debian systems the full text of the GPL-3 can be found in
+ /usr/share/common-licenses/GPL-3
