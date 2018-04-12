@@ -95,6 +95,7 @@ EXAMPLES:
 					Name:        "host",
 					Usage:       "host to connect to",
 					Destination: &host,
+					Value:       "0.0.0.0",
 				},
 				cli.StringFlag{
 					Name:        "port, p",
