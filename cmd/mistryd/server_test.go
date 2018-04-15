@@ -1,7 +1,11 @@
 package main
 
 import (
+	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -63,5 +67,39 @@ func TestLoad(t *testing.T) {
 
 	for i := 0; i < n; i++ {
 		<-results
+	}
+}
+
+func TestHandleIndex(t *testing.T) {
+	cmdout, cmderr, err := cliBuildJob("--project", "simple")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+
+	req, err := http.NewRequest("GET", "/index", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(server.HandleIndex)
+	handler.ServeHTTP(rr, req)
+	result := rr.Result()
+
+	if result.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, result.StatusCode)
+	}
+
+	expected := `"state":"ready"`
+	body, err := ioutil.ReadAll(result.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), expected) {
+		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
+	}
+}
+	if !strings.Contains(string(body), expected) {
+		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
 	}
 }

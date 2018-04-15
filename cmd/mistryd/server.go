@@ -14,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/template"
+	"github.com/skroutz/mistry/pkg/broker"
+	"github.com/skroutz/mistry/pkg/tailer"
 	"github.com/skroutz/mistry/pkg/types"
 )
 
@@ -43,7 +45,9 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 
 	s := new(Server)
 	mux := http.NewServeMux()
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("public"))))
 	mux.HandleFunc("/jobs", s.HandleNewJob)
+	mux.HandleFunc("/index/", s.HandleIndex)
 
 	s.srv = &http.Server{Handler: mux, Addr: cfg.Addr}
 	s.cfg = cfg
