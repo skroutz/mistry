@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"strings"
 	"sync"
 	"testing"
@@ -99,6 +102,55 @@ func TestHandleIndex(t *testing.T) {
 		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
 	}
 }
+
+func TestHandleShowJob(t *testing.T) {
+	cmdout, cmderr, err := cliBuildJob("--project", "simple")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+
+	// Get a job id and project from the index page.
+	req, err := http.NewRequest("GET", "/index", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(server.HandleIndex)
+	handler.ServeHTTP(rr, req)
+	result := rr.Result()
+	body, err := ioutil.ReadAll(result.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job := make([]Job, 0)
+	err = json.Unmarshal([]byte(body), &job)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobID := (job[0].ID)
+	project := (job[0].Project)
+
+	// Request the show page of the job selected from the index page.
+	showPath := path.Join("/job", project, jobID)
+	req, err = http.NewRequest("GET", showPath, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-type", "application/json")
+	rr = httptest.NewRecorder()
+	handler = http.HandlerFunc(server.HandleShowJob)
+	handler.ServeHTTP(rr, req)
+	result = rr.Result()
+
+	if result.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, result.StatusCode)
+	}
+
+	expected := fmt.Sprintf(`"ID":"%s"`, jobID)
+	body, err = ioutil.ReadAll(result.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(string(body), expected) {
 		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
 	}

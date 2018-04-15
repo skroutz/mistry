@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Logs</title>
+  <link rel="stylesheet" href="../../css/foundation.min.css">
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <h1><a href="/">mistry</a></h1>
+    </div>
+  </div>
+
+  <div class="grid-container">
+    <div class="grid">
+      <div class="cell">
+        <h4>Job: {{.ID}}</h4>
+      </div>
+      <div class="cell">
+        <div class="card">
+          <div class="card-section">
+            <div class="card-divider">
+              <h4> Details </h4>
+            </div>
+            <p id="js-job-info"></p>
+          </div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="card">
+          <div class="card-section">
+            <div class="card-divider">
+              <h4> Logs </h4>
+            </div>
+            <p id="js-job-log">{{.Log}}</p>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    const jobInfo = document.getElementById('js-job-info');
+    const state = {{.State}}
+
+    jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
+    jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
+    jobInfo.innerHTML += "Start Time: ".big() + {{.StartedAt}} + "<br>";
+
+    if (state == "ready") {
+      const output = {{.Output}}
+      const jobJSON = JSON.parse(output);
+      jobInfo.innerHTML += "Path: ".big() + jobJSON["Path"] + "<br>";
+      jobInfo.innerHTML += "Cached: ".big() + jobJSON["Cached"] + "<br>";
+      jobInfo.innerHTML += "Coaleshed: ".big() + jobJSON["Coaleshed:"] + "<br>";
+      jobInfo.innerHTML += "Error: ".big() + jobJSON["Err"] + "<br>";
+      jobInfo.innerHTML += "ExitCode: ".big() + jobJSON["ExitCode"] + "<br>";
+      jobInfo.innerHTML += "Transport method: ".big() + jobJSON["TransportMethod"] + "<br>";
+    }
+
+    if (state == "pending") {
+      setInterval(checkState, 3000);
+
+      function checkState() {
+        let jHeaders = new Headers();
+        jHeaders.append('Content-Type', 'application/json');
+        const jobRequest = new Request('/job/{{.Project}}/{{.ID}}', {headers: jHeaders});
+        fetch(jobRequest)
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data["State"] == "ready"){
+              location.reload();
+            }
+          })
+      }
+
+      const source = new EventSource('/log/{{.Project}}/{{.ID}}');
+      const jobLog = document.getElementById('js-job-log')
+      source.onmessage = function(e) {
+        jobLog.innerHTML += JSON.parse(e.data)["stream"] + "</br>"
+      };
+
+      source.onerror = function(e) {
+        document.body.innerHTML += "Web tail failed.";
+        source.close();
+      };
+    }
+  </script>
+</body>
+</html>
