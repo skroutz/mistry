@@ -10,13 +10,11 @@ builds due to its copy-on-write snapshotting features.
 
 Features include:
 
-- running arbitrary commands inside isolated environments
-- providing the build environments as Docker images
-- incremental building (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
-- caching and reusing build results
-- efficient use of disk space due to copy-on-write semantics
-- a simple JSON API for interacting with the service
+- running arbitrary commands inside isolated environments (provided as Docker images)
+- build caching & incremental building (see [*"Build cache"*](https://github.com/skroutz/mistry/wiki/Build-cache))
+- a simple JSON API for interacting with the server (scheduling jobs etc.)
 - ([wip](https://github.com/skroutz/mistry/pull/17)) a web view for inspecting the progress and result of builds
+- efficient use of disk space due to copy-on-write semantics (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
 
 For more information take a look at the [wiki](https://github.com/skroutz/mistry/wiki).
 
@@ -66,12 +64,22 @@ Use `mistry --help` for more info.
 The paths denoted by `projects_path` and `build_path` settings should already
 be created and writable.
 
+
+
+
+
+
 ### Adding projects
 
 The `projects_path` path should contain all the projects known to mistry.
 These are the projects for which jobs can be built.
 
 Refer to [File system layout - Projects directory](https://github.com/skroutz/mistry/wiki/File-system-layout#projects-directory) for more info.
+
+
+
+
+
 
 ### API
 
@@ -89,28 +97,6 @@ This will place the artifacts and the current working directory. See `mistry-cli
 **Scheduling a new job without fetching the artifacts**:
 ``` shell
 $ curl -H 'Content-Type: application/json' -d '{"project": "foo"}' localhost:8462/jobs
-```
-
-### File system adapters
-
-By default, mistry uses the `plain` file system adapter, which means it uses
-plain old `cp` and `rm` builtins under the hood. While this is a portable and sane default
-strategy, it is not the most efficient solution, especially for large builds.
-
-For better performance and improved disk usage, we strongly recommend using the
-`btrfs` adapter (assuming you're on a Linux system). This means mistry will
-leverage [Btrfs](https://en.wikipedia.org/wiki/Btrfs) copy-on-write snapshots
-and subvolumes to efficiently implement incremental builds and utilize far less disk
-space.
-
-To use the `btrfs` adapter, the `build_path` setting should point to a path located in a
-Btrfs partition and the [btrfs](https://btrfs.wiki.kernel.org/index.php/Manpage/btrfs)
-cli should be installed in the system.
-
-The `btrfs` adapter can be specified from the command-line:
-
-```shell
-$ mistry --config config.json --filesystem btrfs
 ```
 
 
