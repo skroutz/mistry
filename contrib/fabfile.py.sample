@@ -23,7 +23,7 @@ def build():
     local('GOOS=linux GOARCH=amd64 make build')
 
 def copy():
-    put('mistry', '/usr/bin/', use_sudo=True, mode=0755)
+    put('mistryd', '/usr/bin/', use_sudo=True, mode=0755)
 
 def restart():
     sudo('systemctl restart mistry.service')
