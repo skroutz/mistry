@@ -38,11 +38,15 @@ Getting started
 You can get the binaries from the
 [latest releases](https://github.com/skroutz/mistry/releases).
 
-Alternatively, if you have Go 1.9 or later installed you can get the
+Alternatively, if you have Go 1.9 or later you can get the
 latest development version:
 
 ```shell
-$ go get -u github.com/skroutz/mistry
+# server
+$ go get -u github.com/skroutz/mistry/cmd/mistryd
+
+# client
+$ go get -u github.com/skroutz/mistry/cmd/mistry
 ```
 
 
@@ -114,7 +118,7 @@ The following settings are currently supported:
 | `build_path` (string)      | The root path where artifacts will be placed       |   "" |
 | `mounts` (object{string:string}) |  The paths from the host machine that should be mounted inside the execution containers     |    {} |
 
-For a sample configuration file refer to [`config.sample.json`](config.sample.json).
+For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/config.sample.json).
 
 
 
