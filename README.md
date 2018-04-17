@@ -2,10 +2,10 @@ mistry
 ====================================
 [![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
 
-mistry executes user-provided build jobs inside pre-defined, isolated
+*mistry* executes user-provided jobs inside pre-defined, isolated
 environments and makes the results available for later consumption.
 
-It enables fast workflows by employing caching techniques and incremental
+*mistry* enables fast workflows by employing caching techniques and incremental
 builds due to its copy-on-write snapshotting features.
 
 Features include:
@@ -16,7 +16,7 @@ Features include:
 - ([wip](https://github.com/skroutz/mistry/pull/17)) a web view for inspecting the progress and result of builds
 - efficient use of disk space due to copy-on-write semantics (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
 
-For more information take a look at the [wiki](https://github.com/skroutz/mistry/wiki).
+For more information visit the [wiki](https://github.com/skroutz/mistry/wiki).
 
 
 
@@ -55,19 +55,19 @@ $ go get -u github.com/skroutz/mistry/cmd/mistry
 
 Usage
 --------------------------------------------------
-To boot the server, a configuration file is needed. You can use [`config.sample.json`](config.sample.json)
-as a starting point:
+To boot the server, a configuration file is needed:
 
 ```shell
 $ mistryd --config config.json
 ```
 
-Use `mistryd --help` for more info.
+You can use [`config.sample.json`](cmd/mistryd/config.sample.json)
+as a starting point.
 
 The paths denoted by `projects_path` and `build_path` settings should already
 be created and writable.
 
-
+Use `mistryd --help` for more info.
 
 
 
@@ -86,8 +86,8 @@ Refer to [File system layout - Projects directory](https://github.com/skroutz/mi
 
 ### API
 
-Interacting with mistry is done in two ways ; (1) using `mistry` or (2)
-using directly the JSON API. We recommended using `mistry` whenever possible
+Interacting with mistry is done in two ways: (1) using `mistry` or (2)
+using the JSON API directly. We recommended using `mistry` whenever possible
 (although it may occassionally lag behind the server in terms of
 supported features).
 
@@ -95,7 +95,9 @@ supported features).
 ```shell
 $ mistry --project foo
 ```
-This will place the artifacts and the current working directory. See `mistry build -h` for more options.
+This will place the artifacts and the current working directory.
+
+See `mistry build -h` for more options.
 
 **Scheduling a new job without fetching the artifacts**:
 ``` shell
