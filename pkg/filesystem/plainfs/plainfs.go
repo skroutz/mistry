@@ -3,7 +3,7 @@ package plainfs
 import (
 	"os"
 
-	"github.com/skroutz/mistry/filesystem"
+	"github.com/skroutz/mistry/pkg/filesystem"
 )
 
 // PlainFS implements the FileSystem interface. It uses plain `cp` and `mkdir`

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skroutz/mistry/types"
+	"github.com/skroutz/mistry/pkg/types"
 )
 
 func TestBootstrapProjectRace(t *testing.T) {

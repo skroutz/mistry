@@ -6,7 +6,7 @@
 client/client
 config.json
 fabfile.py
+mistryd
 mistry
-mistry-cli
 
 vendor/

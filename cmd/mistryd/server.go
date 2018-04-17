@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/skroutz/mistry/types"
+	"github.com/skroutz/mistry/pkg/types"
 )
 
 // Server is the component that performs the actual work (builds images, runs
