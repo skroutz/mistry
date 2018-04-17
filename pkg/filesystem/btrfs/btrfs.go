@@ -1,8 +1,8 @@
 package btrfs
 
 import (
-	"github.com/skroutz/mistry/filesystem"
-	"github.com/skroutz/mistry/utils"
+	"github.com/skroutz/mistry/pkg/filesystem"
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 // Btrfs implements the FileSystem interface. It is an efficient implementation

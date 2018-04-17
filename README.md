@@ -35,7 +35,7 @@ production environments until we reach the 1.x series.
 
 Getting started
 -------------------------------------------------
-You can get the server binaries from the
+You can get the binaries from the
 [latest releases](https://github.com/skroutz/mistry/releases).
 
 Alternatively, if you have Go 1.9 or later installed you can get the
@@ -51,15 +51,14 @@ $ go get -u github.com/skroutz/mistry
 
 Usage
 --------------------------------------------------
-
 To boot the server, a configuration file is needed. You can use [`config.sample.json`](config.sample.json)
 as a starting point:
 
 ```shell
-$ mistry --config config.json
+$ mistryd --config config.json
 ```
 
-Use `mistry --help` for more info.
+Use `mistryd --help` for more info.
 
 The paths denoted by `projects_path` and `build_path` settings should already
 be created and writable.
@@ -83,16 +82,16 @@ Refer to [File system layout - Projects directory](https://github.com/skroutz/mi
 
 ### API
 
-Interacting with mistry is done in two ways ; (1) using `mistry-cli` or (2)
-using directly the JSON API. We recommended using `mistry-cli` whenever possible
+Interacting with mistry is done in two ways ; (1) using `mistry` or (2)
+using directly the JSON API. We recommended using `mistry` whenever possible
 (although it may occassionally lag behind the server in terms of
 supported features).
 
 **Scheduling a new job and fetching the artifacts:**
 ```shell
-$ mistry-cli --project foo
+$ mistry --project foo
 ```
-This will place the artifacts and the current working directory. See `mistry-cli build -h` for more options.
+This will place the artifacts and the current working directory. See `mistry build -h` for more options.
 
 **Scheduling a new job without fetching the artifacts**:
 ``` shell

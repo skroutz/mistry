@@ -13,8 +13,8 @@ import (
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
-	"github.com/skroutz/mistry/types"
-	"github.com/skroutz/mistry/utils"
+	"github.com/skroutz/mistry/pkg/types"
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 // Work performs the work denoted by j and returns a BuildResult upon

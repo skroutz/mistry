@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skroutz/mistry/types"
+	"github.com/skroutz/mistry/pkg/types"
 )
 
 func TestJobID(t *testing.T) {

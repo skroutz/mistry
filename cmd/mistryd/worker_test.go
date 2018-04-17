@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/skroutz/mistry/types"
+	"github.com/skroutz/mistry/pkg/types"
 )
 
 func TestBuildCache(t *testing.T) {

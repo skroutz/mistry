@@ -1,20 +1,22 @@
-.PHONY: install build mistry mistry-cli test testall lint vet fmt clean
+.PHONY: install build mistryd mistry test testall lint vet fmt clean
 
-TESTCMD=go test -v -race
+CLIENT=mistry
+SERVER=mistryd
+BUILDCMD=go build -v
+TESTCMD=MISTRY_CLIENT_PATH="$(shell pwd)/$(CLIENT)" go test -v -race cmd/mistryd/*.go
 
 install: fmt vet test
-	go install -v
-	cd client && go install -v
+	go install -v ./...
 
-build: mistry mistry-cli
+build: mistryd mistry
+
+mistryd:
+	$(BUILDCMD) -o $(SERVER) cmd/mistryd/*.go
 
 mistry:
-	go build -v -o mistry
+	$(BUILDCMD) -o $(CLIENT) cmd/mistry/*.go
 
-mistry-cli:
-	go build -v -o mistry-cli client/*.go
-
-test: mistry-cli
+test: mistry
 	$(TESTCMD) --filesystem plain
 
 testall: test
@@ -27,7 +29,7 @@ vet:
 	go vet ./...
 
 fmt:
-	! gofmt -d -e -s *.go 2>&1 | tee /dev/tty | read
+	! go fmt ./... 2>&1 | tee /dev/tty | read
 
 clean:
-	go clean
+	go clean ./...

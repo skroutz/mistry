@@ -22,10 +22,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/skroutz/mistry/filesystem"
-	_ "github.com/skroutz/mistry/filesystem/btrfs"
-	_ "github.com/skroutz/mistry/filesystem/plainfs"
-	"github.com/skroutz/mistry/utils"
+	"github.com/skroutz/mistry/pkg/filesystem"
+	_ "github.com/skroutz/mistry/pkg/filesystem/btrfs"
+	_ "github.com/skroutz/mistry/pkg/filesystem/plainfs"
+	"github.com/skroutz/mistry/pkg/utils"
 	"github.com/urfave/cli"
 )
 

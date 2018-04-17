@@ -18,8 +18,8 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/skroutz/mistry/types"
-	"github.com/skroutz/mistry/utils"
+	"github.com/skroutz/mistry/pkg/types"
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 // Job is the core unit of work. It is essentially something that needs to

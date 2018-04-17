@@ -3,15 +3,13 @@
 package main
 
 import (
-	"bytes"
 	"io/ioutil"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/skroutz/mistry/types"
+	"github.com/skroutz/mistry/pkg/types"
 )
 
 func TestSimpleBuild(t *testing.T) {
@@ -229,24 +227,4 @@ func TestBuildCoalescing(t *testing.T) {
 	assertNotEq(br1.Coalesced, br2.Coalesced, t)
 	assert(br1.ExitCode, 0, t)
 	assertEq(br1.ExitCode, br2.ExitCode, t)
-}
-
-// cliBuildJob uses the CLI binary to issue a new job request to the server.
-// It returns an error if the request could not be issued or if the job
-// failed to build.
-//
-// NOTE: The CLI binary is expected to be present in the working
-// directory where the tests are ran from.
-func cliBuildJob(args ...string) (string, string, error) {
-	args = append([]string{"./mistry-cli", "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
-
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
 }

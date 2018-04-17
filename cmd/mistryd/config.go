@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/skroutz/mistry/filesystem"
+	"github.com/skroutz/mistry/pkg/filesystem"
 )
 
 // Config holds the configuration values that the Server needs in order to
