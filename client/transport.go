@@ -27,5 +27,5 @@ func (ts Rsync) Copy(user, host, project, src, dst string) []string {
 	}
 	src = src[idx:]
 
-	return []string{"rsync", "-rtlp", fmt.Sprintf("%s@%s::%s/%s", user, host, module, src), dst}
+	return []string{"rsync", "--delete", "-rtlp", fmt.Sprintf("%s@%s::%s/%s", user, host, module, src), dst}
 }
