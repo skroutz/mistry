@@ -55,6 +55,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/skroutz/mistry"
+  packages = ["pkg/filesystem","pkg/filesystem/btrfs","pkg/filesystem/plainfs","pkg/types","pkg/utils"]
+  revision = "abbfb58d5a2aaf3eaebf9408d81ec7d459326416"
+
+[[projects]]
   name = "github.com/urfave/cli"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
@@ -81,6 +87,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2b069a5eea9564708c7739dccd9a504b8f26632a92815d202db23b8b6b11cb77"
+  inputs-digest = "8a515d7bf3e07ec9a127da585260efacc45d4f4c9aa0f7a22df563f753a4a631"
   solver-name = "gps-cdcl"
   solver-version = 1
