@@ -12,6 +12,7 @@ services:
 - docker
 install:
 - make deps
+- go get github.com/rakyll/statik
 script:
 - make
 addons:

@@ -1,3 +1,4 @@
+//go:generate statik -src=./public -f
 package main
 
 import (
@@ -17,8 +18,8 @@ import (
 
 	"sync"
 
-	"github.com/alecthomas/template"
-
+	"github.com/rakyll/statik/fs"
+	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
 	"github.com/skroutz/mistry/pkg/tailer"
 	"github.com/skroutz/mistry/pkg/types"
@@ -41,12 +42,16 @@ type Server struct {
 	// matches a job id.
 	// The stored map type is [string]bool.
 	tq *sync.Map
+
+	fs http.FileSystem
 }
 
 // NewServer accepts a non-nil configuration and an optional logger, and
 // returns a new Server.
 // If logger is nil, server logs are disabled.
 func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
+	var err error
+
 	if cfg == nil {
 		return nil, errors.New("config cannot be nil")
 	}
@@ -57,7 +62,13 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 
 	s := new(Server)
 	mux := http.NewServeMux()
-	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("public"))))
+
+	s.fs, err = fs.New()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(s.fs)))
 	mux.HandleFunc("/jobs", s.HandleNewJob)
 	mux.HandleFunc("/index/", s.HandleIndex)
 	mux.HandleFunc("/job/", s.HandleShowJob)
@@ -326,13 +337,28 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	t, err := template.ParseFiles("./public/templates/show.html")
+	f, err := s.fs.Open("/templates/show.html")
+	if err != nil {
+		s.Log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tmplBody, err := ioutil.ReadAll(f)
+	if err != nil {
+		s.Log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tmpl := template.New("jobshow")
+	tmpl, err = tmpl.Parse(string(tmplBody))
 	if err != nil {
 		s.Log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	t.Execute(w, ji)
+	tmpl.Execute(w, ji)
 }
 
 // HandleServerPush handles the server push logic.
