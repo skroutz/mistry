@@ -5,6 +5,9 @@ import (
 )
 
 type BuildResult struct {
+	// Job parameters
+	Params Params
+
 	// The path where the build artifacts are located.
 	Path string
 
