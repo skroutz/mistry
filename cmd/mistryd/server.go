@@ -248,7 +248,7 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 	ji := Job{
 		Output:    string(rawResult),
-		Log:       string(rawLog),
+		Log:       template.HTML(strings.Replace(string(rawLog), "\n", "<br />", -1)),
 		ID:        id,
 		Project:   project,
 		State:     state,
@@ -263,6 +263,7 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jiData)
 		return

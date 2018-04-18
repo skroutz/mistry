@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -55,7 +56,7 @@ type Job struct {
 
 	// webview-related
 	Output string
-	Log    string
+	Log    template.HTML
 	State  string
 }
 
@@ -216,21 +217,20 @@ func (j *Job) String() string {
 		j.Project, j.Params, j.Group, j.ID[:7])
 }
 
-// TODO: add the other fields
 func (j *Job) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ID        string `json:"id"`
-		Project   string `json:"project"`
-		StartedAt string `json:"startedAt"`
-		Output    string `json:"output"`
-		Log       string `json:"log"`
-		State     string `json:"state"`
+		ID        string        `json:"id"`
+		Project   string        `json:"project"`
+		StartedAt string        `json:"startedAt"`
+		Output    string        `json:"output"`
+		Log       template.HTML `json:"log"`
+		State     string        `json:"state"`
 	}{
 		ID:        j.ID,
 		Project:   j.Project,
 		StartedAt: j.StartedAt.Format(DateFmt),
 		Output:    j.Output,
-		Log:       j.Log,
+		Log:       template.HTML(j.Log),
 		State:     j.State,
 	})
 }
@@ -255,7 +255,7 @@ func (j *Job) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	j.Output = jData.Output
-	j.Log = jData.Log
+	j.Log = template.HTML(jData.Log)
 	j.State = jData.State
 
 	return nil

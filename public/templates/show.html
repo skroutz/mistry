@@ -9,7 +9,6 @@
 </head>
 
 <body>
-
   <div class="top-bar">
     <div class="top-bar-left">
       <h1><a href="/">mistry</a></h1>
@@ -49,14 +48,15 @@
 
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
-    jobInfo.innerHTML += "Start Time: ".big() + {{.StartedAt}} + "<br>";
+    jobInfo.innerHTML += "Started at: ".big() + {{.StartedAt}} + "<br>";
 
     if (state == "ready") {
       const output = {{.Output}}
       const jobJSON = JSON.parse(output);
       jobInfo.innerHTML += "Path: ".big() + jobJSON["Path"] + "<br>";
+      jobInfo.innerHTML += "Params: ".big() + JSON.stringify(jobJSON.Params) + "<br>";
       jobInfo.innerHTML += "Cached: ".big() + jobJSON["Cached"] + "<br>";
-      jobInfo.innerHTML += "Coaleshed: ".big() + jobJSON["Coaleshed:"] + "<br>";
+      jobInfo.innerHTML += "Coalesced: ".big() + jobJSON["Coalesced"] + "<br>";
       jobInfo.innerHTML += "Error: ".big() + jobJSON["Err"] + "<br>";
       jobInfo.innerHTML += "ExitCode: ".big() + jobJSON["ExitCode"] + "<br>";
       jobInfo.innerHTML += "Transport method: ".big() + jobJSON["TransportMethod"] + "<br>";
@@ -81,7 +81,7 @@
       const source = new EventSource('/log/{{.Project}}/{{.ID}}');
       const jobLog = document.getElementById('js-job-log')
       source.onmessage = function(e) {
-        jobLog.innerHTML += JSON.parse(e.data)["stream"] + "</br>"
+        jobLog.innerHTML += e.data + "</br>"
       };
 
       source.onerror = function(e) {
