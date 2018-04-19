@@ -26,10 +26,10 @@ def copy():
     put('mistryd', '/usr/bin/', use_sudo=True, mode=0755)
 
 def restart():
-    sudo('systemctl restart mistry.service')
+    sudo('systemctl restart mistry-server.service')
 
 def status():
-    run('systemctl status mistry.service')
+    run('systemctl status mistry-server.service')
 
 def deploy():
     build()
