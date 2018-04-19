@@ -55,10 +55,11 @@
   version = "v0.8.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/skroutz/mistry"
-  packages = ["pkg/filesystem","pkg/filesystem/btrfs","pkg/filesystem/plainfs","pkg/types","pkg/utils"]
-  revision = "abbfb58d5a2aaf3eaebf9408d81ec7d459326416"
+  name = "github.com/rakyll/statik"
+  packages = ["fs"]
+  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
+  version = "v0.1.1"
+
 
 [[projects]]
   name = "github.com/urfave/cli"
@@ -87,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8a515d7bf3e07ec9a127da585260efacc45d4f4c9aa0f7a22df563f753a4a631"
+  inputs-digest = "bbbde43dbf5ca1e966f0a71221a4c2fdfc73ab80767e8530421bb39d72865c66"
   solver-name = "gps-cdcl"
   solver-version = 1

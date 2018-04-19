@@ -13,7 +13,7 @@ Features include:
 - running arbitrary commands inside isolated environments (provided as Docker images)
 - build caching & incremental building (see [*"Build cache"*](https://github.com/skroutz/mistry/wiki/Build-cache))
 - a simple JSON API for interacting with the server (scheduling jobs etc.)
-- ([wip](https://github.com/skroutz/mistry/pull/17)) a web view for inspecting the progress and result of builds
+- a web view for inspecting the progress of builds (see [*"Web view"*](#web-view))
 - efficient use of disk space due to copy-on-write semantics (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
 
 For more information visit the [wiki](https://github.com/skroutz/mistry/wiki).
@@ -103,6 +103,19 @@ See `mistry build -h` for more options.
 ``` shell
 $ curl -H 'Content-Type: application/json' -d '{"project": "foo"}' localhost:8462/jobs
 ```
+
+
+
+
+
+### Web view
+
+*mistry* comes with a web view where progress and logs of each job can be
+inspected.
+
+Browse to http://0.0.0.0:8462 (or whatever address the server listens to).
+
+
 
 
 

@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -49,6 +51,13 @@ type Job struct {
 	Image     string
 	ImageTar  []byte
 	Container string
+
+	StartedAt time.Time
+
+	// webview-related
+	Output string
+	Log    template.HTML
+	State  string
 }
 
 // NewJob returns a new Job for the given project. project and cfg cannot be
@@ -206,4 +215,63 @@ func (j *Job) String() string {
 	return fmt.Sprintf(
 		"{project=%s params=%s group=%s id=%s}",
 		j.Project, j.Params, j.Group, j.ID[:7])
+}
+
+func (j *Job) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		ID        string        `json:"id"`
+		Project   string        `json:"project"`
+		StartedAt string        `json:"startedAt"`
+		Output    string        `json:"output"`
+		Log       template.HTML `json:"log"`
+		State     string        `json:"state"`
+	}{
+		ID:        j.ID,
+		Project:   j.Project,
+		StartedAt: j.StartedAt.Format(DateFmt),
+		Output:    j.Output,
+		Log:       template.HTML(j.Log),
+		State:     j.State,
+	})
+}
+
+func (j *Job) UnmarshalJSON(data []byte) error {
+	jData := &struct {
+		ID        string `json:"id"`
+		Project   string `json:"project"`
+		StartedAt string `json:"startedAt"`
+		Output    string `json:"output"`
+		Log       string `json:"log"`
+		State     string `json:"state"`
+	}{}
+	err := json.Unmarshal(data, &jData)
+	if err != nil {
+		return err
+	}
+	j.ID = jData.ID
+	j.Project = jData.Project
+	j.StartedAt, err = time.Parse(DateFmt, jData.StartedAt)
+	if err != nil {
+		return err
+	}
+	j.Output = jData.Output
+	j.Log = template.HTML(jData.Log)
+	j.State = jData.State
+
+	return nil
+}
+
+// GetState determines the job's current state by using it's path in the filesystem.
+func GetState(path, project, id string) (string, error) {
+	pPath := filepath.Join(path, project, "pending", id)
+	rPath := filepath.Join(path, project, "ready", id)
+	_, err := os.Stat(pPath)
+	if err == nil {
+		return "pending", nil
+	}
+	_, err = os.Stat(rPath)
+	if err == nil {
+		return "ready", nil
+	}
+	return "", fmt.Errorf("job with id=%s not found error", id)
 }

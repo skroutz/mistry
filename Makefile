@@ -10,13 +10,13 @@ install: fmt test
 
 build: mistryd mistry
 
-mistryd:
+mistryd: generate
 	$(BUILDCMD) -o $(SERVER) cmd/mistryd/*.go
 
 mistry:
 	$(BUILDCMD) -o $(CLIENT) cmd/mistry/*.go
 
-test: mistry
+test: generate mistry
 	$(TESTCMD) --filesystem plain
 
 testall: test
@@ -34,3 +34,6 @@ fmt:
 
 clean:
 	go clean ./...
+
+generate:
+	go generate ./...

@@ -3,10 +3,10 @@
 *.prof
 *.pyc
 
-config.json
-fabfile.py
-
 /mistry
 /mistryd
 
+cmd/mistryd/statik
+config.json
+fabfile.py
 vendor/
