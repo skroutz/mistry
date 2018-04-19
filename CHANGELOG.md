@@ -4,6 +4,10 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+### Added
+
+- Web view [#17](https://github.com/skroutz/mistry/pull/17)
+
 ### Changed
 
 - **[BREAKING]** client/server: Client and server binaries are renamed to "mistryd" and "mistry" respectively.
