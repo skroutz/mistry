@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type BuildResult struct {
+type BuildInfo struct {
 	// Job parameters
 	Params Params
 

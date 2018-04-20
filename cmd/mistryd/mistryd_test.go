@@ -151,8 +151,8 @@ func TestPruneZombieBuilds(t *testing.T) {
 	}
 }
 
-func readOut(br *types.BuildResult, path string) (string, error) {
-	s := strings.Replace(br.Path, "/data/artifacts", "", -1)
+func readOut(bi *types.BuildInfo, path string) (string, error) {
+	s := strings.Replace(bi.Path, "/data/artifacts", "", -1)
 	out, err := ioutil.ReadFile(filepath.Join(s, "data", path, "out.txt"))
 	if err != nil {
 		return "", err
@@ -180,7 +180,7 @@ func assertNotEq(a, b interface{}, t *testing.T) {
 
 // postJob issues an HTTP request with jr to the server. It returns an error if
 // the request was not successful.
-func postJob(jr types.JobRequest) (*types.BuildResult, error) {
+func postJob(jr types.JobRequest) (*types.BuildInfo, error) {
 	body, err := json.Marshal(jr)
 	if err != nil {
 		return nil, fmt.Errorf("cannot marshal %#v; %s", jr, err)
@@ -203,13 +203,13 @@ func postJob(jr types.JobRequest) (*types.BuildResult, error) {
 		return nil, err
 	}
 
-	buildResult := new(types.BuildResult)
-	err = json.Unmarshal(body, buildResult)
+	buildInfo := new(types.BuildInfo)
+	err = json.Unmarshal(body, buildInfo)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal %#v; %s", string(body), err)
 	}
 
-	return buildResult, nil
+	return buildInfo, nil
 }
 
 func waitForServer(port string) {
@@ -230,13 +230,13 @@ func waitForServer(port string) {
 	log.Fatalf("Server on port %s not up after 10 retries", port)
 }
 
-func parseClientJSON(s string) (*types.BuildResult, error) {
-	br := new(types.BuildResult)
-	err := json.Unmarshal([]byte(s), br)
+func parseClientJSON(s string) (*types.BuildInfo, error) {
+	bi := new(types.BuildInfo)
+	err := json.Unmarshal([]byte(s), bi)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't unmarshall '%s'", s)
 	}
-	return br, nil
+	return bi, nil
 }
 
 // cliBuildJob uses the CLI binary to issue a new job request to the server.

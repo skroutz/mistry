@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/skroutz/mistry"
-  packages = ["pkg/types","pkg/utils"]
-  revision = "abbfb58d5a2aaf3eaebf9408d81ec7d459326416"
-
-[[projects]]
   name = "github.com/urfave/cli"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"

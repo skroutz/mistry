@@ -113,7 +113,7 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Log.Printf("Building %s...", j)
-	buildResult, err := s.Work(context.Background(), j)
+	buildInfo, err := s.Work(context.Background(), j)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
 			http.StatusInternalServerError)
@@ -123,7 +123,7 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp, err := json.Marshal(buildResult)
+	resp, err := json.Marshal(buildInfo)
 	if err != nil {
 		s.Log.Print(err)
 	}
@@ -210,7 +210,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 // based on the content type of the request.
 func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	var buildLog []byte
-	var buildResult []byte
+	var buildInfo []byte
 
 	if r.Method != "GET" {
 		http.Error(w, "Expected GET, got "+r.Method, http.StatusMethodNotAllowed)
@@ -233,10 +233,10 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 	jPath := filepath.Join(s.cfg.BuildPath, project, state, id)
 	buildLogPath := filepath.Join(jPath, BuildLogFname)
-	buildResultPath := filepath.Join(jPath, BuildResultFname)
+	buildInfoPath := filepath.Join(jPath, BuildInfoFname)
 
 	if state == "ready" {
-		buildResult, err = ioutil.ReadFile(buildResultPath)
+		buildInfo, err = ioutil.ReadFile(buildInfoPath)
 		if err != nil {
 			s.Log.Print(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -259,7 +259,7 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	j := Job{
-		Output:    string(buildResult),
+		Output:    string(buildInfo),
 		Log:       template.HTML(strings.Replace(string(buildLog), "\n", "<br />", -1)),
 		ID:        id,
 		Project:   project,

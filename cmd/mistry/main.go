@@ -221,25 +221,25 @@ EXAMPLES:
 					return fmt.Errorf("Error creating job: %s, http code: %v", body, resp.StatusCode)
 				}
 
-				br := types.BuildResult{}
-				err = json.Unmarshal([]byte(body), &br)
+				bi := types.BuildInfo{}
+				err = json.Unmarshal([]byte(body), &bi)
 				if err != nil {
 					return err
 				}
 
 				if verbose {
-					fmt.Printf("Result after unmarshalling: %#v\n", br)
+					fmt.Printf("Result after unmarshalling: %#v\n", bi)
 				}
 
 				if jsonResult {
 					fmt.Printf("%s", body)
 				}
 
-				if br.ExitCode != 0 {
-					return fmt.Errorf("Build failed with exit code %d", br.ExitCode)
+				if bi.ExitCode != 0 {
+					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
-				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, br.Path+"/*", target))
+				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, bi.Path+"/*", target))
 				fmt.Println(out)
 				if err != nil {
 					return err

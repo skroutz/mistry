@@ -49,9 +49,9 @@ const (
 	// BuildLogFname is the file inside DataDir, containing the build log.
 	BuildLogFname = "out.log"
 
-	// BuildResultFname is the file inside DataDir, containing the build
-	// result.
-	BuildResultFname = "result.json"
+	// BuildInfoFname is the file inside DataDir, containing the build
+	// info.
+	BuildInfoFname = "build_info.json"
 
 	// ImgCntPrefix is the common prefix added to the names of all
 	// Docker images/containers created by mistry.
