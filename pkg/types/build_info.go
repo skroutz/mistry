@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"time"
 )
 
 type BuildInfo struct {
@@ -26,6 +27,8 @@ type BuildInfo struct {
 
 	// The method by which the build artifacts can be fetched.
 	TransportMethod TransportMethod
+
+	StartedAt time.Time
 }
 
 type ErrImageBuild struct {

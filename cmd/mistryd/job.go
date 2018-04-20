@@ -120,6 +120,8 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.Image = ImgCntPrefix + j.ID
 	j.Container = ImgCntPrefix + j.ID
 
+	j.StartedAt = time.Now()
+
 	return j, nil
 }
 

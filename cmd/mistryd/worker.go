@@ -26,6 +26,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
 		TransportMethod: types.Rsync,
 		Params:          j.Params,
+		StartedAt:       j.StartedAt,
 	}
 
 	_, err = os.Stat(j.ReadyBuildPath)
