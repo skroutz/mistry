@@ -135,23 +135,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	client, err := docker.NewEnvClient()
-	if err != nil {
-		err = workErr("could not create docker client", err)
-		return
-	}
-
-	err = j.BuildImage(ctx, s.cfg.UID, client, out)
-	if err != nil {
-		return
-	}
-
-	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
-	if err != nil {
-		err = workErr("could not start docker container", err)
-		return
-	}
-
 	infoFile, err := os.Create(j.BuildInfoFilePath)
 	if err != nil {
 		err = workErr("could not create build info file", err)
@@ -169,6 +152,39 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 	biJSON, err := json.Marshal(buildInfo)
+	if err != nil {
+		err = workErr("could not serialize build info", err)
+		return
+	}
+	_, err = infoFile.Write(biJSON)
+	if err != nil {
+		err = workErr("could not write build info to file", err)
+		return
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		err = workErr("could not create docker client", err)
+		return
+	}
+
+	err = j.BuildImage(ctx, s.cfg.UID, client, out)
+	if err != nil {
+		return
+	}
+
+	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
+	if err != nil {
+		err = workErr("could not start docker container", err)
+		return
+	}
+
+	_, err = infoFile.Seek(0, 0)
+	if err != nil {
+		err = workErr("could not set the offset for the build_info file", err)
+		return
+	}
+	biJSON, err = json.Marshal(buildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return
