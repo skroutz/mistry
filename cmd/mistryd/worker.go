@@ -170,6 +170,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 
 	err = j.BuildImage(ctx, s.cfg.UID, client, out)
 	if err != nil {
+		err = workErr("could not build docker image", err)
 		return
 	}
 
