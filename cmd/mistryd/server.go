@@ -166,26 +166,40 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, j := range pendingJobs {
+			bi := types.BuildInfo{}
+			biBlob, err := ioutil.ReadFile(filepath.Join(pendingPath, j.Name(), BuildInfoFname))
+			if err != nil {
+				s.Log.Printf("cannot read build_info file of job %s; %s", j.Name(), err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			err = json.Unmarshal(biBlob, &bi)
 			jobs = append(jobs, Job{
 				ID:        j.Name(),
 				Project:   p.Name(),
-				StartedAt: j.ModTime(),
-				Output:    filepath.Join(pendingPath, j.Name(), BuildLogFname),
+				StartedAt: bi.StartedAt,
 				State:     "pending"})
 		}
 
 		for _, j := range readyJobs {
+			bi := types.BuildInfo{}
+			biBlob, err := ioutil.ReadFile(filepath.Join(readyPath, j.Name(), BuildInfoFname))
+			if err != nil {
+				s.Log.Printf("cannot read build_info file of job %s; %s", j.Name(), err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			err = json.Unmarshal(biBlob, &bi)
 			jobs = append(jobs, Job{
 				ID:        j.Name(),
 				Project:   p.Name(),
-				StartedAt: j.ModTime(),
-				Output:    filepath.Join(readyPath, j.Name(), BuildLogFname),
+				StartedAt: bi.StartedAt,
 				State:     "ready"})
 		}
 	}
 
 	sort.Slice(jobs, func(i, j int) bool {
-		return jobs[i].StartedAt.Unix() > jobs[j].StartedAt.Unix()
+		return jobs[j].StartedAt.Before(jobs[i].StartedAt)
 	})
 
 	resp, err := json.Marshal(jobs)
