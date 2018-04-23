@@ -209,7 +209,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 // HandleShowJob receives requests for a job and produces the appropriate output
 // based on the content type of the request.
 func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
-	var buildLog []byte
+	var log []byte
 	var buildInfo []byte
 
 	if r.Method != "GET" {
@@ -235,23 +235,14 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	buildLogPath := filepath.Join(jPath, BuildLogFname)
 	buildInfoPath := filepath.Join(jPath, BuildInfoFname)
 
-	if state == "ready" {
-		buildInfo, err = ioutil.ReadFile(buildInfoPath)
-		if err != nil {
-			s.Log.Print(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-
-	buildLog, err = ioutil.ReadFile(buildLogPath)
+	buildInfo, err = ioutil.ReadFile(buildInfoPath)
 	if err != nil {
 		s.Log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	jDir, err := ioutil.ReadDir(jPath)
+	log, err = ioutil.ReadFile(buildLogPath)
 	if err != nil {
 		s.Log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -259,12 +250,11 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	j := Job{
-		Output:    string(buildInfo),
-		Log:       template.HTML(strings.Replace(string(buildLog), "\n", "<br />", -1)),
-		ID:        id,
-		Project:   project,
-		State:     state,
-		StartedAt: jDir[0].ModTime(),
+		Output:  string(buildInfo),
+		Log:     template.HTML(strings.Replace(string(log), "\n", "<br />", -1)),
+		ID:      id,
+		Project: project,
+		State:   state,
 	}
 
 	if r.Header.Get("Content-type") == "application/json" {

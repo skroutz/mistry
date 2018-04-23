@@ -45,22 +45,19 @@
   <script type="text/javascript">
     const jobInfo = document.getElementById('js-job-info');
     const state = {{.State}}
+    const output = {{.Output}}
+    const jobJSON = JSON.parse(output);
 
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
-    jobInfo.innerHTML += "Started at: ".big() + {{.StartedAt}} + "<br>";
-
-    if (state == "ready") {
-      const output = {{.Output}}
-      const jobJSON = JSON.parse(output);
-      jobInfo.innerHTML += "Path: ".big() + jobJSON["Path"] + "<br>";
-      jobInfo.innerHTML += "Params: ".big() + JSON.stringify(jobJSON.Params) + "<br>";
-      jobInfo.innerHTML += "Cached: ".big() + jobJSON["Cached"] + "<br>";
-      jobInfo.innerHTML += "Coalesced: ".big() + jobJSON["Coalesced"] + "<br>";
-      jobInfo.innerHTML += "Error: ".big() + jobJSON["Err"] + "<br>";
-      jobInfo.innerHTML += "ExitCode: ".big() + jobJSON["ExitCode"] + "<br>";
-      jobInfo.innerHTML += "Transport method: ".big() + jobJSON["TransportMethod"] + "<br>";
-    }
+    jobInfo.innerHTML += "Started At: ".big() + new Date(jobJSON["StartedAt"]) + "<br>";
+    jobInfo.innerHTML += "Path: ".big() + jobJSON["Path"] + "<br>";
+    jobInfo.innerHTML += "Params: ".big() + JSON.stringify(jobJSON.Params) + "<br>";
+    jobInfo.innerHTML += "Cached: ".big() + jobJSON["Cached"] + "<br>";
+    jobInfo.innerHTML += "Coalesced: ".big() + jobJSON["Coalesced"] + "<br>";
+    jobInfo.innerHTML += "Error: ".big() + jobJSON["Err"] + "<br>";
+    jobInfo.innerHTML += "ExitCode: ".big() + jobJSON["ExitCode"] + "<br>";
+    jobInfo.innerHTML += "Transport method: ".big() + jobJSON["TransportMethod"] + "<br>";
 
     if (state == "pending") {
       setInterval(checkState, 3000);
