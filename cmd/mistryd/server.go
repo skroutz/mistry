@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -135,69 +136,17 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 
 // HandleIndex returns all available jobs.
 func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
-	var jobs []Job
-
 	if r.Method != "GET" {
 		http.Error(w, "Expected GET, got "+r.Method, http.StatusMethodNotAllowed)
 		return
 	}
 
-	projects, err := ioutil.ReadDir(s.cfg.BuildPath)
+	jobs, err := s.getJobs()
 	if err != nil {
-		s.Log.Print("cannot scan projects; ", err)
+		s.Log.Printf("cannot get jobs for path %s; %s", s.cfg.BuildPath, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	for _, p := range projects {
-		pendingPath := filepath.Join(s.cfg.BuildPath, p.Name(), "pending")
-		readyPath := filepath.Join(s.cfg.BuildPath, p.Name(), "ready")
-		pendingJobs, err := ioutil.ReadDir(pendingPath)
-		if err != nil {
-			s.Log.Printf("cannot scan pending jobs of project %s; %s", p.Name(), err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		readyJobs, err := ioutil.ReadDir(readyPath)
-		if err != nil {
-			s.Log.Printf("cannot scan ready jobs of project %s; %s", p.Name(), err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		for _, j := range pendingJobs {
-			bi := types.BuildInfo{}
-			biBlob, err := ioutil.ReadFile(filepath.Join(pendingPath, j.Name(), BuildInfoFname))
-			if err != nil {
-				s.Log.Printf("cannot read build_info file of job %s; %s", j.Name(), err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			err = json.Unmarshal(biBlob, &bi)
-			jobs = append(jobs, Job{
-				ID:        j.Name(),
-				Project:   p.Name(),
-				StartedAt: bi.StartedAt,
-				State:     "pending"})
-		}
-
-		for _, j := range readyJobs {
-			bi := types.BuildInfo{}
-			biBlob, err := ioutil.ReadFile(filepath.Join(readyPath, j.Name(), BuildInfoFname))
-			if err != nil {
-				s.Log.Printf("cannot read build_info file of job %s; %s", j.Name(), err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			err = json.Unmarshal(biBlob, &bi)
-			jobs = append(jobs, Job{
-				ID:        j.Name(),
-				Project:   p.Name(),
-				StartedAt: bi.StartedAt,
-				State:     "ready"})
-		}
-	}
-
 	sort.Slice(jobs, func(i, j int) bool {
 		return jobs[j].StartedAt.Before(jobs[i].StartedAt)
 	})
@@ -434,4 +383,79 @@ func (s *Server) ListenAndServe() error {
 	s.Log.Printf("Configuration: %#v", s.cfg)
 	go s.br.ListenForClients()
 	return s.srv.ListenAndServe()
+}
+
+// getJobs returns all pending and ready jobs.
+func (s *Server) getJobs() ([]Job, error) {
+	var jobs []Job
+	var pendingJobs []os.FileInfo
+	var readyJobs []os.FileInfo
+
+	projects, err := ioutil.ReadDir(s.cfg.BuildPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot scan projects; %s", err)
+	}
+
+	for _, p := range projects {
+		pendingPath := filepath.Join(s.cfg.BuildPath, p.Name(), "pending")
+		_, err := os.Stat(pendingPath)
+		pendingExists := !os.IsNotExist(err)
+		if err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("cannot check if pending path exists; %s", err)
+		}
+		readyPath := filepath.Join(s.cfg.BuildPath, p.Name(), "ready")
+		_, err = os.Stat(readyPath)
+		readyExists := !os.IsNotExist(err)
+		if err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("cannot check if ready path exists; %s", err)
+		}
+
+		if pendingExists {
+			pendingJobs, err = ioutil.ReadDir(pendingPath)
+			if err != nil {
+				return nil, fmt.Errorf("cannot scan pending jobs of project %s; %s", p.Name(), err)
+			}
+		}
+		if readyExists {
+			readyJobs, err = ioutil.ReadDir(readyPath)
+			if err != nil {
+				return nil, fmt.Errorf("cannot scan ready jobs of project %s; %s", p.Name(), err)
+			}
+		}
+
+		getJob := func(path, jobID, project, state string) (Job, error) {
+			bi := types.BuildInfo{}
+			biBlob, err := ioutil.ReadFile(filepath.Join(path, jobID, BuildInfoFname))
+			if err != nil {
+				return Job{}, fmt.Errorf("cannot read build_info file; %s", err)
+			}
+			err = json.Unmarshal(biBlob, &bi)
+			if err != nil {
+				return Job{}, fmt.Errorf("cannot unmarshal the build_info file; %s", err)
+			}
+			if err != nil {
+				return Job{}, fmt.Errorf("cannot read build_info file of job %s; %s", jobID, err)
+			}
+
+			return Job{ID: jobID, Project: project, StartedAt: bi.StartedAt, State: state}, nil
+		}
+
+		for _, j := range pendingJobs {
+			job, err := getJob(pendingPath, j.Name(), p.Name(), "pending")
+			if err != nil {
+				return nil, fmt.Errorf("cannot find job %s; %s", j.Name(), err)
+			}
+			jobs = append(jobs, job)
+		}
+
+		for _, j := range readyJobs {
+			job, err := getJob(readyPath, j.Name(), p.Name(), "ready")
+			if err != nil {
+				return nil, fmt.Errorf("cannot find job %s; %s", j.Name(), err)
+			}
+			jobs = append(jobs, job)
+		}
+	}
+
+	return jobs, nil
 }
