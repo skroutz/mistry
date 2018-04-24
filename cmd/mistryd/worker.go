@@ -90,40 +90,57 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		return
 	}
 
-	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
-	if err == nil {
-		if j.Group != "" {
-			out, err := utils.RunCmd(s.cfg.FileSystem.Clone(src, j.PendingBuildPath))
-			if out != "" {
-				log.Println(out)
-			}
-			if err != nil {
-				err = workErr("could not clone latest build result", err)
-				return buildResult, err
-			}
-			defer func() {
-				derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
-				if derr != nil {
-					errstr := "could not clean hanging pending path"
-					if err == nil {
-						err = fmt.Errorf("%s; %s", errstr, derr)
-					} else {
-						err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
-					}
-				}
-			}()
-			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-			if err != nil {
-				err = workErr("could not remove params dir", err)
-				return buildResult, err
-			}
-			err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-			if err != nil {
-				err = workErr("could not ensure directory exists", err)
-				return buildResult, err
+	// determine if we can clone the existing previous build. this should happen when
+	// 1. the job was invoked with a group
+	// 2. the symlink pointing to the previous invocation is valid
+	cloneSrc := ""
+	if j.Group != "" {
+		var symlinkErr error
+		cloneSrc, symlinkErr = filepath.EvalSymlinks(j.LatestBuildPath)
+		// TODO: validate the symlink is not broken
+		if symlinkErr != nil {
+			// dont clone anything if we get an error reading the symlink
+			cloneSrc = ""
+			if !os.IsNotExist(symlinkErr) {
+				// a not exists error is normal, a different one is exceptional
+				log.Printf("could not read latest build link, error: %s", symlinkErr)
 			}
 		}
-	} else if os.IsNotExist(err) {
+	}
+
+	if cloneSrc != "" {
+		// TODO: factor out as cloneJobDir(cloneSrc)
+		out, err := utils.RunCmd(s.cfg.FileSystem.Clone(cloneSrc, j.PendingBuildPath))
+		if out != "" {
+			log.Println(out)
+		}
+		if err != nil {
+			err = workErr("could not clone latest build result", err)
+			return buildResult, err
+		}
+		defer func() {
+			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
+			if derr != nil {
+				errstr := "could not clean hanging pending path"
+				if err == nil {
+					err = fmt.Errorf("%s; %s", errstr, derr)
+				} else {
+					err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
+				}
+			}
+		}()
+		err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+		if err != nil {
+			err = workErr("could not remove params dir", err)
+			return buildResult, err
+		}
+		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+		if err != nil {
+			err = workErr("could not ensure directory exists", err)
+			return buildResult, err
+		}
+	} else {
+		// TODO: factor out as bootstrapJobDir()
 		out, err := utils.RunCmd(s.cfg.FileSystem.Create(j.PendingBuildPath))
 		if out != "" {
 			log.Println(out)
@@ -143,6 +160,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 				}
 			}
 		}()
+		// TODO: factor copy pasta into a for loop
 		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
 		if err != nil {
 			err = workErr("could not ensure directory exists", err)
@@ -163,9 +181,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 			err = workErr("could not ensure directory exists", err)
 			return buildResult, err
 		}
-	} else {
-		err = workErr("could not read latest build link", err)
-		return
 	}
 
 	for k, v := range j.Params {
