@@ -187,12 +187,12 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 	if err != nil {
 		return 0, err
 	}
+	defer logs.Close()
 
 	_, err = stdcopy.StdCopy(out, out, logs)
 	if err != nil {
 		return 0, err
 	}
-	logs.Close()
 
 	var result struct {
 		State struct {
