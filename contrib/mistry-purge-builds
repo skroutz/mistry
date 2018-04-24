@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+require 'json'
+require 'time'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Purge old mistry builds from the file system.\nUsage: #{$0} [options]"
+  opts.on('--older-than DAYS' 'remove builds older than DAYS days') { |v| options[:stale_point] = Time.now - Integer(v)*24*60*60 }
+  opts.on('--path PATH', 'Build path') { |v| options[:path] = v }
+  opts.on('--dry-run', 'Dry run') { |v| options[:dry_run] = v }
+end.parse!
+
+abort("#{options[:path]} is not a directory") unless File.directory?(options[:path])
+
+jobs = []
+stale_jobs = []
+groups_and_latest = []
+projects = Dir["#{options[:path]}/projects/*"].map { |p| p.gsub("#{options[:path]}/projects/","") }
+
+projects.each do |p|
+  data_path = File.join(options[:path], "data", p)
+  groups_path = File.join(data_path, "groups")
+  latest_path = File.join(data_path, "latest")
+  # jobs that have a symlink either as a group or as latest won't be deleted
+  group_jobs = Dir["#{groups_path}/*"]
+  groups_and_latest << File.readlink(Dir["latest_path"]) if Dir["latest_path"].first
+  group_jobs.each do |j|
+    groups_and_latest << File.readlink(j)
+  end
+
+  ready_path = File.join(data_path, "ready")
+  ready_jobs = Dir["#{ready_path}/*"]
+  ready_jobs.each do |rj|
+    if t = JSON.parse(File.read("#{rj}/build_info.json"))["StartedAt"]
+      start_time = Time.parse(t)
+    end
+    stale_jobs << rj if start_time.nil? || start_time < options[:stale_point]
+  end
+end
+
+if options[:dry_run]
+  puts "would delete jobs: #{stale_jobs}"
+elsif !stale_jobs.empty?
+  `btrfs subvolume delete #{stale_jobs.join(' ')}`
+  File.unlink(*(groups_and_latest.select{ |j| stale_jobs.include?(File.readlink(j)) }))
+end
