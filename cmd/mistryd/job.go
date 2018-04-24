@@ -19,6 +19,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/types"
@@ -134,7 +135,7 @@ func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out 
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(out, resp.Body)
+	err = jsonmessage.DisplayJSONMessagesStream(resp.Body, out, 0, false, nil)
 	if err != nil {
 		return types.ErrImageBuild{Image: j.Image, Err: err}
 	}

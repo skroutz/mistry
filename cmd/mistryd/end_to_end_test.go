@@ -3,7 +3,10 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -68,6 +71,37 @@ func TestImageBuildFailure(t *testing.T) {
 	if !strings.Contains(cmderr, expErr) {
 		t.Fatalf("Expected '%s' to contain '%s'", cmderr, expErr)
 	}
+}
+
+func TestImageBuildLogsNotJson(t *testing.T) {
+	// trigger a job
+	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "simple", "--", "--testing=logs")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	// find the log file
+	j, err := NewJob("simple", types.Params{"testing": "logs"}, "", testcfg)
+	if err != nil {
+		t.Fatalf("failed to create job: err: %#v", err)
+	}
+	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildLogFname))
+	if err != nil {
+		t.Fatalf("failed to read job log: err: %#v", err)
+	}
+	defer f.Close()
+
+	// if any line in the log file can be parsed into a JSON, fail
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var v interface{}
+
+		err := json.Unmarshal(line, &v)
+		if err == nil {
+			t.Fatalf("found JSON line in the logs: %s", line)
+		}
+	}
+
 }
 
 func TestExitCode(t *testing.T) {
