@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/docker/distribution"
 	docker "github.com/docker/docker/client"
+	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/types"
 	"github.com/skroutz/mistry/pkg/utils"
 )
@@ -90,34 +91,27 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		return
 	}
 
-	// determine if we can clone the existing previous build. this should happen when
-	// 1. the job was invoked with a group
-	// 2. the symlink pointing to the previous invocation is valid
+	// determine if we should use the build cache. this should happen when
+	// 1. the job is invoked with a group
+	// 2. the symlink pointing to the latest build is valid
 	cloneSrc := ""
 	if j.Group != "" {
 		var symlinkErr error
 		cloneSrc, symlinkErr = filepath.EvalSymlinks(j.LatestBuildPath)
-		// TODO: validate the symlink is not broken
 		if symlinkErr != nil {
 			// dont clone anything if we get an error reading the symlink
 			cloneSrc = ""
-			if !os.IsNotExist(symlinkErr) {
-				// a not exists error is normal, a different one is exceptional
+			if os.IsNotExist(symlinkErr) {
+				log.Printf("no latest build was found: %s", symlinkErr)
+			} else {
 				log.Printf("could not read latest build link, error: %s", symlinkErr)
 			}
 		}
 	}
 
-	if cloneSrc != "" {
-		// TODO: factor out as cloneJobDir(cloneSrc)
-		out, err := utils.RunCmd(s.cfg.FileSystem.Clone(cloneSrc, j.PendingBuildPath))
-		if out != "" {
-			log.Println(out)
-		}
-		if err != nil {
-			err = workErr("could not clone latest build result", err)
-			return buildResult, err
-		}
+	log.Printf("Creating new build directory...")
+	shouldCleanup, err := bootstrapBuildDir(j, cloneSrc, s.cfg.FileSystem)
+	if shouldCleanup == true {
 		defer func() {
 			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
 			if derr != nil {
@@ -129,58 +123,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 				}
 			}
 		}()
-		err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-		if err != nil {
-			err = workErr("could not remove params dir", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-	} else {
-		// TODO: factor out as bootstrapJobDir()
-		out, err := utils.RunCmd(s.cfg.FileSystem.Create(j.PendingBuildPath))
-		if out != "" {
-			log.Println(out)
-		}
-		if err != nil {
-			err = workErr("could not create pending build path", err)
-			return buildResult, err
-		}
-		defer func() {
-			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
-			if derr != nil {
-				errstr := "could not clean hanging pending path"
-				if err == nil {
-					err = fmt.Errorf("%s; %s", errstr, derr)
-				} else {
-					err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
-				}
-			}
-		}()
-		// TODO: factor copy pasta into a for loop
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
+	}
+	if err != nil {
+		return
 	}
 
 	for k, v := range j.Params {
@@ -274,6 +219,55 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 	}
 
 	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
+	return
+}
+
+func bootstrapBuildDir(j *Job, cloneSrc string, fs filesystem.FileSystem) (shouldCleanup bool, err error) {
+	shouldCleanup = false
+	var (
+		cmd []string
+		out string
+	)
+
+	if cloneSrc != "" {
+		cmd = fs.Clone(cloneSrc, j.PendingBuildPath)
+	} else {
+		cmd = fs.Create(j.PendingBuildPath)
+	}
+	out, err = utils.RunCmd(cmd)
+	if out != "" {
+		log.Println(out)
+	}
+	if err != nil {
+		err = workErr("could not create pending build path", err)
+		return
+	}
+	shouldCleanup = true
+
+	// if we cloned, empty the params dir
+	if cloneSrc != "" {
+		err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+		if err != nil {
+			err = workErr("could not remove params dir", err)
+			return
+		}
+	}
+
+	dirs := [4]string{
+		filepath.Join(j.PendingBuildPath, DataDir),
+		filepath.Join(j.PendingBuildPath, DataDir, CacheDir),
+		filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir),
+		filepath.Join(j.PendingBuildPath, DataDir, ParamsDir),
+	}
+
+	for _, dir := range dirs {
+		err = utils.EnsureDirExists(dir)
+		if err != nil {
+			err = workErr("could not ensure directory exists", err)
+			return
+		}
+		log.Printf("created dir: %s", dir)
+	}
 	return
 }
 
