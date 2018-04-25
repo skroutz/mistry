@@ -20,6 +20,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/types"
 	"github.com/skroutz/mistry/pkg/utils"
 )
@@ -274,4 +275,75 @@ func GetState(path, project, id string) (string, error) {
 		return "ready", nil
 	}
 	return "", fmt.Errorf("job with id=%s not found error", id)
+}
+
+// CloneSrcPath determines if we should use the build cache and return the path that
+// should be used.
+//
+// Using the build cache should happen when
+// 1. the job is invoked with a group
+// 2. the symlink pointing to the latest build is valid
+func (j *Job) CloneSrcPath(log *log.Logger) string {
+	cloneSrc := ""
+	if j.Group != "" {
+		var symlinkErr error
+		cloneSrc, symlinkErr = filepath.EvalSymlinks(j.LatestBuildPath)
+		if symlinkErr != nil {
+			// dont clone anything if we get an error reading the symlink
+			cloneSrc = ""
+			if os.IsNotExist(symlinkErr) {
+				log.Printf("no latest build was found: %s", symlinkErr)
+			} else {
+				log.Printf("could not read latest build link, error: %s", symlinkErr)
+			}
+		}
+	}
+	return cloneSrc
+}
+
+// BootstrapBuildDir creates all required build directories. Returns true if directories have
+// been partially or fully created and cleanup is required
+func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool, error) {
+	shouldCleanup := false
+	var cmd []string
+
+	cloneSrc := j.CloneSrcPath(log)
+
+	if cloneSrc == "" {
+		cmd = fs.Create(j.PendingBuildPath)
+	} else {
+		cmd = fs.Clone(cloneSrc, j.PendingBuildPath)
+	}
+	out, err := utils.RunCmd(cmd)
+	if out != "" {
+		log.Println(out)
+	}
+	if err != nil {
+		return shouldCleanup, workErr("could not create pending build path", err)
+	}
+	shouldCleanup = true
+
+	// if we cloned, empty the params dir
+	if cloneSrc != "" {
+		err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
+		if err != nil {
+			return shouldCleanup, workErr("could not remove params dir", err)
+		}
+	}
+
+	dirs := [4]string{
+		filepath.Join(j.PendingBuildPath, DataDir),
+		filepath.Join(j.PendingBuildPath, DataDir, CacheDir),
+		filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir),
+		filepath.Join(j.PendingBuildPath, DataDir, ParamsDir),
+	}
+
+	for _, dir := range dirs {
+		err = utils.EnsureDirExists(dir)
+		if err != nil {
+			return shouldCleanup, workErr("could not ensure directory exists", err)
+		}
+		log.Printf("created dir: %s", dir)
+	}
+	return shouldCleanup, nil
 }

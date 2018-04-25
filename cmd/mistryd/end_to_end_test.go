@@ -19,6 +19,18 @@ func TestSimpleBuild(t *testing.T) {
 	}
 }
 
+func TestNonGroupSubsequentInvocation(t *testing.T) {
+	cmdout, cmderr, err := cliBuildJob("--project", "bootstrap-twice")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	// invoke the 2nd job with different params to trigger the bug
+	cmdout, cmderr, err = cliBuildJob("--project", "bootstrap-twice", "--", "--foo=zxc")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+}
+
 func TestUnknownProject(t *testing.T) {
 	expected := "Unknown project 'Idontexist'"
 

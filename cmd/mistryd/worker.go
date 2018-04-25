@@ -90,48 +90,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		return
 	}
 
-	src, err := filepath.EvalSymlinks(j.LatestBuildPath)
-	if err == nil {
-		if j.Group != "" {
-			out, err := utils.RunCmd(s.cfg.FileSystem.Clone(src, j.PendingBuildPath))
-			if out != "" {
-				log.Println(out)
-			}
-			if err != nil {
-				err = workErr("could not clone latest build result", err)
-				return buildResult, err
-			}
-			defer func() {
-				derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
-				if derr != nil {
-					errstr := "could not clean hanging pending path"
-					if err == nil {
-						err = fmt.Errorf("%s; %s", errstr, derr)
-					} else {
-						err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
-					}
-				}
-			}()
-			err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-			if err != nil {
-				err = workErr("could not remove params dir", err)
-				return buildResult, err
-			}
-			err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-			if err != nil {
-				err = workErr("could not ensure directory exists", err)
-				return buildResult, err
-			}
-		}
-	} else if os.IsNotExist(err) {
-		out, err := utils.RunCmd(s.cfg.FileSystem.Create(j.PendingBuildPath))
-		if out != "" {
-			log.Println(out)
-		}
-		if err != nil {
-			err = workErr("could not create pending build path", err)
-			return buildResult, err
-		}
+	log.Printf("Creating new build directory...")
+	shouldCleanup, err := j.BootstrapBuildDir(s.cfg.FileSystem, log)
+	if shouldCleanup {
 		defer func() {
 			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
 			if derr != nil {
@@ -143,28 +104,8 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 				}
 			}
 		}()
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, CacheDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ArtifactsDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-		err = utils.EnsureDirExists(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
-		if err != nil {
-			err = workErr("could not ensure directory exists", err)
-			return buildResult, err
-		}
-	} else {
-		err = workErr("could not read latest build link", err)
+	}
+	if err != nil {
 		return
 	}
 
