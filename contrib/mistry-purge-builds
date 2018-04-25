@@ -42,6 +42,6 @@ end
 if options[:dry_run]
   puts "would delete jobs: #{stale_jobs}"
 elsif !stale_jobs.empty?
-  `btrfs subvolume delete #{stale_jobs.join(' ')}`
   File.unlink(*(groups_and_latest.select{ |j| stale_jobs.include?(File.readlink(j)) }))
+  `btrfs subvolume delete #{stale_jobs.join(' ')}`
 end
