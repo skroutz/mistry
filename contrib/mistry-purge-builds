@@ -22,11 +22,10 @@ projects.each do |p|
   data_path = File.join(options[:path], "data", p)
   groups_path = File.join(data_path, "groups")
   latest_path = File.join(data_path, "latest")
-  # jobs that have a symlink either as a group or as latest won't be deleted
   group_jobs = Dir["#{groups_path}/*"]
-  groups_and_latest << File.readlink(Dir["latest_path"]) if Dir["latest_path"].first
+  groups_and_latest << Dir["latest_path"].first if !Dir["latest_path"].empty?
   group_jobs.each do |j|
-    groups_and_latest << File.readlink(j)
+    groups_and_latest << j
   end
 
   ready_path = File.join(data_path, "ready")
@@ -41,6 +40,7 @@ end
 
 if options[:dry_run]
   puts "would delete jobs: #{stale_jobs}"
+  puts "would unlink: #{groups_and_latest}"
 elsif !stale_jobs.empty?
   File.unlink(*(groups_and_latest.select{ |j| stale_jobs.include?(File.readlink(j)) }))
   `btrfs subvolume delete #{stale_jobs.join(' ')}`
