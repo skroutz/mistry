@@ -179,28 +179,28 @@ func TestResultCacheExitCode(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error")
 	}
-	br, err := parseClientJSON(cmdout1)
+	bi, err := parseClientJSON(cmdout1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertEq(br.ExitCode, 33, t)
-	assertEq(br.Cached, false, t)
+	assertEq(bi.ExitCode, 33, t)
+	assertEq(bi.Cached, false, t)
 
 	cmdout2, _, err := cliBuildJob("--json-result", "--project", "result-cache-exitcode")
 	if err == nil {
 		t.Fatal("Expected error")
 	}
-	br, err = parseClientJSON(cmdout2)
+	bi, err = parseClientJSON(cmdout2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertEq(br.ExitCode, 33, t)
-	assertEq(br.Cached, true, t)
+	assertEq(bi.ExitCode, 33, t)
+	assertEq(bi.Cached, true, t)
 }
 
 func TestBuildCoalescingExitCode(t *testing.T) {
 	var wg sync.WaitGroup
-	var br1, br2 *types.BuildResult
+	var bi1, bi2 *types.BuildInfo
 
 	wg.Add(1)
 	go func() {
@@ -209,7 +209,7 @@ func TestBuildCoalescingExitCode(t *testing.T) {
 		if err == nil {
 			panic("Expected error")
 		}
-		br1, err = parseClientJSON(cmdout)
+		bi1, err = parseClientJSON(cmdout)
 		if err != nil {
 			panic(err)
 		}
@@ -219,25 +219,25 @@ func TestBuildCoalescingExitCode(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error")
 	}
-	br2, err = parseClientJSON(cmdout)
+	bi2, err = parseClientJSON(cmdout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	wg.Wait()
 
-	assert(br1.ExitCode, 35, t)
-	assertEq(br1.ExitCode, br2.ExitCode, t)
+	assert(bi1.ExitCode, 35, t)
+	assertEq(bi1.ExitCode, bi2.ExitCode, t)
 
-	assert(br1.Cached, false, t)
-	assertEq(br1.Cached, br2.Cached, t)
+	assert(bi1.Cached, false, t)
+	assertEq(bi1.Cached, bi2.Cached, t)
 
-	assertNotEq(br1.Coalesced, br2.Coalesced, t)
+	assertNotEq(bi1.Coalesced, bi2.Coalesced, t)
 }
 
 func TestBuildCoalescing(t *testing.T) {
 	var wg sync.WaitGroup
-	var br1, br2 *types.BuildResult
+	var bi1, bi2 *types.BuildInfo
 
 	wg.Add(1)
 	go func() {
@@ -246,7 +246,7 @@ func TestBuildCoalescing(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		br1, err = parseClientJSON(cmdout)
+		bi1, err = parseClientJSON(cmdout)
 		if err != nil {
 			panic(err)
 		}
@@ -256,7 +256,7 @@ func TestBuildCoalescing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	br2, err = parseClientJSON(cmdout)
+	bi2, err = parseClientJSON(cmdout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func TestBuildCoalescing(t *testing.T) {
 
 	assertEq(string(out), "coalescing!\n", t)
 
-	assertNotEq(br1.Coalesced, br2.Coalesced, t)
-	assert(br1.ExitCode, 0, t)
-	assertEq(br1.ExitCode, br2.ExitCode, t)
+	assertNotEq(bi1.Coalesced, bi2.Coalesced, t)
+	assert(bi1.ExitCode, 0, t)
+	assertEq(bi1.ExitCode, bi2.ExitCode, t)
 }

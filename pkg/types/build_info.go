@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
+	"time"
 )
 
-type BuildResult struct {
+type BuildInfo struct {
 	// Job parameters
 	Params Params
 
@@ -26,6 +27,8 @@ type BuildResult struct {
 
 	// The method by which the build artifacts can be fetched.
 	TransportMethod TransportMethod
+
+	StartedAt time.Time
 }
 
 type ErrImageBuild struct {

@@ -17,26 +17,27 @@ import (
 	"github.com/skroutz/mistry/pkg/utils"
 )
 
-// Work performs the work denoted by j and returns a BuildResult upon
+// Work performs the work denoted by j and returns a BuildInfo upon
 // successful completion, or an error.
-func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResult, err error) {
+func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
-	buildResult = &types.BuildResult{
+	buildInfo = &types.BuildInfo{
 		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
 		TransportMethod: types.Rsync,
 		Params:          j.Params,
+		StartedAt:       j.StartedAt,
 	}
 
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
 		i, err := ExitCode(j)
 		if err != nil {
-			return buildResult, err
+			return buildInfo, err
 		}
-		buildResult.Cached = true
-		buildResult.ExitCode = i
-		return buildResult, err
+		buildInfo.Cached = true
+		buildInfo.ExitCode = i
+		return buildInfo, err
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
 		return
@@ -58,11 +59,11 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 				if err == nil {
 					i, err := ExitCode(j)
 					if err != nil {
-						return buildResult, err
+						return buildInfo, err
 					}
-					buildResult.ExitCode = i
-					buildResult.Coalesced = true
-					return buildResult, err
+					buildInfo.ExitCode = i
+					buildInfo.Coalesced = true
+					return buildInfo, err
 				}
 				if os.IsNotExist(err) {
 					continue
@@ -134,31 +135,14 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 		}
 	}()
 
-	client, err := docker.NewEnvClient()
+	infoFile, err := os.Create(j.BuildInfoFilePath)
 	if err != nil {
-		err = workErr("could not create docker client", err)
-		return
-	}
-
-	err = j.BuildImage(ctx, s.cfg.UID, client, out)
-	if err != nil {
-		return
-	}
-
-	buildResult.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
-	if err != nil {
-		err = workErr("could not start docker container", err)
-		return
-	}
-
-	resultFile, err := os.Create(j.BuildResultFilePath)
-	if err != nil {
-		err = workErr("could not create build result file", err)
+		err = workErr("could not create build info file", err)
 		return
 	}
 	defer func() {
-		ferr := resultFile.Close()
-		errstr := "could not close build result file"
+		ferr := infoFile.Close()
+		errstr := "could not close build info file"
 		if ferr != nil {
 			if err == nil {
 				err = fmt.Errorf("%s; %s", errstr, ferr)
@@ -167,14 +151,48 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildResult *types.BuildResu
 			}
 		}
 	}()
-	brJSON, err := json.Marshal(buildResult)
+	biJSON, err := json.Marshal(buildInfo)
 	if err != nil {
-		err = workErr("could not serialize build result", err)
+		err = workErr("could not serialize build info", err)
 		return
 	}
-	_, err = resultFile.Write(brJSON)
+	_, err = infoFile.Write(biJSON)
 	if err != nil {
-		err = workErr("could not write build result to file", err)
+		err = workErr("could not write build info to file", err)
+		return
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		err = workErr("could not create docker client", err)
+		return
+	}
+
+	err = j.BuildImage(ctx, s.cfg.UID, client, out)
+	if err != nil {
+		err = workErr("could not build docker image", err)
+		return
+	}
+
+	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
+	if err != nil {
+		err = workErr("could not start docker container", err)
+		return
+	}
+
+	_, err = infoFile.Seek(0, 0)
+	if err != nil {
+		err = workErr("could not set the offset for the build_info file", err)
+		return
+	}
+	biJSON, err = json.Marshal(buildInfo)
+	if err != nil {
+		err = workErr("could not serialize build info", err)
+		return
+	}
+	_, err = infoFile.Write(biJSON)
+	if err != nil {
+		err = workErr("could not write build info to file", err)
 		return
 	}
 
@@ -237,8 +255,8 @@ func (s *Server) BootstrapProject(j *Job) error {
 // ExitCode returns the exit code of the job's container build.
 // If an error is returned, the exit code is irrelevant.
 func ExitCode(j *Job) (int, error) {
-	br := new(types.BuildResult)
-	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildResultFname))
+	br := new(types.BuildInfo)
+	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildInfoFname))
 	if err != nil {
 		return -999, err
 	}

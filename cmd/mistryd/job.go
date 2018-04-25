@@ -46,8 +46,8 @@ type Job struct {
 
 	// NOTE: after a job is complete, this points to an invalid (pending)
 	// path
-	BuildLogPath        string
-	BuildResultFilePath string
+	BuildLogPath      string
+	BuildInfoFilePath string
 
 	// docker-related
 	Image     string
@@ -115,10 +115,12 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
 	j.ReadyDataPath = filepath.Join(j.ReadyBuildPath, DataDir)
 	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogFname)
-	j.BuildResultFilePath = filepath.Join(j.PendingBuildPath, BuildResultFname)
+	j.BuildInfoFilePath = filepath.Join(j.PendingBuildPath, BuildInfoFname)
 
 	j.Image = ImgCntPrefix + j.ID
 	j.Container = ImgCntPrefix + j.ID
+
+	j.StartedAt = time.Now()
 
 	return j, nil
 }

@@ -45,7 +45,7 @@ func TestBootstrapProjectRace(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 	n := 100
-	results := make(chan *types.BuildResult, n)
+	results := make(chan *types.BuildInfo, n)
 	rand.Seed(time.Now().UnixNano())
 
 	projects := []string{"concurrent", "concurrent2", "concurrent3", "concurrent4"}
