@@ -1,6 +1,8 @@
 package btrfs
 
 import (
+	"fmt"
+
 	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/utils"
 )
@@ -23,6 +25,9 @@ func (fs Btrfs) Clone(src, dst string) []string {
 }
 
 func (fs Btrfs) Remove(path string) error {
-	_, err := utils.RunCmd([]string{"btrfs", "subvolume", "delete", path})
-	return err
+	out, err := utils.RunCmd([]string{"btrfs", "subvolume", "delete", path})
+	if err != nil {
+		return fmt.Errorf("%s (%s)", err, out)
+	}
+	return nil
 }
