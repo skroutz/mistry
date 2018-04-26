@@ -91,21 +91,45 @@ using the JSON API directly. We recommended using `mistry` whenever possible
 (although it may occassionally lag behind the server in terms of
 supported features).
 
-**Scheduling a new job and fetching the artifacts:**
-```shell
-$ mistry --project foo
+#### Client
+
+##### Schedule a new job, wait for completion, and fetch the artifacts
+
+```sh
+$ mistry build --project foo --target .
 ```
-This will place the artifacts and the current working directory.
+This will place the artifacts and the target directory.
+
+##### Schedule a new job without waiting
+
+```sh
+$ mistry build --project foo --async
+```
 
 See `mistry build -h` for more options.
 
-**Scheduling a new job without fetching the artifacts**:
-``` shell
-$ curl -H 'Content-Type: application/json' -d '{"project": "foo"}' localhost:8462/jobs
+#### HTTP Endpoints
+
+##### Schedule a new job
+
+```sh
+$ curl -X POST /jobs \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"project": "foo"}' 
 ```
 
-
-
+```js
+{
+    "Params": {"foo": "xzv"}, 
+    "Path": "<artifact path>",
+    "Cached": true,
+    "Coalesced": false,
+    "ExitCode": 0,
+    "Err": null,
+    "TransportMethod": "rsync"
+}
+```
 
 
 ### Web view

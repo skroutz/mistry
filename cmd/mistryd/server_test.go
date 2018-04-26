@@ -155,3 +155,16 @@ func TestHandleShowJob(t *testing.T) {
 		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
 	}
 }
+
+func TestNewJobAsync(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/jobs?async", strings.NewReader("{\"project\": \"simple\"}"))
+	server.srv.Handler.ServeHTTP(rec, req)
+	resp := rec.Result()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Error in reading response body: %s", err)
+	}
+	assertEq(resp.StatusCode, 201, t)
+	assertEq(string(body), "", t)
+}

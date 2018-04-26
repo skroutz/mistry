@@ -5,12 +5,14 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/skroutz/mistry/pkg/types"
 )
@@ -31,6 +33,59 @@ func TestNonGroupSubsequentInvocation(t *testing.T) {
 	cmdout, cmderr, err = cliBuildJob("--project", "bootstrap-twice", "--", "--foo=zxc")
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+}
+
+func TestAsyncSimpleBuild(t *testing.T) {
+	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "simple", "--no-wait", "--", "--test=async")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	assertEq(cmdout, "", t)
+	assertEq(cmderr, "", t)
+
+	// wait until the build is done and verify the result
+
+	j, err := NewJob("simple", types.Params{"test": "async"}, "", testcfg)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	buildInfoPath := filepath.Join(j.ReadyBuildPath, BuildInfoFname)
+
+	err = waitUntilExists(buildInfoPath)
+	if err != nil {
+		t.Fatalf("failed to find job build info at %s: %s", buildInfoPath, err)
+	}
+
+	bi := types.BuildInfo{}
+	biBlob, err := ioutil.ReadFile(buildInfoPath)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	err = json.Unmarshal(biBlob, &bi)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	assertEq(bi.ExitCode, 0, t)
+}
+
+func waitUntilExists(path string) error {
+	maxElapsed := 10 * time.Second
+	start := time.Now()
+	for {
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			elapsed := time.Since(start)
+			if elapsed > maxElapsed {
+				return fmt.Errorf("file was not found at %s after %s", path, maxElapsed)
+			}
+			time.Sleep(500 * time.Millisecond)
+		} else if err != nil {
+			return err
+		} else {
+			return nil
+		}
 	}
 }
 

@@ -51,6 +51,7 @@ func main() {
 		transport     string
 		verbose       bool
 		jsonResult    bool
+		noWait        bool
 	)
 
 	currentUser, err := user.Current()
@@ -67,29 +68,27 @@ JOB PARAMETERS:
    -- dynamic options for the command
 
 EXAMPLES:
-   1. The following sequence schedules a command to be executed in http://example.org:9090,
-      builds the yarn project, groups it under group_name, syncs the result to the
-      directory /tmp/yarn and uses the dynamic arguments yarn.lock and foo.
-      Note the @ before the yarn.lock, this indicates a referral to an actual file on the
-      filesystem.
+	1. Schedule a job with a group and some parameters and put artifacts under
+		/tmp/yarn using rsync. Prefixing a file name with @ will cause the contents
+		of yarn.lock to be sent as parameters.
 
-      $ mistry-cli build --host example.org --port 9090 --project yarn \
-      --group group_name --target /tmp/yarn -- --lockfile=@yarn.lock --foo=bar
+		$ {{.HelpName}} --host example.org --port 9090 --project yarn \
+			--group group_name --transport rsync --target /tmp/yarn \
+			-- --lockfile=@yarn.lock --foo=bar
 
-   2. The following sequence uses the GROUP environment variable to set the project group.
+	2. Schedules a build and exits early without waiting for the result by setting
+		the no-wait flag
 
-      $ GROUP=group_name mistry-cli build --host example.org --port 9090 --project yarn \
-      --target /tmp/yarn -- --lockfile=@yarn.lock --foo=bar
-	`, cli.CommandHelpTemplate)
+		$ {{.HelpName}} --host example.org --port 9090 --project yarn --no-wait
+`, cli.CommandHelpTemplate)
 
 	app := cli.NewApp()
-	app.Name = "mistry-cli"
-	app.Usage = "mistry client"
+	app.Usage = "schedule build jobs at the mistry service"
 	app.HideVersion = true
 	app.Commands = []cli.Command{
 		{
 			Name:  "build",
-			Usage: "Schedule a mistry job and retrieve the results",
+			Usage: "Schedule jobs and retrieve artifacts.",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:        "host",
@@ -104,12 +103,6 @@ EXAMPLES:
 					Value:       "8462",
 				},
 				cli.StringFlag{
-					Name:        "transport-user",
-					Usage:       "user to fetch the artifacts with",
-					Destination: &transportUser,
-					Value:       currentUser.Username,
-				},
-				cli.StringFlag{
 					Name:        "project",
 					Usage:       "job's project",
 					Destination: &project,
@@ -119,25 +112,39 @@ EXAMPLES:
 					Usage:       "group project builds (optional)",
 					Destination: &group,
 				},
-				cli.StringFlag{
-					Name:        "target, t",
-					Usage:       "the local directory where the result will be saved",
-					Destination: &target,
-					Value:       ".",
-				},
-				cli.StringFlag{
-					Name:        "transport",
-					Destination: &transport,
-					Value:       types.Scp,
-				},
 				cli.BoolFlag{
 					Name:        "verbose, v",
 					Destination: &verbose,
 				},
 				cli.BoolFlag{
 					Name:        "json-result",
-					Usage:       "Output the build result in JSON format to STDOUT (implies verbose: false)",
+					Usage:       "output the build result in JSON format to STDOUT (implies verbose: false)",
 					Destination: &jsonResult,
+				},
+
+				// transport flags
+				cli.BoolFlag{
+					Name:        "no-wait",
+					Usage:       "if set, schedule the job but don't fetch the artifacts",
+					Destination: &noWait,
+				},
+				cli.StringFlag{
+					Name:        "transport",
+					Usage:       "the method to use for fetching artifacts",
+					Destination: &transport,
+					Value:       types.Scp,
+				},
+				cli.StringFlag{
+					Name:        "transport-user",
+					Usage:       "user to fetch the artifacts with",
+					Destination: &transportUser,
+					Value:       currentUser.Username,
+				},
+				cli.StringFlag{
+					Name:        "target, t",
+					Usage:       "the local directory where the artifacts will be saved",
+					Destination: &target,
+					Value:       ".",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -151,13 +158,22 @@ EXAMPLES:
 				if target == "" {
 					return errors.New("target cannot be empty")
 				}
-				ts, ok := transports[types.TransportMethod(transport)]
-				if !ok {
-					return fmt.Errorf("invalid transport argument (%v)", transport)
+				if !noWait && transport == "" {
+					return errors.New("you need to either specify a transport or use the async flag")
 				}
 
 				if jsonResult {
 					verbose = false
+				}
+
+				var (
+					ts       Transport
+					tsExists bool
+				)
+
+				ts, tsExists = transports[types.TransportMethod(transport)]
+				if !tsExists {
+					return fmt.Errorf("invalid transport argument (%v)", transport)
 				}
 
 				// Normalize dynamic arguments by trimming the `--` and
@@ -187,13 +203,13 @@ EXAMPLES:
 					}
 				}
 
-				jr := types.JobRequest{Project: project, Group: group, Params: params}
-				jrJSON, err := json.Marshal(jr)
-				if err != nil {
-					return err
+				url := fmt.Sprintf("http://%s:%s/%s", host, port, JobsPath)
+				if noWait {
+					url += "?async"
 				}
 
-				request, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%s/%s", host, port, JobsPath), bytes.NewBuffer(jrJSON))
+				jr := types.JobRequest{Project: project, Group: group, Params: params}
+				jrJSON, err := json.Marshal(jr)
 				if err != nil {
 					return err
 				}
@@ -202,25 +218,19 @@ EXAMPLES:
 					fmt.Printf("Scheduling %#v...\n", jr)
 				}
 
-				client := &http.Client{}
-				resp, err := client.Do(request)
-				if err != nil {
-					return err
-				}
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := sendRequest(url, jrJSON, verbose)
 				if err != nil {
 					return err
 				}
 
-				if verbose {
-					fmt.Printf("Server response: %#v\n", resp)
-					fmt.Printf("Body: %s\n", body)
+				if noWait {
+					if verbose {
+						fmt.Printf("Build scheduled successfully\n")
+					}
+					return nil
 				}
 
-				if resp.StatusCode != http.StatusCreated {
-					return fmt.Errorf("Error creating job: %s, http code: %v", body, resp.StatusCode)
-				}
-
+				// Transfer the result
 				bi := types.BuildInfo{}
 				err = json.Unmarshal([]byte(body), &bi)
 				if err != nil {
@@ -254,4 +264,31 @@ EXAMPLES:
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func sendRequest(url string, reqBody []byte, verbose bool) ([]byte, error) {
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if verbose {
+		fmt.Printf("Server response: %#v\n", resp)
+		fmt.Printf("Body: %s\n", respBody)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("Error creating job: %s, http code: %v", respBody, resp.StatusCode)
+	}
+	return respBody, nil
 }
