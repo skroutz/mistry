@@ -92,9 +92,10 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	log.Printf("Creating new build directory...")
-	shouldCleanup, err := j.BootstrapBuildDir(s.cfg.FileSystem, log)
-	if shouldCleanup {
-		defer func() {
+	cleanupPending, err := j.BootstrapBuildDir(s.cfg.FileSystem, log)
+
+	defer func() {
+		if cleanupPending {
 			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
 			if derr != nil {
 				errstr := "could not clean hanging pending path"
@@ -104,8 +105,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 					err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
 				}
 			}
-		}()
-	}
+		}
+	}()
+
 	if err != nil {
 		return
 	}
@@ -201,6 +203,8 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		err = workErr("could not rename pending to ready path", err)
 		return
 	}
+	// after moving the pending to ready there's nothing to cleanup
+	cleanupPending = false
 
 	_, err = os.Lstat(j.LatestBuildPath)
 	if err == nil {
