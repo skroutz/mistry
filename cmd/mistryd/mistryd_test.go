@@ -21,7 +21,6 @@ import (
 
 	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/types"
-	"github.com/skroutz/mistry/pkg/utils"
 )
 
 var (
@@ -128,11 +127,11 @@ func TestPruneZombieBuilds(t *testing.T) {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 	path := filepath.Join(testcfg.BuildPath, project, "pending")
-	_, err = utils.RunCmd(testcfg.FileSystem.Create(filepath.Join(path, "foo")))
+	err = testcfg.FileSystem.Create(filepath.Join(path, "foo"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utils.RunCmd(testcfg.FileSystem.Create(filepath.Join(path, "bar")))
+	err = testcfg.FileSystem.Create(filepath.Join(path, "bar"))
 	if err != nil {
 		t.Fatal(err)
 	}

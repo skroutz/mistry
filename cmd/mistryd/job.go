@@ -308,18 +308,14 @@ func (j *Job) CloneSrcPath(log *log.Logger) string {
 // been partially or fully created and cleanup is required
 func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool, error) {
 	shouldCleanup := false
-	var cmd []string
+	var err error
 
 	cloneSrc := j.CloneSrcPath(log)
 
 	if cloneSrc == "" {
-		cmd = fs.Create(j.PendingBuildPath)
+		err = fs.Create(j.PendingBuildPath)
 	} else {
-		cmd = fs.Clone(cloneSrc, j.PendingBuildPath)
-	}
-	out, err := utils.RunCmd(cmd)
-	if out != "" {
-		log.Println(out)
+		err = fs.Clone(cloneSrc, j.PendingBuildPath)
 	}
 	if err != nil {
 		return shouldCleanup, workErr("could not create pending build path", err)

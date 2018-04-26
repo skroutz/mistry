@@ -4,27 +4,29 @@ import (
 	"fmt"
 )
 
-var List = make(map[string]FileSystem)
+// Registry maps the filesystem name to its implementation
+var Registry = make(map[string]FileSystem)
 
+// FileSystem defines a few basic filesystem operations
 type FileSystem interface {
-	// Create returns a command followed by its arguments, that will
-	// create path as a directory.
-	Create(path string) []string
+	// Create creates a new directory in the given path.
+	Create(path string) error
 
-	// Clone returns a command followed by its arguments, that will
-	// clone src to dst.
-	Clone(src, dst string) []string
+	// Clone copies the src directory and its contents to the dst.
+	Clone(src, dst string) error
 
 	// Remove removes path and its children.
+	// Implementors should not return an error when the path does not
+	// exist.
 	Remove(path string) error
 }
 
 // Get returns the registered filesystem denoted by s. If it doesn't exist,
 // an error is returned.
 func Get(s string) (FileSystem, error) {
-	fs, ok := List[s]
+	fs, ok := Registry[s]
 	if !ok {
-		return nil, fmt.Errorf("unknown filesystem '%s' (%v)", s, List)
+		return nil, fmt.Errorf("unknown filesystem '%s' (%v)", s, Registry)
 	}
 	return fs, nil
 }

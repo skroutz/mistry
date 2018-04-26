@@ -2,6 +2,7 @@ package btrfs
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/utils"
@@ -13,19 +14,27 @@ import (
 type Btrfs struct{}
 
 func init() {
-	filesystem.List["btrfs"] = Btrfs{}
+	filesystem.Registry["btrfs"] = Btrfs{}
 }
 
-func (fs Btrfs) Create(path string) []string {
-	return []string{"btrfs", "subvolume", "create", path}
+func (fs Btrfs) Create(path string) error {
+	return runCmd([]string{"btrfs", "subvolume", "create", path})
 }
 
-func (fs Btrfs) Clone(src, dst string) []string {
-	return []string{"btrfs", "subvolume", "snapshot", src, dst}
+func (fs Btrfs) Clone(src, dst string) error {
+	return runCmd([]string{"btrfs", "subvolume", "snapshot", src, dst})
 }
 
 func (fs Btrfs) Remove(path string) error {
-	out, err := utils.RunCmd([]string{"btrfs", "subvolume", "delete", path})
+	_, err := os.Stat(path)
+	if err == nil {
+		return runCmd([]string{"btrfs", "subvolume", "delete", path})
+	}
+	return nil
+}
+
+func runCmd(args []string) error {
+	out, err := utils.RunCmd(args)
 	if err != nil {
 		return fmt.Errorf("%s (%s)", err, out)
 	}

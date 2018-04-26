@@ -1,9 +1,11 @@
 package plainfs
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 // PlainFS implements the FileSystem interface. It uses plain `cp` and `mkdir`
@@ -11,17 +13,24 @@ import (
 type PlainFS struct{}
 
 func init() {
-	filesystem.List["plain"] = PlainFS{}
+	filesystem.Registry["plain"] = PlainFS{}
 }
 
-func (fs PlainFS) Create(path string) []string {
-	return []string{"mkdir", path}
+// Create creates a new directory at path
+func (fs PlainFS) Create(path string) error {
+	return os.Mkdir(path, 0755)
 }
 
-func (fs PlainFS) Clone(src, dst string) []string {
-	return []string{"cp", "-r", src, dst}
+// Clone recursively copies the contents of src to dst
+func (fs PlainFS) Clone(src, dst string) error {
+	out, err := utils.RunCmd([]string{"cp", "-r", src, dst})
+	if err != nil {
+		return fmt.Errorf("%s (%s)", err, out)
+	}
+	return nil
 }
 
+// Remove deletes the path and all its contents
 func (fs PlainFS) Remove(path string) error {
 	return os.RemoveAll(path)
 }
