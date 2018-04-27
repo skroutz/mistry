@@ -35,9 +35,17 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		if err != nil {
 			return buildInfo, err
 		}
-		buildInfo.Cached = true
-		buildInfo.ExitCode = i
-		return buildInfo, err
+		if i != 0 {
+			// previous build failed, remove its build dir to restart it
+			err = j.RemoveBuildDir(s.cfg.FileSystem, log)
+			if err != nil {
+				return buildInfo, workErr("could not remove existing failed build", err)
+			}
+		} else {
+			buildInfo.Cached = true
+			buildInfo.ExitCode = i
+			return buildInfo, err
+		}
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
 		return
