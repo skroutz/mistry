@@ -174,28 +174,33 @@ func TestResultCache(t *testing.T) {
 	assert(br2.ExitCode, 0, t)
 }
 
-func TestResultCacheExitCode(t *testing.T) {
-	cmdout1, _, err := cliBuildJob("--json-result", "--project", "result-cache-exitcode")
+func TestRerunFailedBuild(t *testing.T) {
+	// schedule a build that fails (non zero exit code)
+	cmdout, _, err := cliBuildJob("--json-result", "--project", "exit-code")
 	if err == nil {
-		t.Fatal("Expected error")
+		t.Fatal("expected error")
 	}
-	bi, err := parseClientJSON(cmdout1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertEq(bi.ExitCode, 33, t)
-	assertEq(bi.Cached, false, t)
 
-	cmdout2, _, err := cliBuildJob("--json-result", "--project", "result-cache-exitcode")
-	if err == nil {
-		t.Fatal("Expected error")
-	}
-	bi, err = parseClientJSON(cmdout2)
+	br, err := parseClientJSON(cmdout)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertEq(bi.ExitCode, 33, t)
-	assertEq(bi.Cached, true, t)
+
+	assertNotEq(br.ExitCode, 0, t)
+
+	// schedule it again, verify it ran a 2nd time by checking the start timestamp
+	cmdout, _, err = cliBuildJob("--json-result", "--project", "exit-code")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	br2, err := parseClientJSON(cmdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert(br2.ExitCode, br.ExitCode, t)
+	assertNotEq(br2.StartedAt, br.StartedAt, t)
 }
 
 func TestBuildCoalescingExitCode(t *testing.T) {

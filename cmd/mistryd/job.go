@@ -346,3 +346,8 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool
 	}
 	return shouldCleanup, nil
 }
+
+// RemoveBuildDir removes the existing build directory
+func (j *Job) RemoveBuildDir(fs filesystem.FileSystem, log *log.Logger) error {
+	return fs.Remove(j.ReadyBuildPath)
+}
