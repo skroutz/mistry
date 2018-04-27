@@ -62,6 +62,11 @@ type Job struct {
 	State  string
 }
 
+// NewJobFromRequest returns a new Job from the JobRequest
+func NewJobFromRequest(jr types.JobRequest, cfg *Config) (*Job, error) {
+	return NewJob(jr.Project, jr.Params, jr.Group, cfg)
+}
+
 // NewJob returns a new Job for the given project. project and cfg cannot be
 // empty.
 func NewJob(project string, params types.Params, group string, cfg *Config) (*Job, error) {
@@ -221,6 +226,7 @@ func (j *Job) String() string {
 		j.Project, j.Params, j.Group, j.ID[:7])
 }
 
+// MarshalJSON serializes the Job to JSON
 func (j *Job) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ID        string        `json:"id"`
@@ -239,6 +245,8 @@ func (j *Job) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON deserializes JSON data and updates the Job
+// with them
 func (j *Job) UnmarshalJSON(data []byte) error {
 	jData := &struct {
 		ID        string `json:"id"`

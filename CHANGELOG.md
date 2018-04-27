@@ -6,6 +6,7 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Added
 
+- Asynchronous job scheduling [[#61](https://github.com/skroutz/mistry/pull/61)]
 - Web view [[#17](https://github.com/skroutz/mistry/pull/17)]
 
 ### Changed

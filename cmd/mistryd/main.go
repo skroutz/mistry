@@ -57,6 +57,7 @@ const (
 	// Docker images/containers created by mistry.
 	ImgCntPrefix = "mistry-"
 
+	// DateFmt the date format
 	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
 

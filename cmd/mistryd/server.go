@@ -106,13 +106,23 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJob(jr.Project, jr.Params, jr.Group, s.cfg)
+	j, err := NewJobFromRequest(*jr, s.cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", jr, err),
 			http.StatusInternalServerError)
 		return
 	}
 
+	if _, isAsync := r.URL.Query()["async"]; isAsync {
+		s.handleNewJobAsync(j, w)
+	} else {
+		s.handleNewJobSync(j, w)
+	}
+}
+
+// handleNewJobSync triggers the build synchronously, and writes the
+// build result JSON to the response
+func (s *Server) handleNewJobSync(j *Job, w http.ResponseWriter) {
 	s.Log.Printf("Building %s...", j)
 	buildInfo, err := s.Work(context.Background(), j)
 	if err != nil {
@@ -132,6 +142,12 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Log.Printf("Error writing response for %s: %s", j, err)
 	}
+}
+
+func (s *Server) handleNewJobAsync(j *Job, w http.ResponseWriter) {
+	s.Log.Printf("Scheduling %s...", j)
+	go s.Work(context.Background(), j)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // HandleIndex returns all available jobs.
@@ -431,13 +447,14 @@ func (s *Server) getJobs() ([]Job, error) {
 			}
 			err = json.Unmarshal(biBlob, &bi)
 			if err != nil {
-				return Job{}, fmt.Errorf("cannot unmarshal the build_info file; %s", err)
-			}
-			if err != nil {
 				return Job{}, fmt.Errorf("cannot read build_info file of job %s; %s", jobID, err)
 			}
 
-			return Job{ID: jobID, Project: project, StartedAt: bi.StartedAt, State: state}, nil
+			return Job{
+				ID:        jobID,
+				Project:   project,
+				StartedAt: bi.StartedAt,
+				State:     state}, nil
 		}
 
 		for _, j := range pendingJobs {
