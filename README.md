@@ -88,7 +88,7 @@ Refer to [File system layout - Projects directory](https://github.com/skroutz/mi
 
 Interacting with mistry is done in two ways: (1) using `mistry` or (2)
 using the JSON API directly. We recommended using `mistry` whenever possible
-(although it may occassionally lag behind the server in terms of
+(although it may occasionally lag behind the server in terms of
 supported features).
 
 #### Client
