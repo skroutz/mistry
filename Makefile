@@ -23,8 +23,7 @@ testall: test
 	$(TESTCMD) --filesystem btrfs
 
 deps:
-	cd cmd/mistryd && dep ensure -v
-	cd cmd/mistry && dep ensure -v
+	dep ensure -v
 
 lint:
 	golint ./...
