@@ -7,19 +7,27 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 type Transport interface {
-	Copy(user, host, project, src, dst string, clearDst bool) []string
+	// Copy copies from src to dst, clearing the destination if clearDst is true
+	Copy(user, host, project, src, dst string, clearDst bool) (string, error)
 }
 
 type Scp struct{}
 
-func (ts Scp) Copy(user, host, project, src, dst string, clearDst bool) []string {
+// Copy runs 'scp user@host:src dst'. If clearDst is set, all contents of dst will be
+// removed before the scp
+func (ts Scp) Copy(user, host, project, src, dst string, clearDst bool) (string, error) {
 	if clearDst {
-		removeDirContents(dst)
+		err := removeDirContents(dst)
+		if err != nil {
+			return "", err
+		}
 	}
-	return []string{"scp", "-r", fmt.Sprintf("%s@%s:%s", user, host, src), dst}
+	return utils.RunCmd([]string{"scp", "-r", fmt.Sprintf("%s@%s:%s", user, host, src), dst})
 }
 
 func removeDirContents(dir string) error {
@@ -39,7 +47,9 @@ func removeDirContents(dir string) error {
 
 type Rsync struct{}
 
-func (ts Rsync) Copy(user, host, project, src, dst string, clearDst bool) []string {
+// Copy runs 'rsync -rtlp user@host::mistry/src dst'. If clearDst is true, the --delete flag
+// will be set
+func (ts Rsync) Copy(user, host, project, src, dst string, clearDst bool) (string, error) {
 	module := "mistry"
 
 	idx := strings.Index(src, project)
@@ -53,5 +63,5 @@ func (ts Rsync) Copy(user, host, project, src, dst string, clearDst bool) []stri
 	}
 	cmd = append(cmd, fmt.Sprintf("%s@%s::%s/%s", user, host, module, src), dst)
 
-	return cmd
+	return utils.RunCmd(cmd)
 }
