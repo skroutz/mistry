@@ -89,6 +89,48 @@ func waitUntilExists(path string) error {
 	}
 }
 
+func TestBuildRemoveTarget(t *testing.T) {
+	// create files at the target dir
+	target, err := ioutil.TempDir("", "test-remove-target")
+	failIfError(err, t)
+	defer os.RemoveAll(target)
+
+	// create 2 files: a /target/file.txt and a /target/dir/file2.txt
+	dirName := filepath.Join(target, "dir")
+	fileNames := []string{filepath.Join(target, "file.txt"), filepath.Join(dirName, "file2.txt")}
+
+	err = os.Mkdir(dirName, 0755)
+	failIfError(err, t)
+
+	for _, filepath := range fileNames {
+		f, err := os.Create(filepath)
+		failIfError(err, t)
+		f.Close()
+	}
+
+	// run the job with remove-target
+	cmdout, cmderr, err := cliBuildJobTarget(target, "--project", "simple", "--verbose", "--clear-target")
+	t.Logf("cli output: out: %s err: %s", cmdout, cmderr)
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	// verify the files and directory have been deleted
+	for _, path := range append(fileNames, dirName) {
+		_, err = os.Stat(path)
+		if err == nil {
+			t.Fatalf("unexpected file found at %s", path)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("error when trying to check target file %s: %s", path, err)
+		}
+	}
+}
+
+func failIfError(err error, t *testing.T) {
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+}
+
 func TestUnknownProject(t *testing.T) {
 	expected := "Unknown project 'Idontexist'"
 

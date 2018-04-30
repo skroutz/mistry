@@ -246,11 +246,18 @@ func parseClientJSON(s string) (*types.BuildInfo, error) {
 // MISTRY_CLIENT_PATH environment variable or, if empty,  from the current
 // working directory where the tests are ran from.
 func cliBuildJob(args ...string) (string, string, error) {
+	return cliBuildJobTarget(target, args...)
+}
+
+func cliBuildJobTarget(trgt string, args ...string) (string, string, error) {
 	clientPath := os.Getenv("MISTRY_CLIENT_PATH")
 	if clientPath == "" {
-		clientPath = "./mistry"
+		clientPath = "/home/dtheodor/go/src/github.com/skroutz/mistry/mistry"
 	}
-	args = append([]string{clientPath, "build", "--host", host, "--port", port, "--target", target, "--transport-user", username}, args...)
+	if trgt == "" {
+		trgt = target
+	}
+	args = append([]string{clientPath, "build", "--host", host, "--port", port, "--target", trgt, "--transport-user", username}, args...)
 
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)

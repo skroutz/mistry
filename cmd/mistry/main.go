@@ -52,6 +52,7 @@ func main() {
 		verbose       bool
 		jsonResult    bool
 		noWait        bool
+		clearTarget   bool
 	)
 
 	currentUser, err := user.Current()
@@ -145,6 +146,11 @@ EXAMPLES:
 					Usage:       "the local directory where the artifacts will be saved",
 					Destination: &target,
 					Value:       ".",
+				},
+				cli.BoolFlag{
+					Name:        "clear-target",
+					Usage:       "whether to remove any previously existing files in the target directory",
+					Destination: &clearTarget,
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -249,7 +255,7 @@ EXAMPLES:
 					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
-				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, bi.Path+"/*", target))
+				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget))
 				fmt.Println(out)
 				if err != nil {
 					return err
