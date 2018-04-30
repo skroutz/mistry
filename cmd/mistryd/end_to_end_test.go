@@ -90,7 +90,7 @@ func waitUntilExists(path string) error {
 }
 
 func TestBuildRemoveTarget(t *testing.T) {
-	// create files at the target dir
+	// create a new temp target dir
 	target, err := ioutil.TempDir("", "test-remove-target")
 	failIfError(err, t)
 	defer os.RemoveAll(target)
@@ -107,10 +107,11 @@ func TestBuildRemoveTarget(t *testing.T) {
 		failIfError(err, t)
 		f.Close()
 	}
+	cliArgs := cliDefaultArgs
+	cliArgs.target = target
 
 	// run the job with remove-target
-	cmdout, cmderr, err := cliBuildJobTarget(target, "--project", "simple", "--verbose", "--clear-target")
-	t.Logf("cli output: out: %s err: %s", cmdout, cmderr)
+	cmdout, cmderr, err := cliBuildJobArgs(cliArgs, "--project", "simple", "--verbose", "--clear-target")
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
@@ -149,7 +150,7 @@ func TestJobParams(t *testing.T) {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 
-	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,7 +221,7 @@ func TestSameGroupDifferentParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout1, cmderr1, err)
 	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out1, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +230,7 @@ func TestSameGroupDifferentParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout2, cmderr2, err)
 	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out2, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +243,7 @@ func TestResultCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout1, cmderr1, err)
 	}
-	out1, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out1, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +256,7 @@ func TestResultCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout2, cmderr2, err)
 	}
-	out2, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out2, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,7 +366,7 @@ func TestBuildCoalescing(t *testing.T) {
 
 	wg.Wait()
 
-	out, err := ioutil.ReadFile(filepath.Join(target, "out.txt"))
+	out, err := ioutil.ReadFile(filepath.Join(cliDefaultArgs.target, "out.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}

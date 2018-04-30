@@ -29,15 +29,19 @@ var (
 	params  = make(types.Params)
 
 	// mistry-cli args
-	host     string
-	port     string
-	username string
-	target   string
+	cliDefaultArgs CliCommonArgs
 
 	addrFlag       string
 	configFlag     string
 	filesystemFlag string
 )
+
+type CliCommonArgs struct {
+	host     string
+	port     string
+	username string
+	target   string
+}
 
 func TestMain(m *testing.M) {
 	flag.StringVar(&addrFlag, "addr", "127.0.0.1:8462", "")
@@ -49,8 +53,8 @@ func TestMain(m *testing.M) {
 	if len(parts) != 2 {
 		panic("invalid addr argument")
 	}
-	host = parts[0]
-	port = parts[1]
+	cliDefaultArgs.host = parts[0]
+	cliDefaultArgs.port = parts[1]
 
 	fs, err := filesystem.Get(filesystemFlag)
 	if err != nil {
@@ -79,7 +83,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	username = user.Username
+	cliDefaultArgs.username = user.Username
 
 	server, err = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
 	if err != nil {
@@ -97,21 +101,20 @@ func TestMain(m *testing.M) {
 		}
 
 	}()
-	waitForServer(port)
+	waitForServer(cliDefaultArgs.port)
 
-	target, err = ioutil.TempDir("", "mistry-test-artifacts")
+	cliDefaultArgs.target, err = ioutil.TempDir("", "mistry-test-artifacts")
 	if err != nil {
 		panic(err)
 	}
 
 	result := m.Run()
-
 	if result == 0 {
 		err = os.RemoveAll(testcfg.BuildPath)
 		if err != nil {
 			panic(err)
 		}
-		err = os.RemoveAll(target)
+		err = os.RemoveAll(cliDefaultArgs.target)
 		if err != nil {
 			panic(err)
 		}
@@ -246,18 +249,21 @@ func parseClientJSON(s string) (*types.BuildInfo, error) {
 // MISTRY_CLIENT_PATH environment variable or, if empty,  from the current
 // working directory where the tests are ran from.
 func cliBuildJob(args ...string) (string, string, error) {
-	return cliBuildJobTarget(target, args...)
+	return cliBuildJobArgs(cliDefaultArgs, args...)
 }
 
-func cliBuildJobTarget(trgt string, args ...string) (string, string, error) {
+func cliBuildJobArgs(cliArgs CliCommonArgs, args ...string) (string, string, error) {
 	clientPath := os.Getenv("MISTRY_CLIENT_PATH")
 	if clientPath == "" {
-		clientPath = "/home/dtheodor/go/src/github.com/skroutz/mistry/mistry"
+		clientPath = "./mistry"
 	}
-	if trgt == "" {
-		trgt = target
-	}
-	args = append([]string{clientPath, "build", "--host", host, "--port", port, "--target", trgt, "--transport-user", username}, args...)
+	args = append([]string{
+		clientPath, "build",
+		"--host", cliArgs.host,
+		"--port", cliArgs.port,
+		"--target", cliArgs.target,
+		"--transport-user", cliArgs.username},
+		args...)
 
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
