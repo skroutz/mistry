@@ -243,7 +243,9 @@ EXAMPLES:
 				}
 
 				if verbose {
-					fmt.Printf("Result after unmarshalling: %#v\n", bi)
+					fmt.Printf(
+						"\nResult:\nStarted at: %s ExitCode: %v Params: %s Cached: %v Coalesced: %v\n\nLogs:\n%s\n",
+						bi.StartedAt, bi.ExitCode, bi.Params, bi.Cached, bi.Coalesced, bi.Log)
 				}
 
 				if jsonResult {
@@ -254,10 +256,16 @@ EXAMPLES:
 					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
+				if verbose {
+					fmt.Printf("Copying artifacts to %s", target)
+				}
 				out, err := ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget)
 				fmt.Println(out)
 				if err != nil {
 					return err
+				}
+				if verbose {
+					fmt.Printf("Artifacts copied to %s successfully\n", target)
 				}
 
 				return nil
@@ -289,7 +297,6 @@ func sendRequest(url string, reqBody []byte, verbose bool) ([]byte, error) {
 
 	if verbose {
 		fmt.Printf("Server response: %#v\n", resp)
-		fmt.Printf("Body: %s\n", respBody)
 	}
 
 	if resp.StatusCode != http.StatusCreated {

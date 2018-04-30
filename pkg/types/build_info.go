@@ -29,6 +29,8 @@ type BuildInfo struct {
 	TransportMethod TransportMethod
 
 	StartedAt time.Time
+
+	Log string
 }
 
 type ErrImageBuild struct {

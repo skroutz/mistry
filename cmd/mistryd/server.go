@@ -189,9 +189,6 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 // HandleShowJob receives requests for a job and produces the appropriate output
 // based on the content type of the request.
 func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
-	var log []byte
-	var buildInfo []byte
-
 	if r.Method != "GET" {
 		http.Error(w, "Expected GET, got "+r.Method, http.StatusMethodNotAllowed)
 		return
@@ -212,17 +209,8 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jPath := filepath.Join(s.cfg.BuildPath, project, state, id)
-	buildLogPath := filepath.Join(jPath, BuildLogFname)
-	buildInfoPath := filepath.Join(jPath, BuildInfoFname)
 
-	buildInfo, err = ioutil.ReadFile(buildInfoPath)
-	if err != nil {
-		s.Log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	log, err = ioutil.ReadFile(buildLogPath)
+	buildInfo, err := ReadJobBuildInfo(jPath, true)
 	if err != nil {
 		s.Log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -230,11 +218,10 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	j := Job{
-		Output:  string(buildInfo),
-		Log:     template.HTML(strings.Replace(string(log), "\n", "<br />", -1)),
-		ID:      id,
-		Project: project,
-		State:   state,
+		BuildInfo: buildInfo,
+		ID:        id,
+		Project:   project,
+		State:     state,
 	}
 
 	if r.Header.Get("Content-type") == "application/json" {
@@ -262,7 +249,7 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 				s.br.CloseClientC[id] = make(chan struct{})
 			}
 
-			tl, err := tailer.New(buildLogPath)
+			tl, err := tailer.New(BuildLogPath(jPath))
 			if err != nil {
 				s.Log.Print(err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -454,21 +441,17 @@ func (s *Server) getJobs() ([]Job, error) {
 		}
 
 		getJob := func(path, jobID, project, state string) (Job, error) {
-			bi := types.BuildInfo{}
-			biBlob, err := ioutil.ReadFile(filepath.Join(path, jobID, BuildInfoFname))
+			bi, err := ReadJobBuildInfo(filepath.Join(path, jobID), false)
 			if err != nil {
-				return Job{}, fmt.Errorf("cannot read build_info file; %s", err)
-			}
-			err = json.Unmarshal(biBlob, &bi)
-			if err != nil {
-				return Job{}, fmt.Errorf("cannot read build_info file of job %s; %s", jobID, err)
+				return Job{}, err
 			}
 
 			return Job{
 				ID:        jobID,
 				Project:   project,
 				StartedAt: bi.StartedAt,
-				State:     state}, nil
+				State:     state,
+				BuildInfo: bi}, nil
 		}
 
 		for _, j := range pendingJobs {

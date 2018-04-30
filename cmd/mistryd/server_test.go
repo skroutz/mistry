@@ -127,8 +127,8 @@ func TestHandleShowJob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jobID := (job[0].ID)
-	project := (job[0].Project)
+	jobID := job[0].ID
+	project := job[0].Project
 
 	// Request the show page of the job selected from the index page.
 	showPath := path.Join("/job", project, jobID)

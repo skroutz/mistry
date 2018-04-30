@@ -36,28 +36,29 @@
             <div class="card-divider">
               <h4> Logs </h4>
             </div>
-            <p id="js-job-log">{{.Log}}</p>
+            <p id="js-job-log"></p>
           </div>
       </div>
     </div>
   </div>
 
   <script type="text/javascript">
+    const jobLog = document.getElementById('js-job-log')
+    const logs = {{.BuildInfo.Log}};
     const jobInfo = document.getElementById('js-job-info');
     const state = {{.State}}
-    const output = {{.Output}}
-    const jobJSON = JSON.parse(output);
 
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
-    jobInfo.innerHTML += "Started At: ".big() + new Date(jobJSON["StartedAt"]) + "<br>";
-    jobInfo.innerHTML += "Path: ".big() + jobJSON["Path"] + "<br>";
-    jobInfo.innerHTML += "Params: ".big() + JSON.stringify(jobJSON.Params) + "<br>";
-    jobInfo.innerHTML += "Cached: ".big() + jobJSON["Cached"] + "<br>";
-    jobInfo.innerHTML += "Coalesced: ".big() + jobJSON["Coalesced"] + "<br>";
-    jobInfo.innerHTML += "Error: ".big() + jobJSON["Err"] + "<br>";
-    jobInfo.innerHTML += "ExitCode: ".big() + jobJSON["ExitCode"] + "<br>";
-    jobInfo.innerHTML += "Transport method: ".big() + jobJSON["TransportMethod"] + "<br>";
+    jobInfo.innerHTML += "Started At: ".big() + new Date({{.BuildInfo.StartedAt}}) + "<br>";
+    jobInfo.innerHTML += "Path: ".big() + {{.BuildInfo.Path}} + "<br>";
+    jobInfo.innerHTML += "Params: ".big() + JSON.stringify({{.BuildInfo.Params}}) + "<br>";
+    jobInfo.innerHTML += "Cached: ".big() + {{.BuildInfo.Cached}} + "<br>";
+    jobInfo.innerHTML += "Coalesced: ".big() + {{.BuildInfo.Coalesced}} + "<br>";
+    jobInfo.innerHTML += "ExitCode: ".big() + {{.BuildInfo.ExitCode}} + "<br>";
+    jobInfo.innerHTML += "Transport method: ".big() + {{.BuildInfo.TransportMethod}} + "<br>";
+
+    jobLog.innerHTML += logs.split('\n').join('<br>')
 
     if (state == "pending") {
       setInterval(checkState, 3000);
@@ -76,7 +77,6 @@
       }
 
       const source = new EventSource('/log/{{.Project}}/{{.ID}}');
-      const jobLog = document.getElementById('js-job-log')
       source.onmessage = function(e) {
         jobLog.innerHTML += e.data + "</br>"
       };

@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,10 +56,8 @@ type Job struct {
 
 	StartedAt time.Time
 
-	// webview-related
-	Output string
-	Log    template.HTML
-	State  string
+	BuildInfo *types.BuildInfo
+	State     string
 }
 
 // NewJobFromRequest returns a new Job from the JobRequest
@@ -119,13 +117,15 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.PendingBuildPath = filepath.Join(j.RootBuildPath, "pending", j.ID)
 	j.ReadyBuildPath = filepath.Join(j.RootBuildPath, "ready", j.ID)
 	j.ReadyDataPath = filepath.Join(j.ReadyBuildPath, DataDir)
-	j.BuildLogPath = filepath.Join(j.PendingBuildPath, BuildLogFname)
+	j.BuildLogPath = BuildLogPath(j.PendingBuildPath)
 	j.BuildInfoFilePath = filepath.Join(j.PendingBuildPath, BuildInfoFname)
 
 	j.Image = ImgCntPrefix + j.ID
 	j.Container = ImgCntPrefix + j.ID
 
 	j.StartedAt = time.Now()
+	j.BuildInfo = new(types.BuildInfo)
+	j.State = "pending"
 
 	return j, nil
 }
@@ -229,18 +229,16 @@ func (j *Job) String() string {
 // MarshalJSON serializes the Job to JSON
 func (j *Job) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ID        string        `json:"id"`
-		Project   string        `json:"project"`
-		StartedAt string        `json:"startedAt"`
-		Output    string        `json:"output"`
-		Log       template.HTML `json:"log"`
-		State     string        `json:"state"`
+		ID        string          `json:"id"`
+		Project   string          `json:"project"`
+		StartedAt string          `json:"startedAt"`
+		BuildInfo types.BuildInfo `json:"buildInfo"`
+		State     string          `json:"state"`
 	}{
 		ID:        j.ID,
 		Project:   j.Project,
 		StartedAt: j.StartedAt.Format(DateFmt),
-		Output:    j.Output,
-		Log:       template.HTML(j.Log),
+		BuildInfo: *j.BuildInfo,
 		State:     j.State,
 	})
 }
@@ -249,12 +247,11 @@ func (j *Job) MarshalJSON() ([]byte, error) {
 // with them
 func (j *Job) UnmarshalJSON(data []byte) error {
 	jData := &struct {
-		ID        string `json:"id"`
-		Project   string `json:"project"`
-		StartedAt string `json:"startedAt"`
-		Output    string `json:"output"`
-		Log       string `json:"log"`
-		State     string `json:"state"`
+		ID        string          `json:"id"`
+		Project   string          `json:"project"`
+		StartedAt string          `json:"startedAt"`
+		BuildInfo types.BuildInfo `json:"buildInfo"`
+		State     string          `json:"state"`
 	}{}
 	err := json.Unmarshal(data, &jData)
 	if err != nil {
@@ -266,8 +263,7 @@ func (j *Job) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	j.Output = jData.Output
-	j.Log = template.HTML(jData.Log)
+	j.BuildInfo = &jData.BuildInfo
 	j.State = jData.State
 
 	return nil
@@ -355,7 +351,44 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool
 	return shouldCleanup, nil
 }
 
-// RemoveBuildDir removes the existing build directory
-func (j *Job) RemoveBuildDir(fs filesystem.FileSystem, log *log.Logger) error {
-	return fs.Remove(j.ReadyBuildPath)
+// BuildLogPath returns the path of the job logs found at jobPath
+func BuildLogPath(jobPath string) string {
+	return filepath.Join(jobPath, BuildLogFname)
+}
+
+// ReadJobLogs returns the job logs found at jobPath
+func ReadJobLogs(jobPath string) ([]byte, error) {
+	buildLogPath := BuildLogPath(jobPath)
+
+	log, err := ioutil.ReadFile(buildLogPath)
+	if err != nil {
+		return nil, err
+	}
+	return log, nil
+}
+
+// ReadJobBuildInfo returns the BuildInfo found at jobPath
+func ReadJobBuildInfo(path string, logs bool) (*types.BuildInfo, error) {
+	buildInfoPath := filepath.Join(path, BuildInfoFname)
+	buildInfo := &types.BuildInfo{}
+
+	buildInfoBytes, err := ioutil.ReadFile(buildInfoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(buildInfoBytes, &buildInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if logs {
+		log, err := ReadJobLogs(path)
+		if err != nil {
+			return nil, err
+		}
+		buildInfo.Log = string(log)
+	}
+
+	return buildInfo, nil
 }
