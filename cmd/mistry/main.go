@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/skroutz/mistry/pkg/types"
-	"github.com/skroutz/mistry/pkg/utils"
 	"github.com/urfave/cli"
 )
 
@@ -149,7 +148,7 @@ EXAMPLES:
 				},
 				cli.BoolFlag{
 					Name:        "clear-target",
-					Usage:       "whether to remove any previously existing files in the target directory",
+					Usage:       "remove contents of the target directory before fetching artifacts",
 					Destination: &clearTarget,
 				},
 			},
@@ -255,7 +254,7 @@ EXAMPLES:
 					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
-				out, err := utils.RunCmd(ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget))
+				out, err := ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget)
 				fmt.Println(out)
 				if err != nil {
 					return err
