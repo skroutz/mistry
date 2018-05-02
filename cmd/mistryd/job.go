@@ -132,10 +132,17 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 
 // BuildImage builds the Docker image denoted by j.Image. If there is an
 // error, it will be of type types.ErrImageBuild.
-func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out io.Writer) error {
+func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out io.Writer, pullParent, noCache bool) error {
 	buildArgs := make(map[string]*string)
 	buildArgs["uid"] = &uid
-	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{j.Image}, BuildArgs: buildArgs, NetworkMode: "host"}
+	buildOpts := dockertypes.ImageBuildOptions{
+		Tags:        []string{j.Image},
+		BuildArgs:   buildArgs,
+		NetworkMode: "host",
+		PullParent:  pullParent,
+		NoCache:     noCache,
+		ForceRemove: true,
+	}
 	resp, err := c.ImageBuild(context.Background(), bytes.NewBuffer(j.ImageTar), buildOpts)
 	if err != nil {
 		return types.ErrImageBuild{Image: j.Image, Err: err}

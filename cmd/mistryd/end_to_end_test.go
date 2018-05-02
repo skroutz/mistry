@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	docker "github.com/docker/docker/client"
 	"github.com/skroutz/mistry/pkg/types"
 )
 
@@ -23,6 +25,46 @@ func TestSimpleBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
+}
+
+func TestSimpleRebuild(t *testing.T) {
+	// run a job, fetch its build time
+	cmdout, cmderr, err := cliBuildJob("--project", "simple", "--", "--test=rebuild")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+
+	j, err := NewJob("simple", types.Params{"test": "rebuild"}, "", testcfg)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	i, _, err := client.ImageInspectWithRaw(context.Background(), j.Image)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// remove the build directory for the job to run again
+	err = testcfg.FileSystem.Remove(j.ReadyBuildPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmdout, cmderr, err = cliBuildJob("--project", "simple", "--rebuild", "--", "--test=rebuild")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	// fetch last build time, make sure it is different
+	i2, _, err := client.ImageInspectWithRaw(context.Background(), j.Image)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNotEq(i.Created, i2.Created, t)
 }
 
 func TestNonGroupSubsequentInvocation(t *testing.T) {

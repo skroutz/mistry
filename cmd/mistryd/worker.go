@@ -19,7 +19,7 @@ import (
 
 // Work performs the work denoted by j and returns a BuildInfo upon
 // successful completion, or an error.
-func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, err error) {
+func (s *Server) Work(ctx context.Context, j *Job, jr types.JobRequest) (buildInfo *types.BuildInfo, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
 	_, err = os.Stat(j.ReadyBuildPath)
@@ -176,7 +176,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	err = j.BuildImage(ctx, s.cfg.UID, client, out)
+	err = j.BuildImage(ctx, s.cfg.UID, client, out, jr.Rebuild, jr.Rebuild)
 	if err != nil {
 		err = workErr("could not build docker image", err)
 		return

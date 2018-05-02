@@ -100,14 +100,14 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
-	jr := &types.JobRequest{}
-	err = json.Unmarshal(body, jr)
+	jr := types.JobRequest{}
+	err = json.Unmarshal(body, &jr)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error unmarshalling body '%s' to Job: %s", body, err),
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJobFromRequest(*jr, s.cfg)
+	j, err := NewJobFromRequest(jr, s.cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", jr, err),
 			http.StatusInternalServerError)
@@ -115,17 +115,17 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, isAsync := r.URL.Query()["async"]; isAsync {
-		s.handleNewJobAsync(j, w)
+		s.handleNewJobAsync(j, jr, w)
 	} else {
-		s.handleNewJobSync(j, w)
+		s.handleNewJobSync(j, jr, w)
 	}
 }
 
 // handleNewJobSync triggers the build synchronously, and writes the
 // build result JSON to the response
-func (s *Server) handleNewJobSync(j *Job, w http.ResponseWriter) {
+func (s *Server) handleNewJobSync(j *Job, jr types.JobRequest, w http.ResponseWriter) {
 	s.Log.Printf("Building %s...", j)
-	buildInfo, err := s.Work(context.Background(), j)
+	buildInfo, err := s.Work(context.Background(), j, jr)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
 			http.StatusInternalServerError)
@@ -145,9 +145,9 @@ func (s *Server) handleNewJobSync(j *Job, w http.ResponseWriter) {
 	}
 }
 
-func (s *Server) handleNewJobAsync(j *Job, w http.ResponseWriter) {
+func (s *Server) handleNewJobAsync(j *Job, jr types.JobRequest, w http.ResponseWriter) {
 	s.Log.Printf("Scheduling %s...", j)
-	go s.Work(context.Background(), j)
+	go s.Work(context.Background(), j, jr)
 	w.WriteHeader(http.StatusCreated)
 }
 
