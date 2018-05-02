@@ -52,6 +52,7 @@ func main() {
 		jsonResult    bool
 		noWait        bool
 		clearTarget   bool
+		rebuild       bool
 	)
 
 	currentUser, err := user.Current()
@@ -120,6 +121,11 @@ EXAMPLES:
 					Name:        "json-result",
 					Usage:       "output the build result in JSON format to STDOUT (implies verbose: false)",
 					Destination: &jsonResult,
+				},
+				cli.BoolFlag{
+					Name:        "rebuild",
+					Usage:       "rebuild the docker image",
+					Destination: &rebuild,
 				},
 
 				// transport flags
@@ -213,7 +219,7 @@ EXAMPLES:
 					url += "?async"
 				}
 
-				jr := types.JobRequest{Project: project, Group: group, Params: params}
+				jr := types.JobRequest{Project: project, Group: group, Params: params, Rebuild: rebuild}
 				jrJSON, err := json.Marshal(jr)
 				if err != nil {
 					return err
