@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -328,10 +329,23 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	tmpl, err = tmpl.Parse(string(tmplBody))
 	if err != nil {
 		s.Log.Print(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, j)
+
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, j)
+	if err != nil {
+		s.Log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		s.Log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleServerPush emits build logs as Server-SentEvents (SSE).
