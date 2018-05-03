@@ -22,33 +22,31 @@ import (
 func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
-	buildInfo = &types.BuildInfo{
-		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
-		TransportMethod: types.Rsync,
-		Params:          j.Params,
-		StartedAt:       j.StartedAt,
-	}
-
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
-		i, err := ExitCode(j)
+		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
 		if err != nil {
-			return buildInfo, err
-		}
-		if i != 0 {
+			return nil, err
+		} else if buildInfo.ExitCode != 0 {
 			// previous build failed, remove its build dir to restart it
-			err = j.RemoveBuildDir(s.cfg.FileSystem, log)
+			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
 			if err != nil {
 				return buildInfo, workErr("could not remove existing failed build", err)
 			}
 		} else {
 			buildInfo.Cached = true
-			buildInfo.ExitCode = i
 			return buildInfo, err
 		}
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
 		return
+	}
+
+	buildInfo = &types.BuildInfo{
+		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
+		TransportMethod: types.Rsync,
+		Params:          j.Params,
+		StartedAt:       j.StartedAt,
 	}
 
 	added := s.jq.Add(j)
@@ -214,6 +212,21 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	// after moving the pending to ready there's nothing to cleanup
 	cleanupPending = false
 
+	// fill the buildInfo Log from the freshly written log
+	err = out.Sync()
+	if err != nil {
+		err = workErr("could not flush the output log", err)
+		return
+	}
+
+	finalLog, err := ReadJobLogs(j.ReadyBuildPath)
+	if err != nil {
+		err = workErr("could not read the job logs", err)
+		return
+	}
+
+	buildInfo.Log = string(finalLog)
+
 	_, err = os.Lstat(j.LatestBuildPath)
 	if err == nil {
 		err = os.Remove(j.LatestBuildPath)
@@ -267,17 +280,11 @@ func (s *Server) BootstrapProject(j *Job) error {
 // ExitCode returns the exit code of the job's container build.
 // If an error is returned, the exit code is irrelevant.
 func ExitCode(j *Job) (int, error) {
-	br := new(types.BuildInfo)
-	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildInfoFname))
+	buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, false)
 	if err != nil {
 		return -999, err
 	}
-	dec := json.NewDecoder(f)
-	err = dec.Decode(br)
-	if err != nil {
-		return -999, err
-	}
-	return br.ExitCode, nil
+	return buildInfo.ExitCode, nil
 }
 
 func workErr(s string, e error) error {

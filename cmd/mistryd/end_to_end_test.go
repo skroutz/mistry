@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -171,25 +172,48 @@ func TestImageBuildFailure(t *testing.T) {
 	}
 }
 
-func TestImageBuildLogsNotJson(t *testing.T) {
+func TestLogs(t *testing.T) {
 	// trigger a job
 	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "simple", "--", "--testing=logs")
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
+
+	br, err := parseClientJSON(cmdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// find the log file
 	j, err := NewJob("simple", types.Params{"testing": "logs"}, "", testcfg)
 	if err != nil {
 		t.Fatalf("failed to create job: err: %#v", err)
 	}
-	f, err := os.Open(filepath.Join(j.ReadyBuildPath, BuildLogFname))
+	log, err := ReadJobLogs(j.ReadyBuildPath)
 	if err != nil {
 		t.Fatalf("failed to read job log: err: %#v", err)
 	}
-	defer f.Close()
+
+	assertEq(br.Log, string(log), t)
+}
+
+func TestLogsNotJson(t *testing.T) {
+	// trigger a job and grab the logs
+	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "simple", "--", "--testing=logsnotjson")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	j, err := NewJob("simple", types.Params{"testing": "logsnotjson"}, "", testcfg)
+	if err != nil {
+		t.Fatalf("failed to create job: err: %#v", err)
+	}
+	logs, err := ReadJobLogs(j.ReadyBuildPath)
+	if err != nil {
+		t.Fatalf("failed to read job log: err: %#v", err)
+	}
 
 	// if any line in the log file can be parsed into a JSON, fail
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(bytes.NewReader(logs))
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		var v interface{}
@@ -199,7 +223,6 @@ func TestImageBuildLogsNotJson(t *testing.T) {
 			t.Fatalf("found JSON line in the logs: %s", line)
 		}
 	}
-
 }
 
 func TestExitCode(t *testing.T) {
