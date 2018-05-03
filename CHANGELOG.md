@@ -6,6 +6,9 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Added
 
+- client: Add `--clear-target` option to clear target path before fetching
+  artifacts [[#63](https://github.com/skroutz/mistry/pull/63)]
+- client: Build logs are now displayed when in verbose mode [[#65](https://github.com/skroutz/mistry/pull/65)]
 - Asynchronous job scheduling [[#61](https://github.com/skroutz/mistry/pull/61)]
 - Web view [[#17](https://github.com/skroutz/mistry/pull/17)]
 
