@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	docker "github.com/docker/docker/client"
 	"github.com/skroutz/mistry/pkg/filesystem"
 	"github.com/skroutz/mistry/pkg/types"
 )
@@ -26,6 +28,7 @@ import (
 var (
 	testcfg *Config
 	server  *Server
+	logger  *log.Logger
 	params  = make(types.Params)
 
 	// mistry-cli args
@@ -85,7 +88,9 @@ func TestMain(m *testing.M) {
 	}
 	cliDefaultArgs.username = user.Username
 
-	server, err = NewServer(testcfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	logger = log.New(os.Stderr, "[http] ", log.LstdFlags)
+
+	server, err = NewServer(testcfg, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -150,6 +155,54 @@ func TestPruneZombieBuilds(t *testing.T) {
 	}
 	if len(hangingPendingBuilds) != 0 {
 		t.Fatalf("Expected to have cleaned up all zombie pending builds, found %d", len(hangingPendingBuilds))
+	}
+}
+
+func TestRebuildImages(t *testing.T) {
+	// run a job, fetch its build time
+	params := types.Params{"test": "rebuild-server"}
+	cmdout, cmderr, err := cliBuildJob("--project", "simple", "--", toCli(params)[0])
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+
+	j, err := NewJob("simple", params, "", testcfg)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	i, _, err := client.ImageInspectWithRaw(context.Background(), j.Image)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b := new(strings.Builder)
+	r, err := RebuildImages(testcfg, logger, b, []string{"simple"}, true)
+	t.Log(b.String())
+	failIfError(err, t)
+	assertEq(r.successful, 1, t)
+	assertEq(r.failed, 0, t)
+
+	// fetch last build time, make sure it is different
+	i2, _, err := client.ImageInspectWithRaw(context.Background(), j.Image)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNotEq(i.Created, i2.Created, t)
+}
+
+func TestRebuildImagesNonExistingProject(t *testing.T) {
+	buf := new(bytes.Buffer)
+	r, err := RebuildImages(testcfg, logger, buf, []string{"shouldnotexist"}, true)
+	assertEq(r.successful, 0, t)
+	assertEq(r.failed, 1, t)
+	if err == nil {
+		t.Fatal("Expected unknown project error")
 	}
 }
 

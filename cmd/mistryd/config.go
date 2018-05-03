@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
+	"github.com/skroutz/mistry/pkg/utils"
 )
 
 // Config holds the configuration values that the Server needs in order to
@@ -42,6 +43,16 @@ func ParseConfig(addr string, fs filesystem.FileSystem, r io.Reader) (*Config, e
 
 	if cfg.UID == "" {
 		cfg.UID = strconv.Itoa(os.Getuid())
+	}
+
+	err = utils.PathIsDir(cfg.ProjectsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = utils.PathIsDir(cfg.BuildPath)
+	if err != nil {
+		return nil, err
 	}
 
 	return cfg, nil

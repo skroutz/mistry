@@ -120,7 +120,7 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.BuildLogPath = BuildLogPath(j.PendingBuildPath)
 	j.BuildInfoFilePath = filepath.Join(j.PendingBuildPath, BuildInfoFname)
 
-	j.Image = ImgCntPrefix + j.ID
+	j.Image = ImgCntPrefix + j.Project
 	j.Container = ImgCntPrefix + j.ID
 
 	j.StartedAt = time.Now()

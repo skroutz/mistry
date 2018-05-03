@@ -27,14 +27,25 @@ func TestSimpleBuild(t *testing.T) {
 	}
 }
 
+func toCli(p types.Params) []string {
+	cliParams := make([]string, len(p))
+	i := 0
+	for k, v := range p {
+		cliParams[i] = fmt.Sprintf("--%s=%s", k, v)
+		i++
+	}
+	return cliParams
+}
+
 func TestSimpleRebuild(t *testing.T) {
 	// run a job, fetch its build time
-	cmdout, cmderr, err := cliBuildJob("--project", "simple", "--", "--test=rebuild")
+	params := types.Params{"test": "rebuild-cli"}
+	cmdout, cmderr, err := cliBuildJob("--project", "simple", "--", toCli(params)[0])
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
 
-	j, err := NewJob("simple", types.Params{"test": "rebuild"}, "", testcfg)
+	j, err := NewJob("simple", params, "", testcfg)
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
@@ -55,7 +66,7 @@ func TestSimpleRebuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmdout, cmderr, err = cliBuildJob("--project", "simple", "--rebuild", "--", "--test=rebuild")
+	cmdout, cmderr, err = cliBuildJob("--project", "simple", "--rebuild", "--", toCli(params)[0])
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}

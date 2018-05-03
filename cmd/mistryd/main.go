@@ -16,7 +16,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,7 +25,6 @@ import (
 	"github.com/skroutz/mistry/pkg/filesystem"
 	_ "github.com/skroutz/mistry/pkg/filesystem/btrfs"
 	_ "github.com/skroutz/mistry/pkg/filesystem/plainfs"
-	"github.com/skroutz/mistry/pkg/utils"
 	"github.com/urfave/cli"
 )
 
@@ -84,26 +83,52 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		fs, err := filesystem.Get(c.String("filesystem"))
+		cfg, err := parseConfigFromCli(c)
 		if err != nil {
 			return err
 		}
-
-		f, err := os.Open(c.String("config"))
-		if err != nil {
-			return fmt.Errorf("cannot parse configuration; %s", err)
-		}
-		cfg, err := ParseConfig(c.String("addr"), fs, f)
-		if err != nil {
-			return err
-		}
-
 		err = SetUp(cfg)
 		if err != nil {
 			return err
 		}
-
 		return StartServer(cfg)
+	}
+	app.Commands = []cli.Command{
+		{
+			Name:  "rebuild",
+			Usage: "Rebuild docker images for all projects.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "fail-fast",
+					Usage: "exit immediately on first error",
+				},
+				cli.StringSliceFlag{
+					Name:  "project, p",
+					Usage: "the project to build. Multiple projects can be specified. If not passed, all projects are built",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				cfg, err := parseConfigFromCli(c.Parent())
+				if err != nil {
+					return err
+				}
+
+				logf, err := os.OpenFile(filepath.Join(cfg.BuildPath, "rebuild.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					return err
+				}
+				defer logf.Close()
+
+				out := io.MultiWriter(logf, os.Stdout)
+				logger := log.New(out, "", log.LstdFlags)
+				r, err := RebuildImages(cfg, logger, out, c.StringSlice("project"), c.Bool("fail-fast"))
+				if err != nil {
+					return fmt.Errorf("failed to build images with error: %s. Partial result: %s", err, r)
+				}
+				fmt.Printf("Finished. %s\n", r)
+				return nil
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
@@ -114,22 +139,28 @@ func main() {
 
 // SetUp accepts a Config and performs necessary initialization tasks.
 func SetUp(cfg *Config) error {
-	err := utils.PathIsDir(cfg.ProjectsPath)
-	if err != nil {
-		return err
-	}
-
-	err = utils.PathIsDir(cfg.BuildPath)
-	if err != nil {
-		return err
-	}
-
-	err = PruneZombieBuilds(cfg)
+	err := PruneZombieBuilds(cfg)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func parseConfigFromCli(c *cli.Context) (*Config, error) {
+	fs, err := filesystem.Get(c.String("filesystem"))
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(c.String("config"))
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse configuration; %s", err)
+	}
+	cfg, err := ParseConfig(c.String("addr"), fs, f)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // StartServer sets up and spawns starts the HTTP server
@@ -150,29 +181,5 @@ func StartServer(cfg *Config) error {
 	}()
 	s.Log.Printf("Listening on %s...", cfg.Addr)
 	wg.Wait()
-	return nil
-}
-
-// PruneZombieBuilds removes any pending builds from the filesystem.
-func PruneZombieBuilds(cfg *Config) error {
-	projects, err := ioutil.ReadDir(cfg.ProjectsPath)
-	if err != nil {
-		return err
-	}
-	l := log.New(os.Stderr, "[cleanup] ", log.LstdFlags)
-
-	for _, p := range projects {
-		pendingPath := filepath.Join(cfg.BuildPath, p.Name(), "pending")
-		pendingBuilds, err := ioutil.ReadDir(pendingPath)
-		for _, pending := range pendingBuilds {
-			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
-			err = cfg.FileSystem.Remove(pendingBuildPath)
-			if err != nil {
-				return fmt.Errorf("Error pruning zombie build '%s' of project '%s'", pending.Name(), p.Name())
-			}
-			l.Printf("Pruned zombie build '%s' of project '%s'", pending.Name(), p.Name())
-		}
-	}
-
 	return nil
 }
