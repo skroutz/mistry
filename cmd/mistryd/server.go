@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,6 +21,9 @@ import (
 
 	"sync"
 
+	dockerTypes "github.com/docker/docker/api/types"
+	dockerFilters "github.com/docker/docker/api/types/filters"
+	docker "github.com/docker/docker/client"
 	"github.com/rakyll/statik/fs"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
@@ -402,25 +406,121 @@ func (s *Server) ListenAndServe() error {
 	return s.srv.ListenAndServe()
 }
 
+// RebuildResult contains result data on the rebuild operation
+type RebuildResult struct {
+	successful  int
+	failed      int
+	pruneReport dockerTypes.ImagesPruneReport
+}
+
+func (r RebuildResult) String() string {
+	return fmt.Sprintf(
+		"Rebuilt: %d Failed: %d Pruned: %d Reclaimed: %d bytes",
+		r.successful, r.failed, len(r.pruneReport.ImagesDeleted), r.pruneReport.SpaceReclaimed)
+}
+
+// RebuildImages rebuilds images for all projects, and prunes any dangling images
+func RebuildImages(cfg *Config, log *log.Logger, out io.Writer, projects []string, failOnImageError bool) (RebuildResult, error) {
+	var err error
+	r := RebuildResult{}
+	if len(projects) == 0 {
+		projects, err = getProjects(cfg.ProjectsPath)
+		if err != nil {
+			return r, err
+		}
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		return r, err
+	}
+
+	ctx := context.Background()
+	for _, project := range projects {
+		log.Printf("Rebuilding %s...\n", project)
+		j, err := NewJob(project, types.Params{}, "", cfg)
+		if err != nil {
+			r.failed++
+			log.Printf("Failed to instantiate %s job with error: %s\n", project, err)
+			if failOnImageError {
+				return r, err
+			}
+		} else {
+			err = j.BuildImage(ctx, cfg.UID, client, out, true, true)
+			if err != nil {
+				r.failed++
+				log.Printf("Failed to build %s job %s with error: %s\n", project, j.ID, err)
+				if failOnImageError {
+					return r, err
+				}
+			} else {
+				r.successful++
+			}
+		}
+	}
+	r.pruneReport, err = client.ImagesPrune(ctx, dockerFilters.Args{})
+	if err != nil {
+		return r, err
+	}
+	return r, nil
+}
+
+// PruneZombieBuilds removes any pending builds from the filesystem.
+func PruneZombieBuilds(cfg *Config) error {
+	projects, err := getProjects(cfg.ProjectsPath)
+	if err != nil {
+		return err
+	}
+	l := log.New(os.Stderr, "[cleanup] ", log.LstdFlags)
+
+	for _, p := range projects {
+		pendingPath := filepath.Join(cfg.BuildPath, p, "pending")
+		pendingBuilds, err := ioutil.ReadDir(pendingPath)
+		for _, pending := range pendingBuilds {
+			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
+			err = cfg.FileSystem.Remove(pendingBuildPath)
+			if err != nil {
+				return fmt.Errorf("Error pruning zombie build '%s' of project '%s'", pending.Name(), p)
+			}
+			l.Printf("Pruned zombie build '%s' of project '%s'", pending.Name(), p)
+		}
+	}
+	return nil
+}
+
+func getProjects(path string) ([]string, error) {
+	folders, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	projects := []string{}
+	for _, f := range folders {
+		if f.IsDir() {
+			projects = append(projects, f.Name())
+		}
+	}
+	return projects, nil
+}
+
 // getJobs returns all pending and ready jobs.
 func (s *Server) getJobs() ([]Job, error) {
 	var jobs []Job
 	var pendingJobs []os.FileInfo
 	var readyJobs []os.FileInfo
 
-	projects, err := ioutil.ReadDir(s.cfg.BuildPath)
+	projects, err := getProjects(s.cfg.BuildPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot scan projects; %s", err)
 	}
 
 	for _, p := range projects {
-		pendingPath := filepath.Join(s.cfg.BuildPath, p.Name(), "pending")
+		pendingPath := filepath.Join(s.cfg.BuildPath, p, "pending")
 		_, err := os.Stat(pendingPath)
 		pendingExists := !os.IsNotExist(err)
 		if err != nil && !os.IsNotExist(err) {
 			return nil, fmt.Errorf("cannot check if pending path exists; %s", err)
 		}
-		readyPath := filepath.Join(s.cfg.BuildPath, p.Name(), "ready")
+		readyPath := filepath.Join(s.cfg.BuildPath, p, "ready")
 		_, err = os.Stat(readyPath)
 		readyExists := !os.IsNotExist(err)
 		if err != nil && !os.IsNotExist(err) {
@@ -430,13 +530,13 @@ func (s *Server) getJobs() ([]Job, error) {
 		if pendingExists {
 			pendingJobs, err = ioutil.ReadDir(pendingPath)
 			if err != nil {
-				return nil, fmt.Errorf("cannot scan pending jobs of project %s; %s", p.Name(), err)
+				return nil, fmt.Errorf("cannot scan pending jobs of project %s; %s", p, err)
 			}
 		}
 		if readyExists {
 			readyJobs, err = ioutil.ReadDir(readyPath)
 			if err != nil {
-				return nil, fmt.Errorf("cannot scan ready jobs of project %s; %s", p.Name(), err)
+				return nil, fmt.Errorf("cannot scan ready jobs of project %s; %s", p, err)
 			}
 		}
 
@@ -455,7 +555,7 @@ func (s *Server) getJobs() ([]Job, error) {
 		}
 
 		for _, j := range pendingJobs {
-			job, err := getJob(pendingPath, j.Name(), p.Name(), "pending")
+			job, err := getJob(pendingPath, j.Name(), p, "pending")
 			if err != nil {
 				return nil, fmt.Errorf("cannot find job %s; %s", j.Name(), err)
 			}
@@ -463,7 +563,7 @@ func (s *Server) getJobs() ([]Job, error) {
 		}
 
 		for _, j := range readyJobs {
-			job, err := getJob(readyPath, j.Name(), p.Name(), "ready")
+			job, err := getJob(readyPath, j.Name(), p, "ready")
 			if err != nil {
 				return nil, fmt.Errorf("cannot find job %s; %s", j.Name(), err)
 			}
