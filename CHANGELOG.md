@@ -6,6 +6,8 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Added
 
+- server: Add `--rebuild` option to rebuild the docker images of a selection of projects ignoring the image cache [[#70](https://github.com/skroutz/mistry/pull/70)]
+- client: Add `--rebuild` option to rebuild the docker image ignoring the image cache [[#70](https://github.com/skroutz/mistry/pull/70)]
 - client: Add `--clear-target` option to clear target path before fetching
   artifacts [[#63](https://github.com/skroutz/mistry/pull/63)]
 - client: Build logs are now displayed when in verbose mode [[#65](https://github.com/skroutz/mistry/pull/65)]
