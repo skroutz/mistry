@@ -37,10 +37,11 @@ import (
 type Server struct {
 	Log *log.Logger
 
-	srv *http.Server
-	jq  *JobQueue
-	pq  *ProjectQueue
-	cfg *Config
+	srv        *http.Server
+	jq         *JobQueue
+	pq         *ProjectQueue
+	cfg        *Config
+	workerPool *WorkerPool
 
 	// web-view related
 
@@ -87,6 +88,7 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s.pq = NewProjectQueue()
 	s.br = broker.NewBroker(s.Log)
 	s.tq = new(sync.Map)
+	s.workerPool = NewWorkerPool(s, cfg.Concurrency, cfg.Backlog, logger)
 	return s, nil
 }
 
@@ -118,20 +120,35 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, isAsync := r.URL.Query()["async"]; isAsync {
-		s.handleNewJobAsync(j, jr, w)
+	// send the work item to the worker pool
+	future, err := s.workerPool.SendWork(j)
+	if err != nil {
+		// the in-memory queue is overloaded, we have to wait for the workers to pick
+		// up new items.
+		// return a 503 to signal that the server is overloaded and for clients to try
+		// again later
+		// 503 is an appropriate status code to signal that the server is overloaded
+		// for all users, while 429 would have been used if we implemented user-specific
+		// throttling
+		s.Log.Print("Failed to send message to work queue")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	// if async, we're done, otherwise wait for the result in the result channel
+	_, async := r.URL.Query()["async"]
+	if async {
+		s.Log.Printf("Scheduled %s", j)
+		w.WriteHeader(http.StatusCreated)
 	} else {
-		s.handleNewJobSync(j, jr, w)
+		s.Log.Printf("Waiting for result of %s...", j)
+		s.writeWorkResult(j, future.Wait(), w)
 	}
 }
 
-// handleNewJobSync triggers the build synchronously, and writes the
-// build result JSON to the response
-func (s *Server) handleNewJobSync(j *Job, jr types.JobRequest, w http.ResponseWriter) {
-	s.Log.Printf("Building %s...", j)
-	buildInfo, err := s.Work(context.Background(), j, jr)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error building %s: %s", j, err),
+func (s *Server) writeWorkResult(j *Job, r WorkResult, w http.ResponseWriter) {
+	if r.Err != nil {
+		http.Error(w, fmt.Sprintf("Error building %s: %s", j, r.Err),
 			http.StatusInternalServerError)
 		return
 	}
@@ -139,7 +156,7 @@ func (s *Server) handleNewJobSync(j *Job, jr types.JobRequest, w http.ResponseWr
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp, err := json.Marshal(buildInfo)
+	resp, err := json.Marshal(r.BuildInfo)
 	if err != nil {
 		s.Log.Print(err)
 	}
@@ -147,12 +164,6 @@ func (s *Server) handleNewJobSync(j *Job, jr types.JobRequest, w http.ResponseWr
 	if err != nil {
 		s.Log.Printf("Error writing response for %s: %s", j, err)
 	}
-}
-
-func (s *Server) handleNewJobAsync(j *Job, jr types.JobRequest, w http.ResponseWriter) {
-	s.Log.Printf("Scheduling %s...", j)
-	go s.Work(context.Background(), j, jr)
-	w.WriteHeader(http.StatusCreated)
 }
 
 // HandleIndex returns all available jobs.

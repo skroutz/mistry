@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
@@ -21,6 +22,9 @@ type Config struct {
 	ProjectsPath string            `json:"projects_path"`
 	BuildPath    string            `json:"build_path"`
 	Mounts       map[string]string `json:"mounts"`
+
+	Concurrency int `json:"job_concurrency"`
+	Backlog     int `json:"job_backlog"`
 }
 
 // ParseConfig accepts the listening address, a filesystem adapter and a
@@ -53,6 +57,16 @@ func ParseConfig(addr string, fs filesystem.FileSystem, r io.Reader) (*Config, e
 	err = utils.PathIsDir(cfg.BuildPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.Concurrency == 0 {
+		// our work is CPU bound so number of cores is OK
+		cfg.Concurrency = runtime.NumCPU()
+	}
+
+	if cfg.Backlog == 0 {
+		// by default allow a request spike double the worker capacity
+		cfg.Backlog = cfg.Concurrency * 2
 	}
 
 	return cfg, nil

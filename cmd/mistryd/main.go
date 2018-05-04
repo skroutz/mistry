@@ -181,5 +181,6 @@ func StartServer(cfg *Config) error {
 	}()
 	s.Log.Printf("Listening on %s...", cfg.Addr)
 	wg.Wait()
+	s.workerPool.Stop()
 	return nil
 }

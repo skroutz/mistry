@@ -3,5 +3,7 @@
   "build_path": "/tmp",
   "mounts": {
     "/tmp": "/tmp"
-  }
+  },
+  "job_concurrency": 5,
+  "job_backlog": 100
 }
