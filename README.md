@@ -38,7 +38,7 @@ Getting started
 You can get the binaries from the
 [latest releases](https://github.com/skroutz/mistry/releases).
 
-Alternatively, if you have Go 1.9 or later you can get the
+Alternatively, if you have Go 1.10 or later you can get the
 latest development version:
 
 ```shell
