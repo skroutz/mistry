@@ -1,8 +1,11 @@
 package broker
 
 import (
+	"bufio"
 	"log"
 	"sync"
+
+	"github.com/skroutz/mistry/pkg/tailer"
 )
 
 // A Broker holds a registry with open client connections, listens for events on the
@@ -22,7 +25,7 @@ type Broker struct {
 	// Channel for signaling the closing of all connections for an id.
 	CloseClientC map[string]chan struct{}
 
-	// Clients is the connections registry of the Broker. Clients sent to the
+	// clients is the connections registry of the Broker. clients sent to the
 	// NewClients channel are being added to the registry.
 	// A reference to the Client is being used so that the connections can be
 	// uniquely identified for the messages broadcasting.
@@ -37,11 +40,15 @@ type Broker struct {
 type Client struct {
 	// The connection channel to communicate with the events gathering
 	// channel.
-	EventC chan []byte
+	Data chan []byte
 
 	// Each connection has an id that corresponds to the Event ID it is
 	// interested in receiving messages about.
 	ID string
+
+	// Extra contains any extra misc information about the connection.
+	// e.g a secondary unique identifier for the Client
+	Extra string
 }
 
 // Event consists of an id ID and a message Msg. All clients with the same id
@@ -73,32 +80,58 @@ func NewBroker(logger *log.Logger) *Broker {
 func (br *Broker) ListenForClients() {
 	for {
 		select {
-		case sb := <-br.NewClients:
-			br.clients[sb] = true
-			cc, ok := br.clientsCount.Load(sb.ID)
-			if ok {
-				br.clientsCount.Store(sb.ID, cc.(int)+1)
+		case client := <-br.NewClients:
+			br.clients[client] = true
+			val, exists := br.clientsCount.Load(client.ID)
+			cc, ok := val.(int)
+			if exists && !ok {
+				br.Log.Printf("got data of type %T but wanted int", val)
+			}
+			if exists && cc > 0 {
+				br.clientsCount.Store(client.ID, cc+1)
 			} else {
-				br.clientsCount.Store(sb.ID, 1)
+				br.clientsCount.Store(client.ID, 1)
+				br.CloseClientC[client.ID] = make(chan struct{})
+				tl, err := tailer.New(client.Extra)
+				if err != nil {
+					br.Log.Printf("[broker] Could not start the tailer for file %s", client.Extra)
+				}
+				go func() {
+					br.Log.Printf("[tailer] Starting for %s", client.ID)
+
+					s := bufio.NewScanner(tl)
+					for s.Scan() {
+						br.Notifier <- &Event{Msg: []byte(s.Text()), ID: client.ID}
+					}
+				}()
+				go func() {
+					<-br.CloseClientC[client.ID]
+					br.Log.Printf("[tailer] Exiting for: %s", client.ID)
+					err = tl.Close()
+					if err != nil {
+						br.Log.Print(err)
+					}
+				}()
 			}
 			br.Log.Printf("[broker] Client added. %d registered clients", len(br.clients))
-		case sb := <-br.ClosingClients:
-			delete(br.clients, sb)
-			cc, ok := br.clientsCount.Load(sb.ID)
-			if ok {
-				br.clientsCount.Store(sb.ID, cc.(int)-1)
-			} else {
-				br.clientsCount.Store(sb.ID, 0)
+		case client := <-br.ClosingClients:
+			close(client.Data)
+			delete(br.clients, client)
+			val, _ := br.clientsCount.Load(client.ID)
+			cc, ok := val.(int)
+			if !ok {
+				br.Log.Printf("got data of type %T but wanted int", val)
 			}
 			br.Log.Printf("[broker] Removed client. %d registered clients", len(br.clients))
-			cc, ok = br.clientsCount.Load(sb.ID)
-			if ok && cc.(int) == 0 {
-				br.CloseClientC[sb.ID] <- struct{}{}
+			new_val := cc - 1
+			br.clientsCount.Store(client.ID, new_val)
+			if new_val == 0 {
+				br.CloseClientC[client.ID] <- struct{}{}
 			}
 		case event := <-br.Notifier:
 			for client, _ := range br.clients {
 				if client.ID == event.ID {
-					client.EventC <- event.Msg
+					client.Data <- event.Msg
 				}
 			}
 		}
