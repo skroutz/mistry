@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -17,9 +16,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
-
-	"sync"
 
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
@@ -27,7 +23,6 @@ import (
 	"github.com/rakyll/statik/fs"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
-	"github.com/skroutz/mistry/pkg/tailer"
 	"github.com/skroutz/mistry/pkg/types"
 )
 
@@ -45,10 +40,6 @@ type Server struct {
 
 	// web-view related
 
-	// Queue used to track all open tailers by their id. Every tailer id
-	// matches a job id.
-	// The stored map type is [string]bool.
-	tq *sync.Map
 	br *broker.Broker
 	fs http.FileSystem
 }
@@ -87,7 +78,6 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s.jq = NewJobQueue()
 	s.pq = NewProjectQueue()
 	s.br = broker.NewBroker(s.Log)
-	s.tq = new(sync.Map)
 	s.workerPool = NewWorkerPool(s, cfg.Concurrency, cfg.Backlog, logger)
 	return s, nil
 }
@@ -252,67 +242,6 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if state == "pending" {
-		// For each job id there is only one tailer responsible for
-		// emitting the read bytes to the s.br.Notifier channel.
-		_, ok := s.tq.Load(id)
-		if !ok {
-			// Create a channel to communicate the closure of all connections
-			// for the job id to the spawned tailer goroutine.
-			_, ok := s.br.CloseClientC[id]
-			if !ok {
-				s.br.CloseClientC[id] = make(chan struct{})
-			}
-
-			tl, err := tailer.New(BuildLogPath(jPath))
-			if err != nil {
-				s.Log.Print(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			// Mark the id to the tailers' queue to identify that a
-			// tail reader has been spawned.
-			s.tq.Store(id, true)
-
-			go func() {
-				s.Log.Printf("[tailer] Starting for %s", id)
-
-				scanner := bufio.NewScanner(tl)
-				for scanner.Scan() {
-					s.br.Notifier <- &broker.Event{Msg: []byte(scanner.Text()), ID: id}
-				}
-			}()
-
-			go func() {
-				tick := time.NewTicker(time.Second * 3)
-				defer tick.Stop()
-
-			TAIL_CLOSE_LOOP:
-				for {
-					select {
-					case <-tick.C:
-						state, err := GetState(s.cfg.BuildPath, project, id)
-						if err != nil {
-							s.Log.Print(err)
-						}
-						if state == "ready" {
-							break TAIL_CLOSE_LOOP
-						}
-					case <-s.br.CloseClientC[id]:
-						break TAIL_CLOSE_LOOP
-					}
-				}
-				s.Log.Printf("[tailer] Exiting for: %s", id)
-				s.tq.Delete(id)
-				err = tl.Close()
-				if err != nil {
-					s.Log.Print(err)
-				}
-			}()
-		}
-	}
-
 	f, err := s.fs.Open("/templates/show.html")
 	if err != nil {
 		s.Log.Print(err)
@@ -390,12 +319,10 @@ func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	client := &broker.Client{ID: id, EventC: make(chan []byte)}
+	jPath := filepath.Join(s.cfg.BuildPath, project, state, id)
+	buildLogPath := filepath.Join(jPath, BuildLogFname)
+	client := &broker.Client{ID: id, Data: make(chan []byte), Extra: buildLogPath}
 	s.br.NewClients <- client
-
-	defer func() {
-		s.br.ClosingClients <- client
-	}()
 
 	go func() {
 		<-w.(http.CloseNotifier).CloseNotify()
@@ -403,7 +330,11 @@ func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		fmt.Fprintf(w, "data: %s\n\n", <-client.EventC)
+		msg, ok := <-client.Data
+		if !ok {
+			break
+		}
+		fmt.Fprintf(w, "data: %s\n\n", msg)
 		flusher.Flush()
 	}
 }
