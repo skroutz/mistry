@@ -3,5 +3,7 @@
   "build_path": "/var/lib/mistry/data",
   "mounts": {
     "/var/lib/mistry/.ssh": "/home/mistry/.ssh"
-  }
+  },
+  "job_concurrency": 5,
+  "job_backlog": 20
 }
