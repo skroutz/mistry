@@ -258,6 +258,32 @@ func TestImageBuildFailure(t *testing.T) {
 	if !strings.Contains(cmderr, expErr) {
 		t.Fatalf("Expected '%s' to contain '%s'", cmderr, expErr)
 	}
+	j, err := NewJob("image-build-failure", types.Params{}, "", testcfg)
+	if err != nil {
+		t.Fatalf("failed to create job; %s", err)
+	}
+
+	errDockercmd := "apt-get install -y fofkoeakodksao"
+	log, err := ReadJobLogs(j.ReadyBuildPath)
+	if err != nil {
+		t.Fatalf("failed to read job log; %s", err)
+	}
+
+	if !strings.Contains(string(log), errDockercmd) {
+		t.Fatalf("Expected out log '%s' to contain '%s'", string(log), cmderr)
+	}
+
+	buildInfoPath := filepath.Join(j.ReadyBuildPath, BuildInfoFname)
+	bi := types.NewBuildInfo()
+	biBlob, err := ioutil.ReadFile(buildInfoPath)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	err = json.Unmarshal(biBlob, bi)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	assertEq(bi.ExitCode, -999, t)
 }
 
 func TestLogs(t *testing.T) {
