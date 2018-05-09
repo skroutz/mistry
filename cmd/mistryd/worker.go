@@ -42,12 +42,11 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	buildInfo = &types.BuildInfo{
-		Path:            filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir),
-		TransportMethod: types.Rsync,
-		Params:          j.Params,
-		StartedAt:       j.StartedAt,
-	}
+	buildInfo = types.NewBuildInfo()
+	buildInfo.Path = filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir)
+	buildInfo.TransportMethod = types.Rsync
+	buildInfo.Params = j.Params
+	buildInfo.StartedAt = j.StartedAt
 
 	added := s.jq.Add(j)
 	if added {

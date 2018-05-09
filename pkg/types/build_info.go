@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const containerFailureExitCode = -999
+
 type BuildInfo struct {
 	// Job parameters
 	Params Params
@@ -36,6 +38,14 @@ type BuildInfo struct {
 type ErrImageBuild struct {
 	Image string
 	Err   error
+}
+
+func NewBuildInfo() *BuildInfo {
+	bi := new(BuildInfo)
+	bi.StartedAt = time.Now()
+	bi.ExitCode = containerFailureExitCode
+
+	return bi
 }
 
 func (e ErrImageBuild) Error() string {
