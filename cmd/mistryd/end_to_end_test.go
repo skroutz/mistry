@@ -122,12 +122,12 @@ func TestAsyncSimpleBuild(t *testing.T) {
 		t.Fatalf("failed to find job build info at %s: %s", buildInfoPath, err)
 	}
 
-	bi := types.BuildInfo{}
+	bi := types.NewBuildInfo()
 	biBlob, err := ioutil.ReadFile(buildInfoPath)
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
-	err = json.Unmarshal(biBlob, &bi)
+	err = json.Unmarshal(biBlob, bi)
 	if err != nil {
 		t.Fatalf("%s", err)
 	}

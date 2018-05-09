@@ -265,8 +265,8 @@ EXAMPLES:
 				}
 
 				// Transfer the result
-				bi := types.BuildInfo{}
-				err = json.Unmarshal([]byte(body), &bi)
+				bi := types.NewBuildInfo()
+				err = json.Unmarshal([]byte(body), bi)
 				if err != nil {
 					return err
 				}
