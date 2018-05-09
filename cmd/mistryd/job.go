@@ -354,10 +354,9 @@ func (j *Job) CloneSrcPath(log *log.Logger) string {
 	return cloneSrc
 }
 
-// BootstrapBuildDir creates all required build directories. Returns true if directories have
-// been partially or fully created and cleanup is required
-func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool, error) {
-	shouldCleanup := false
+// BootstrapBuildDir creates all required build directories. Cleans the
+// pending directory if there were any errors.
+func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) error {
 	var err error
 
 	cloneSrc := j.CloneSrcPath(log)
@@ -368,15 +367,14 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool
 		err = fs.Clone(cloneSrc, j.PendingBuildPath)
 	}
 	if err != nil {
-		return shouldCleanup, workErr("could not create pending build path", err)
+		return workErr("could not create pending build path", err)
 	}
-	shouldCleanup = true
 
 	// if we cloned, empty the params dir
 	if cloneSrc != "" {
 		err = os.RemoveAll(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir))
 		if err != nil {
-			return shouldCleanup, workErr("could not remove params dir", err)
+			return workErr("could not remove params dir", err)
 		}
 	}
 
@@ -390,11 +388,11 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) (bool
 	for _, dir := range dirs {
 		err = utils.EnsureDirExists(dir)
 		if err != nil {
-			return shouldCleanup, workErr("could not ensure directory exists", err)
+			return workErr("could not ensure directory exists", err)
 		}
 		log.Printf("created dir: %s", dir)
 	}
-	return shouldCleanup, nil
+	return err
 }
 
 // BuildLogPath returns the path of the job logs found at jobPath

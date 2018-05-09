@@ -5,7 +5,9 @@ import (
 	"time"
 )
 
-const containerFailureExitCode = -999
+// ContainerFailureExitCode is the exit code that signifies a failure
+// before even running the container
+const ContainerFailureExitCode = -999
 
 type BuildInfo struct {
 	// Job parameters
@@ -43,7 +45,7 @@ type ErrImageBuild struct {
 func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
-	bi.ExitCode = containerFailureExitCode
+	bi.ExitCode = ContainerFailureExitCode
 
 	return bi
 }
