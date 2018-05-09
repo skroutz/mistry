@@ -8,7 +8,7 @@ import (
 )
 
 func TestBacklogLimit(t *testing.T) {
-	wp, cfg := setupQueue(t, 1, 0)
+	wp, cfg := setupQueue(t, 0, 1)
 	defer wp.Stop()
 
 	params := types.Params{"test": "pool-backlog-limit"}
