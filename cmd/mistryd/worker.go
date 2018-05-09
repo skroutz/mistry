@@ -97,18 +97,40 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	log.Printf("Creating new build directory...")
-	cleanupPending, err := j.BootstrapBuildDir(s.cfg.FileSystem, log)
+	err = j.BootstrapBuildDir(s.cfg.FileSystem, log)
+	if err != nil {
+		err = workErr("could not bootstrap build dir", err)
+	}
 
+	// moves the pending directory to the ready one
 	defer func() {
-		if cleanupPending {
-			derr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
-			if derr != nil {
-				errstr := "could not clean hanging pending path"
-				if err == nil {
-					err = fmt.Errorf("%s; %s", errstr, derr)
-				} else {
-					err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
+		rerr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
+		if rerr != nil {
+			errstr := "could not move pending path"
+			if err == nil {
+				err = fmt.Errorf("%s; %s", errstr, rerr)
+			} else {
+				err = fmt.Errorf("%s; %s | %s", errstr, rerr, err)
+			}
+		}
+
+		// When there are no errors the LatestBuildPath can be updated
+		// to point to the last build. Otherwise it remains unchanged.
+		if err == nil {
+			_, err = os.Lstat(j.LatestBuildPath)
+			if err == nil {
+				err = os.Remove(j.LatestBuildPath)
+				if err != nil {
+					err = workErr("could not remove latest build link", err)
+					return
 				}
+			} else if !os.IsNotExist(err) {
+				err = workErr("could not stat the latest build link", err)
+				return
+			}
+			err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
+			if err != nil {
+				err = workErr("could not create latest build link", err)
 			}
 		}
 	}()
@@ -182,14 +204,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	err = os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
-	if err != nil {
-		err = workErr("could not rename pending to ready path", err)
-		return
-	}
-	// after moving the pending to ready there's nothing to cleanup
-	cleanupPending = false
-
 	// fill the buildInfo Log from the freshly written log
 	err = out.Sync()
 	if err != nil {
@@ -197,28 +211,13 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	finalLog, err := ReadJobLogs(j.ReadyBuildPath)
+	finalLog, err := ReadJobLogs(j.PendingBuildPath)
 	if err != nil {
 		err = workErr("could not read the job logs", err)
 		return
 	}
 
 	buildInfo.Log = string(finalLog)
-
-	_, err = os.Lstat(j.LatestBuildPath)
-	if err == nil {
-		err = os.Remove(j.LatestBuildPath)
-		if err != nil {
-			err = workErr("could not remove latest build link", err)
-			return
-		}
-	}
-
-	err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
-	if err != nil {
-		err = workErr("could not create latest build link", err)
-		return
-	}
 
 	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
 	return
@@ -260,7 +259,7 @@ func (s *Server) BootstrapProject(j *Job) error {
 func ExitCode(j *Job) (int, error) {
 	buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, false)
 	if err != nil {
-		return -999, err
+		return types.ContainerFailureExitCode, err
 	}
 	return buildInfo.ExitCode, nil
 }
