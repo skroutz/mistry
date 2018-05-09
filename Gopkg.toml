@@ -4,7 +4,7 @@
 
 [[constraint]]
   name = "github.com/docker/docker"
-  version = "17.05.0-ce"
+  version = "=17.05.0-ce"
 
 [[constraint]]
   name = "github.com/urfave/cli"
