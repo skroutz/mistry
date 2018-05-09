@@ -101,7 +101,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 
 	defer func() {
 		if cleanupPending {
-			derr := s.cfg.FileSystem.Remove(j.PendingBuildPath)
+			derr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
 			if derr != nil {
 				errstr := "could not clean hanging pending path"
 				if err == nil {
