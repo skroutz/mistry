@@ -8,10 +8,13 @@ import (
 	"time"
 )
 
+// A Tailer holds an io.ReadCloser interface. It implements a Read() function
+// which emulates the tailf UNIX program.
 type Tailer struct {
 	io.ReadCloser
 }
 
+// New returns a new Tailer for the given path.
 func New(path string) (*Tailer, error) {
 	f, err := os.Open(path)
 	if err != nil {

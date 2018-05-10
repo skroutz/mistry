@@ -61,6 +61,7 @@ type Event struct {
 	ID string
 }
 
+// NewBroker returns a new Broker.
 func NewBroker(logger *log.Logger) *Broker {
 	br := &Broker{}
 	br.Log = logger
@@ -123,13 +124,13 @@ func (br *Broker) ListenForClients() {
 				br.Log.Printf("got data of type %T but wanted int", val)
 			}
 			br.Log.Printf("[broker] Removed client. %d registered clients", len(br.clients))
-			new_val := cc - 1
-			br.clientsCount.Store(client.ID, new_val)
-			if new_val == 0 {
+			newVal := cc - 1
+			br.clientsCount.Store(client.ID, newVal)
+			if newVal == 0 {
 				br.CloseClientC[client.ID] <- struct{}{}
 			}
 		case event := <-br.Notifier:
-			for client, _ := range br.clients {
+			for client := range br.clients {
 				if client.ID == event.ID {
 					client.Data <- event.Msg
 				}
