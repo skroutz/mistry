@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,10 +17,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
-	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+	"github.com/docker/go-units"
 	"github.com/rakyll/statik/fs"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
@@ -350,19 +352,29 @@ func (s *Server) ListenAndServe() error {
 
 // RebuildResult contains result data on the rebuild operation
 type RebuildResult struct {
-	successful  int
-	failed      int
-	pruneReport dockerTypes.ImagesPruneReport
+	successful       int
+	failed           []string
+	prunedImages     int
+	prunedContainers int
+	reclaimedSpace   uint64
 }
 
 func (r RebuildResult) String() string {
+	var failedNames string
+	if len(r.failed) > 0 {
+		failedNames = " Failed names: " + strings.Join(r.failed, ", ")
+	} else {
+		failedNames = ""
+	}
+
 	return fmt.Sprintf(
-		"Rebuilt: %d Failed: %d Pruned: %d Reclaimed: %d bytes",
-		r.successful, r.failed, len(r.pruneReport.ImagesDeleted), r.pruneReport.SpaceReclaimed)
+		"Rebuilt: %d Pruned images: %d Pruned containers: %d Reclaimed: %s Failed: %d%s",
+		r.successful, r.prunedImages, r.prunedContainers, units.HumanSize(float64(r.reclaimedSpace)),
+		len(r.failed), failedNames)
 }
 
 // RebuildImages rebuilds images for all projects, and prunes any dangling images
-func RebuildImages(cfg *Config, log *log.Logger, out io.Writer, projects []string, failOnImageError bool) (RebuildResult, error) {
+func RebuildImages(cfg *Config, log *log.Logger, projects []string, failOnImageError, verbose bool) (RebuildResult, error) {
 	var err error
 	r := RebuildResult{}
 	if len(projects) == 0 {
@@ -379,32 +391,71 @@ func RebuildImages(cfg *Config, log *log.Logger, out io.Writer, projects []strin
 
 	ctx := context.Background()
 	for _, project := range projects {
+		start := time.Now()
 		log.Printf("Rebuilding %s...\n", project)
 		j, err := NewJob(project, types.Params{}, "", cfg)
 		if err != nil {
-			r.failed++
+			r.failed = append(r.failed, project)
 			log.Printf("Failed to instantiate %s job with error: %s\n", project, err)
 			if failOnImageError {
 				return r, err
 			}
 		} else {
-			err = j.BuildImage(ctx, cfg.UID, client, out, true, true)
-			if err != nil {
-				r.failed++
-				log.Printf("Failed to build %s job %s with error: %s\n", project, j.ID, err)
+			var buildErr error
+			if verbose {
+				// pipe image build logs to the logger
+				pr, pw := io.Pipe()
+				buildResult := make(chan error)
+
+				go func() {
+					err := j.BuildImage(ctx, cfg.UID, client, pw, true, true)
+					pw.Close()
+					buildResult <- err
+				}()
+
+				scanner := bufio.NewScanner(pr)
+				for scanner.Scan() {
+					log.Print(scanner.Text())
+				}
+				buildErr = <-buildResult
+			} else {
+				// discard image build logs
+				buildErr = j.BuildImage(ctx, cfg.UID, client, ioutil.Discard, true, true)
+			}
+
+			if buildErr != nil {
+				r.failed = append(r.failed, project)
+				log.Printf("Failed to build %s job %s with error: %s\n", project, j.ID, buildErr)
 				if failOnImageError {
-					return r, err
+					return r, buildErr
 				}
 			} else {
+				log.Printf("Rebuilt %s in %s\n", project, time.Now().Sub(start).Truncate(time.Millisecond))
 				r.successful++
 			}
 		}
 	}
-	r.pruneReport, err = client.ImagesPrune(ctx, dockerFilters.Args{})
+	r.prunedImages, r.prunedContainers, r.reclaimedSpace, err = dockerPruneUnused(ctx, client)
 	if err != nil {
 		return r, err
 	}
 	return r, nil
+}
+
+func dockerPruneUnused(ctx context.Context, c *docker.Client) (int, int, uint64, error) {
+	// TODO: we should look at filtering images and containers based on labels so that we
+	// only delete mistry generated items
+
+	// prune containters before images, this will allow more images to be eligible for clean up
+	cr, err := c.ContainersPrune(ctx, dockerFilters.Args{})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ir, err := c.ImagesPrune(ctx, dockerFilters.Args{})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return len(ir.ImagesDeleted), len(cr.ContainersDeleted), ir.SpaceReclaimed + cr.SpaceReclaimed, nil
 }
 
 // PruneZombieBuilds removes any pending builds from the filesystem.

@@ -16,10 +16,8 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
@@ -106,6 +104,9 @@ func main() {
 					Name:  "project, p",
 					Usage: "the project to build. Multiple projects can be specified. If not passed, all projects are built",
 				},
+				cli.BoolFlag{
+					Name: "verbose, v",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				cfg, err := parseConfigFromCli(c.Parent())
@@ -113,17 +114,13 @@ func main() {
 					return err
 				}
 
-				logf, err := os.OpenFile(filepath.Join(cfg.BuildPath, "rebuild.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				logger := log.New(os.Stdout, "", 0)
+				r, err := RebuildImages(cfg, logger, c.StringSlice("project"), c.Bool("fail-fast"), c.Bool("verbose"))
 				if err != nil {
-					return err
+					return fmt.Errorf("Image error, existing early, partial result: %s", r)
 				}
-				defer logf.Close()
-
-				out := io.MultiWriter(logf, os.Stdout)
-				logger := log.New(out, "", log.LstdFlags)
-				r, err := RebuildImages(cfg, logger, out, c.StringSlice("project"), c.Bool("fail-fast"))
-				if err != nil {
-					return fmt.Errorf("failed to build images with error: %s. Partial result: %s", err, r)
+				if len(r.failed) > 0 {
+					return fmt.Errorf("%s", r)
 				}
 				fmt.Printf("Finished. %s\n", r)
 				return nil
@@ -133,7 +130,8 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
