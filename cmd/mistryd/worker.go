@@ -143,28 +143,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	infoFile, err := os.Create(j.BuildInfoFilePath)
-	if err != nil {
-		err = workErr("could not create build info file", err)
-		return
-	}
-	defer func() {
-		ferr := infoFile.Close()
-		errstr := "could not close build info file"
-		if ferr != nil {
-			if err == nil {
-				err = fmt.Errorf("%s; %s", errstr, ferr)
-			} else {
-				err = fmt.Errorf("%s; %s | %s", errstr, ferr, err)
-			}
-		}
-	}()
 	biJSON, err := json.Marshal(buildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return
 	}
-	_, err = infoFile.Write(biJSON)
+	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
 	if err != nil {
 		err = workErr("could not write build info to file", err)
 		return
@@ -188,17 +172,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	_, err = infoFile.Seek(0, 0)
-	if err != nil {
-		err = workErr("could not set the offset for the build_info file", err)
-		return
-	}
 	biJSON, err = json.Marshal(buildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return
 	}
-	_, err = infoFile.Write(biJSON)
+	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
 	if err != nil {
 		err = workErr("could not write build info to file", err)
 		return
