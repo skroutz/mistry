@@ -181,12 +181,10 @@ func TestRebuildImages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b := new(strings.Builder)
-	r, err := RebuildImages(testcfg, logger, b, []string{"simple"}, true)
-	t.Log(b.String())
+	r, err := RebuildImages(testcfg, logger, []string{"simple"}, true, true)
 	failIfError(err, t)
 	assertEq(r.successful, 1, t)
-	assertEq(r.failed, 0, t)
+	assertEq(len(r.failed), 0, t)
 
 	// fetch last build time, make sure it is different
 	i2, _, err := client.ImageInspectWithRaw(context.Background(), j.Image)
@@ -197,10 +195,9 @@ func TestRebuildImages(t *testing.T) {
 }
 
 func TestRebuildImagesNonExistingProject(t *testing.T) {
-	buf := new(bytes.Buffer)
-	r, err := RebuildImages(testcfg, logger, buf, []string{"shouldnotexist"}, true)
+	r, err := RebuildImages(testcfg, logger, []string{"shouldnotexist"}, true, true)
 	assertEq(r.successful, 0, t)
-	assertEq(r.failed, 1, t)
+	assertEq(r.failed, []string{"shouldnotexist"}, t)
 	if err == nil {
 		t.Fatal("Expected unknown project error")
 	}
