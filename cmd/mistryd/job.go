@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -184,6 +187,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: false, NetworkMode: "host"}
 
+	err := renameIfExists(ctx, c, j.Container)
 	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.Container)
 	if err != nil {
 		return 0, err
@@ -231,6 +235,35 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 	}
 
 	return result.State.ExitCode, nil
+}
+
+// renameIfExists searches for containers with the passed name and renames them
+// by appending a random suffix to their name
+func renameIfExists(ctx context.Context, c *docker.Client, name string) error {
+	filter := filters.NewArgs()
+	filter.Add("name", name)
+	containers, err := c.ContainerList(ctx, dockertypes.ContainerListOptions{
+		Quiet:   true,
+		All:     true,
+		Limit:   -1,
+		Filters: filter,
+	})
+	if err != nil {
+		return err
+	}
+	for _, container := range containers {
+		err := c.ContainerRename(ctx, container.ID, name+"-renamed-"+randomHexString())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func randomHexString() string {
+	buf := make([]byte, 16)
+	rand.Read(buf)
+	return hex.EncodeToString(buf)
 }
 
 func (j *Job) String() string {

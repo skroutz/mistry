@@ -17,8 +17,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/skroutz/mistry/pkg/filesystem"
 	_ "github.com/skroutz/mistry/pkg/filesystem/btrfs"
@@ -57,6 +59,10 @@ const (
 	// DateFmt the date format
 	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	app := cli.NewApp()

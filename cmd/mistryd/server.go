@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	dockerFilters "github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/rakyll/statik/fs"
@@ -451,11 +451,12 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, stopErr, ver
 // dockerPruneUnused prunes stopped containers and unused images
 func dockerPruneUnused(ctx context.Context, c *docker.Client) (pruneResult, error) {
 	// prune containters before images, this will allow more images to be eligible for clean up
-	cr, err := c.ContainersPrune(ctx, dockerFilters.Args{})
+	noFilters := filters.NewArgs()
+	cr, err := c.ContainersPrune(ctx, noFilters)
 	if err != nil {
 		return pruneResult{}, err
 	}
-	ir, err := c.ImagesPrune(ctx, dockerFilters.Args{})
+	ir, err := c.ImagesPrune(ctx, noFilters)
 	if err != nil {
 		return pruneResult{}, err
 	}
