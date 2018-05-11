@@ -90,6 +90,15 @@ func TestNonGroupSubsequentInvocation(t *testing.T) {
 	}
 }
 
+func TestBuildTimeout(t *testing.T) {
+	timeout := "1s"
+	_, stderr, err := cliBuildJob("--project", "sleep", "--timeout", timeout, "--", "--test=client-timeout")
+	if err == nil {
+		t.Fatalf("Expected timeout error")
+	}
+	assertEq(strings.Contains(stderr, "The build did not finish after "+timeout), true, t)
+}
+
 func TestAsyncSimpleBuild(t *testing.T) {
 	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "simple", "--no-wait", "--", "--test=async")
 	if err != nil {
