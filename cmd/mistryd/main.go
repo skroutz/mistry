@@ -105,7 +105,8 @@ func main() {
 					Usage: "the project to build. Multiple projects can be specified. If not passed, all projects are built",
 				},
 				cli.BoolFlag{
-					Name: "verbose, v",
+					Name:  "verbose, v",
+					Usage: "print logs from docker build and run",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -117,7 +118,7 @@ func main() {
 				logger := log.New(os.Stdout, "", 0)
 				r, err := RebuildImages(cfg, logger, c.StringSlice("project"), c.Bool("fail-fast"), c.Bool("verbose"))
 				if err != nil {
-					return fmt.Errorf("Image error, existing early, partial result: %s", r)
+					return err
 				}
 				if len(r.failed) > 0 {
 					return fmt.Errorf("%s", r)

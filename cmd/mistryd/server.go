@@ -350,31 +350,33 @@ func (s *Server) ListenAndServe() error {
 	return s.srv.ListenAndServe()
 }
 
-// RebuildResult contains result data on the rebuild operation
-type RebuildResult struct {
-	successful       int
-	failed           []string
+type pruneResult struct {
 	prunedImages     int
 	prunedContainers int
 	reclaimedSpace   uint64
 }
 
+// RebuildResult contains result data on the rebuild operation
+type RebuildResult struct {
+	successful int
+	failed     []string
+	pruneResult
+}
+
 func (r RebuildResult) String() string {
 	var failedNames string
 	if len(r.failed) > 0 {
-		failedNames = " Failed names: " + strings.Join(r.failed, ", ")
-	} else {
-		failedNames = ""
+		failedNames = ", Failed names: " + strings.Join(r.failed, ", ")
 	}
 
 	return fmt.Sprintf(
-		"Rebuilt: %d Pruned images: %d Pruned containers: %d Reclaimed: %s Failed: %d%s",
+		"Rebuilt: %d, Pruned images: %d, Pruned containers: %d, Reclaimed: %s, Failed: %d%s",
 		r.successful, r.prunedImages, r.prunedContainers, units.HumanSize(float64(r.reclaimedSpace)),
 		len(r.failed), failedNames)
 }
 
 // RebuildImages rebuilds images for all projects, and prunes any dangling images
-func RebuildImages(cfg *Config, log *log.Logger, projects []string, failOnImageError, verbose bool) (RebuildResult, error) {
+func RebuildImages(cfg *Config, log *log.Logger, projects []string, stopErr, verbose bool) (RebuildResult, error) {
 	var err error
 	r := RebuildResult{}
 	if len(projects) == 0 {
@@ -396,10 +398,10 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, failOnImageE
 		j, err := NewJob(project, types.Params{}, "", cfg)
 		if err != nil {
 			r.failed = append(r.failed, project)
-			log.Printf("Failed to instantiate %s job with error: %s\n", project, err)
-			if failOnImageError {
+			if stopErr {
 				return r, err
 			}
+			log.Printf("Failed to instantiate %s job with error: %s\n", project, err)
 		} else {
 			var buildErr error
 			if verbose {
@@ -409,7 +411,11 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, failOnImageE
 
 				go func() {
 					err := j.BuildImage(ctx, cfg.UID, client, pw, true, true)
-					pw.Close()
+					pErr := pw.Close()
+					if pErr != nil {
+						// as of Go 1.10 this is never non-nil
+						log.Printf("Unexpected PipeWriter.Close() error: %s\n", pErr)
+					}
 					buildResult <- err
 				}()
 
@@ -425,37 +431,38 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, failOnImageE
 
 			if buildErr != nil {
 				r.failed = append(r.failed, project)
-				log.Printf("Failed to build %s job %s with error: %s\n", project, j.ID, buildErr)
-				if failOnImageError {
+				if stopErr {
 					return r, buildErr
 				}
+				log.Printf("Failed to build %s job %s with error: %s\n", project, j.ID, buildErr)
 			} else {
 				log.Printf("Rebuilt %s in %s\n", project, time.Now().Sub(start).Truncate(time.Millisecond))
 				r.successful++
 			}
 		}
 	}
-	r.prunedImages, r.prunedContainers, r.reclaimedSpace, err = dockerPruneUnused(ctx, client)
+	r.pruneResult, err = dockerPruneUnused(ctx, client)
 	if err != nil {
 		return r, err
 	}
 	return r, nil
 }
 
-func dockerPruneUnused(ctx context.Context, c *docker.Client) (int, int, uint64, error) {
-	// TODO: we should look at filtering images and containers based on labels so that we
-	// only delete mistry generated items
-
+// dockerPruneUnused prunes stopped containers and unused images
+func dockerPruneUnused(ctx context.Context, c *docker.Client) (pruneResult, error) {
 	// prune containters before images, this will allow more images to be eligible for clean up
 	cr, err := c.ContainersPrune(ctx, dockerFilters.Args{})
 	if err != nil {
-		return 0, 0, 0, err
+		return pruneResult{}, err
 	}
 	ir, err := c.ImagesPrune(ctx, dockerFilters.Args{})
 	if err != nil {
-		return 0, 0, 0, err
+		return pruneResult{}, err
 	}
-	return len(ir.ImagesDeleted), len(cr.ContainersDeleted), ir.SpaceReclaimed + cr.SpaceReclaimed, nil
+	return pruneResult{
+		prunedImages:     len(ir.ImagesDeleted),
+		prunedContainers: len(cr.ContainersDeleted),
+		reclaimedSpace:   ir.SpaceReclaimed + cr.SpaceReclaimed}, nil
 }
 
 // PruneZombieBuilds removes any pending builds from the filesystem.
