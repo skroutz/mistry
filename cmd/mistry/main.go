@@ -134,6 +134,7 @@ EXAMPLES:
 					Name:        "timeout",
 					Usage:       "time to wait for the build to finish, accepts values as defined at https://golang.org/pkg/time/#ParseDuration",
 					Destination: &timeout,
+					Value:       "60m",
 				},
 
 				// transport flags
