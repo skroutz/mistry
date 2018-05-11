@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	docker "github.com/docker/docker/client"
 	"github.com/skroutz/mistry/pkg/types"
 )
@@ -149,6 +150,31 @@ func waitUntilExists(path string) error {
 		} else {
 			return nil
 		}
+	}
+}
+
+func TestExistingContainer(t *testing.T) {
+	client, err := docker.NewEnvClient()
+	failIfError(err, t)
+
+	project := "simple"
+	// randomize params to avoid name conflict errors
+	// in the manual ContainerCreate called in the test
+	params := types.Params{"testing": "existing-container-" + randomHexString()}
+
+	j, err := NewJob(project, params, "", testcfg)
+	failIfError(err, t)
+
+	_, err = client.ContainerCreate(
+		context.TODO(),
+		&container.Config{User: testcfg.UID, Image: j.Image},
+		&container.HostConfig{NetworkMode: "host"},
+		nil, j.Container)
+	failIfError(err, t)
+
+	cmdout, cmderr, err := cliBuildJob("--project", project, "--", toCli(params)[0])
+	if err != nil {
+		t.Fatalf("Unexpected error %s, stdout: %s, stderr %s", err, cmdout, cmderr)
 	}
 }
 
