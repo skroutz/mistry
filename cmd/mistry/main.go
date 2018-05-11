@@ -22,9 +22,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/user"
 	"strings"
+	"time"
 
 	"github.com/skroutz/mistry/pkg/types"
 	"github.com/urfave/cli"
@@ -53,6 +55,7 @@ func main() {
 		noWait        bool
 		clearTarget   bool
 		rebuild       bool
+		timeout       string
 	)
 
 	currentUser, err := user.Current()
@@ -127,6 +130,11 @@ EXAMPLES:
 					Usage:       "rebuild the docker image",
 					Destination: &rebuild,
 				},
+				cli.StringFlag{
+					Name:        "timeout",
+					Usage:       "time to wait for the build to finish, accepts values as defined at https://golang.org/pkg/time/#ParseDuration",
+					Destination: &timeout,
+				},
 
 				// transport flags
 				cli.BoolFlag{
@@ -171,6 +179,17 @@ EXAMPLES:
 				}
 				if !noWait && transport == "" {
 					return errors.New("you need to either specify a transport or use the async flag")
+				}
+
+				var (
+					clientTimeout time.Duration
+					err           error
+				)
+				if timeout != "" {
+					clientTimeout, err = time.ParseDuration(timeout)
+					if err != nil {
+						return err
+					}
 				}
 
 				if jsonResult {
@@ -229,8 +248,11 @@ EXAMPLES:
 					fmt.Printf("Scheduling %#v...\n", jr)
 				}
 
-				body, err := sendRequest(url, jrJSON, verbose)
+				body, err := sendRequest(url, jrJSON, verbose, clientTimeout)
 				if err != nil {
+					if isTimeout(err) {
+						return fmt.Errorf("The build did not finish after %s, %s", clientTimeout, err)
+					}
 					return err
 				}
 
@@ -285,14 +307,9 @@ EXAMPLES:
 	}
 }
 
-func sendRequest(url string, reqBody []byte, verbose bool) ([]byte, error) {
-	request, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
+func sendRequest(url string, reqBody []byte, verbose bool, timeout time.Duration) ([]byte, error) {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, err
 	}
@@ -309,4 +326,9 @@ func sendRequest(url string, reqBody []byte, verbose bool) ([]byte, error) {
 		return nil, fmt.Errorf("Error creating job: %s, http code: %v", respBody, resp.StatusCode)
 	}
 	return respBody, nil
+}
+
+func isTimeout(err error) bool {
+	urlErr, ok := err.(*url.Error)
+	return ok && urlErr.Timeout()
 }
