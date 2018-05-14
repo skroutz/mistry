@@ -28,6 +28,20 @@ func TestSimpleBuild(t *testing.T) {
 	}
 }
 
+func TestContainerErrorLogs(t *testing.T) {
+	_, cmderr, err := cliBuildJob("--project", "bad_entrypoint", "--", "--test=error-logs")
+	if err == nil {
+		t.Fatal("Expected mistry-cli error")
+	}
+	expecteds := [2]string{"this is stderr", "missing_command: command not found"}
+
+	for _, expected := range expecteds {
+		if !strings.Contains(cmderr, expected) {
+			t.Fatalf("Expected stderr to contain '%s'", expected)
+		}
+	}
+}
+
 func toCli(p types.Params) []string {
 	cliParams := make([]string, len(p))
 	i := 0

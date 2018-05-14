@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/docker/distribution"
@@ -187,7 +188,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out)
+	var outErr strings.Builder
+	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out, &outErr)
+
 	if err != nil {
 		err = workErr("could not start docker container", err)
 		return
@@ -218,6 +221,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	buildInfo.Log = string(finalLog)
+	buildInfo.ErrLog = outErr.String()
 
 	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
 	return
