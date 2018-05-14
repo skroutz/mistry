@@ -235,8 +235,8 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 
 func (j *Job) String() string {
 	return fmt.Sprintf(
-		"{project=%s params=%s group=%s id=%s}",
-		j.Project, j.Params, j.Group, j.ID[:7])
+		"{project=%s group=%s id=%s}",
+		j.Project, j.Group, j.ID[:7])
 }
 
 // MarshalJSON serializes the Job to JSON
