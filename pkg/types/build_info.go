@@ -34,7 +34,10 @@ type BuildInfo struct {
 
 	StartedAt time.Time
 
+	// Contains the stdout and stderr as output by the container
 	Log string
+	// Contains the stderr output by the container
+	ErrLog string
 }
 
 type ErrImageBuild struct {

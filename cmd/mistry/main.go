@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,7 +59,8 @@ func main() {
 
 	currentUser, err := user.Current()
 	if err != nil {
-		log.Fatal("Cannot fetch current user; ", err)
+		fmt.Fprintln(os.Stderr, "Cannot fetch current user:", err)
+		os.Exit(1)
 	}
 
 	cli.AppHelpTemplate = fmt.Sprintf(`%s
@@ -259,7 +259,7 @@ EXAMPLES:
 
 				if noWait {
 					if verbose {
-						fmt.Printf("Build scheduled successfully\n")
+						fmt.Println("Build scheduled successfully")
 					}
 					return nil
 				}
@@ -278,15 +278,18 @@ EXAMPLES:
 				}
 
 				if jsonResult {
-					fmt.Printf("%s", body)
+					fmt.Printf("%s\n", body)
 				}
 
 				if bi.ExitCode != 0 {
+					if bi.ErrLog != "" {
+						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ErrLog)
+					}
 					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
 				if verbose {
-					fmt.Printf("Copying artifacts to %s", target)
+					fmt.Println("Copying artifacts to", target)
 				}
 				out, err := ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget)
 				fmt.Println(out)
@@ -294,7 +297,7 @@ EXAMPLES:
 					return err
 				}
 				if verbose {
-					fmt.Printf("Artifacts copied to %s successfully\n", target)
+					fmt.Println("Artifacts copied to", target, "successfully")
 				}
 
 				return nil
@@ -304,7 +307,8 @@ EXAMPLES:
 
 	err = app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 

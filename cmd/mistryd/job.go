@@ -177,7 +177,7 @@ func (j *Job) BuildImage(ctx context.Context, uid string, c *docker.Client, out 
 //
 // NOTE: If there was an error with the user's dockerfile, the returned exit
 // code will be 1 and the error nil.
-func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client, out io.Writer) (int, error) {
+func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client, out, outErr io.Writer) (int, error) {
 	config := container.Config{User: cfg.UID, Image: j.Image}
 
 	mnts := []mount.Mount{{Type: mount.TypeBind, Source: filepath.Join(j.PendingBuildPath, DataDir), Target: DataDir}}
@@ -213,7 +213,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 	}
 	defer logs.Close()
 
-	_, err = stdcopy.StdCopy(out, out, logs)
+	_, err = stdcopy.StdCopy(out, io.MultiWriter(out, outErr), logs)
 	if err != nil {
 		return 0, err
 	}
