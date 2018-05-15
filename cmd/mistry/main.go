@@ -234,7 +234,8 @@ EXAMPLES:
 					}
 				}
 
-				url := fmt.Sprintf("http://%s:%s/%s", host, port, JobsPath)
+				baseURL := fmt.Sprintf("http://%s:%s", host, port)
+				url := baseURL + "/" + JobsPath
 				if noWait {
 					url += "?async"
 				}
@@ -271,6 +272,10 @@ EXAMPLES:
 					return err
 				}
 
+				if !jsonResult {
+					fmt.Println("Logs can be found at", baseURL+"/"+bi.URL)
+				}
+
 				if verbose {
 					fmt.Printf(
 						"\nResult:\nStarted at: %s ExitCode: %v Params: %s Cached: %v Coalesced: %v\n\nLogs:\n%s\n",
@@ -284,12 +289,14 @@ EXAMPLES:
 				if bi.ExitCode != 0 {
 					if bi.ErrLog != "" {
 						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ErrLog)
+					} else {
+						fmt.Fprintln(os.Stderr, "There are no container error logs.")
 					}
 					return fmt.Errorf("Build failed with exit code %d", bi.ExitCode)
 				}
 
 				if verbose {
-					fmt.Println("Copying artifacts to", target)
+					fmt.Println("Copying artifacts to", target, "...")
 				}
 				out, err := ts.Copy(transportUser, host, project, bi.Path+"/*", target, clearTarget)
 				fmt.Println(out)
@@ -297,7 +304,7 @@ EXAMPLES:
 					return err
 				}
 				if verbose {
-					fmt.Println("Artifacts copied to", target, "successfully")
+					fmt.Println("Artifacts copied to", target)
 				}
 
 				return nil

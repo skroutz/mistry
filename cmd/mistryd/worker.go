@@ -48,6 +48,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	buildInfo.TransportMethod = types.Rsync
 	buildInfo.Params = j.Params
 	buildInfo.StartedAt = j.StartedAt
+	buildInfo.URL = getJobURL(j)
 
 	added := s.jq.Add(j)
 	if added {
