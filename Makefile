@@ -3,7 +3,7 @@
 CLIENT=mistry
 SERVER=mistryd
 BUILDCMD=go build -v
-TESTCMD=MISTRY_CLIENT_PATH="$(shell pwd)/$(CLIENT)" go test -v -race cmd/mistryd/*.go
+TESTCMD=MISTRY_CLIENT_PATH="$(shell pwd)/$(CLIENT)" go test -v -race -coverprofile=profile.out -covermode=atomic cmd/mistryd/*.go
 
 install: fmt test
 	go install -v ./...
@@ -18,6 +18,7 @@ mistry:
 
 test: generate mistry
 	$(TESTCMD) --filesystem plain
+	#report
 
 testall: test
 	$(TESTCMD) --filesystem btrfs
@@ -36,3 +37,10 @@ clean:
 
 generate:
 	go generate ./...
+
+report:
+	if [ -n "$CI" ] && [ -f profile.out ]; then
+			echo "" > coverage.txt
+			cat profile.out >> coverage.txt
+			rm profile.out
+	fi
