@@ -6,7 +6,7 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Added
 
-- server: Don't delete build results on docker image build failure [[#75](https://github.com/skroutz/mistry/issues/75)]
+- client: Output container stderr on non-zero exit code [[#85](https://github.com/skroutz/mistry/pull/85)]
 - client: Add a `--timeout` option to specify maximum time to wait for a job [[#81](https://github.com/skroutz/mistry/pull/70)]
 - server: Introduced a configuration option to limit the number of concurrent builds [[73c44ec](https://github.com/skroutz/mistry/commit/73c44ecc924260ccf61bad220eb26cd51a1f30d6)]
 - server: Add `--rebuild` option to rebuild the docker images of a selection of projects ignoring the image cache [[#70](https://github.com/skroutz/mistry/pull/70)]
@@ -27,6 +27,7 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Fixed
 
+- Don't delete build results on docker image build failure [[#75](https://github.com/skroutz/mistry/issues/75)]
 - If a container with the same name exists, we remove it so that the new container
   can run [[#20](https://github.com/skroutz/mistry/issues/20)]
 - Streaming log output in web view might occassionally hang [[7c07ca1](7c07ca177639cd6be7f9a860fb39c01370f35779)]

@@ -36,8 +36,12 @@ type BuildInfo struct {
 
 	// Contains the stdout and stderr as output by the container
 	Log string
+
 	// Contains the stderr output by the container
 	ErrLog string
+
+	// The relative URL (excluding hostname) at which the job logs are available
+	URL string
 }
 
 type ErrImageBuild struct {

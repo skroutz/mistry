@@ -281,6 +281,10 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getJobURL(j *Job) string {
+	return strings.Join([]string{"job", j.Project, j.ID}, "/")
+}
+
 // HandleServerPush emits build logs as Server-SentEvents (SSE).
 func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
