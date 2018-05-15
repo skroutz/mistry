@@ -4,6 +4,8 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+## 0.0.2 (2018-05-15)
+
 ### Added
 
 - client: Output container stderr on non-zero exit code [[#85](https://github.com/skroutz/mistry/pull/85)]
@@ -19,6 +21,7 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ### Changed
 
+- **[BREAKING]** server: failed image builds are now always visible as ready [[#75](https://github.com/skroutz/mistry/issues/75)]
 - server: Job parameters are not logged, making the logs less verbose
 - **[BREAKING]** Failed build results are no longer cached [[#62](https://github.com/skroutz/mistry/pull/62)]
 - **[BREAKING]** client/server: Client and server binaries are renamed to "mistryd" and "mistry" respectively.
