@@ -1,4 +1,4 @@
-mistry (0.0.1-1+git1.b55adba) stretch; urgency=low
+mistry (0.0.2-1) stretch; urgency=low
 
   * Initial debian packaging.
 
