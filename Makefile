@@ -26,7 +26,7 @@ deps:
 	dep ensure -v
 
 lint:
-	golint ./...
+	golint `go list ./... | grep -v /vendor/`
 
 fmt:
 	! go fmt ./... 2>&1 | tee /dev/tty | read
