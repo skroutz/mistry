@@ -43,10 +43,10 @@
   </div>
 
   <script type="text/javascript">
-    const jobLog = document.getElementById('js-job-log')
+    const jobLog = document.getElementById('js-job-log');
     const logs = {{.BuildInfo.Log}};
     const jobInfo = document.getElementById('js-job-info');
-    const state = {{.State}}
+    const state = {{.State}};
 
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
@@ -61,7 +61,9 @@
     jobLog.innerHTML += logs.split('\n').join('<br>')
 
     if (state == "pending") {
+      let logsFragment = document.createDocumentFragment();
       setInterval(checkState, 3000);
+      setInterval(updateJobLogs, 500);
 
       function checkState() {
         let jHeaders = new Headers();
@@ -76,9 +78,15 @@
           })
       }
 
+      function updateJobLogs() {
+        jobLog.appendChild(logsFragment);
+      }
+
       const source = new EventSource('/log/{{.Project}}/{{.ID}}');
       source.onmessage = function(e) {
-        jobLog.innerHTML += e.data + "</br>"
+        let logLine = document.createElement("div");
+        logLine.innerHTML = e.data + "</br>";
+        logsFragment.appendChild(logLine);
       };
 
       source.onerror = function(e) {
