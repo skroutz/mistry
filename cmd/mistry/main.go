@@ -80,8 +80,8 @@ EXAMPLES:
 			--group group_name --transport rsync --target /tmp/yarn \
 			-- --lockfile=@yarn.lock --foo=bar
 
-	2. Schedules a build and exits early without waiting for the result by setting
-		the no-wait flag
+	2. Schedule a build and exit early without waiting for the result by setting
+		the no-wait flag.
 
 		$ {{.HelpName}} --host example.org --port 9090 --project yarn --no-wait
 `, cli.CommandHelpTemplate)
