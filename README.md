@@ -1,6 +1,7 @@
 mistry
 ====================================
 [![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 *mistry* executes user-provided jobs inside pre-defined, isolated
 environments and makes the results available for later consumption.
@@ -116,12 +117,12 @@ See `mistry build -h` for more options.
 $ curl -X POST /jobs \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
-    -d '{"project": "foo"}' 
+    -d '{"project": "foo"}'
 ```
 
 ```js
 {
-    "Params": {"foo": "xzv"}, 
+    "Params": {"foo": "xzv"},
     "Path": "<artifact path>",
     "Cached": true,
     "Coalesced": false,
