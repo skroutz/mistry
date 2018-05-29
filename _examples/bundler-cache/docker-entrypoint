@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+require 'open3'
+
+# non-buffered stdout
+STDOUT.sync = true
+
+GEMFILE = File.read("params/Gemfile").strip
+abort "Gemfile param cannot be empty" if GEMFILE.empty?
+
+GEMFILE_LOCK = File.read("params/Gemfile.lock").strip
+abort "Gemfile.lock param cannot be empty" if GEMFILE_LOCK.empty?
+
+cmd = "bundle install --path /data/artifacts --no-prune --deployment --jobs=4 --gemfile=params/Gemfile"
+puts "Running '#{cmd}'..."
+Open3.popen2(cmd) do |_, stdout, status_thread|
+  stdout.each_line { |line| puts line }
+  unless status_thread.value.success?
+    abort "Aborting #{cmd} returned non-zero exit code (#{status_thread.value})"
+  end
+end

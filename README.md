@@ -55,6 +55,15 @@ $ go get -u github.com/skroutz/mistry/cmd/mistry
 
 
 
+Examples
+--------------------------------------------------
+For example projects take a look at the [examples](https://github.com/skroutz/mistry/_examples) directory.
+
+
+
+
+
+
 Usage
 --------------------------------------------------
 To boot the server, a configuration file is needed:
