@@ -182,6 +182,17 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		err = workErr("could not create docker client", err)
 		return
 	}
+	defer func() {
+		derr := client.Close()
+		errstr := "could not close docker client"
+		if derr != nil {
+			if err == nil {
+				err = fmt.Errorf("%s; %s", errstr, derr)
+			} else {
+				err = fmt.Errorf("%s; %s | %s", errstr, derr, err)
+			}
+		}
+	}()
 
 	err = j.BuildImage(ctx, s.cfg.UID, client, out, j.Rebuild, j.Rebuild)
 	if err != nil {
@@ -191,7 +202,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 
 	var outErr strings.Builder
 	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out, &outErr)
-
 	if err != nil {
 		err = workErr("could not start docker container", err)
 		return
