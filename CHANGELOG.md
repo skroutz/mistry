@@ -4,6 +4,15 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+### Fixed
+
+- server: Socket FDs to docker were never closed [[b079128](b079128c018f145f013a5a2f2e3a51cfe37926e3)]
+
+
+
+
+
+
 ## 0.0.2 (2018-05-15)
 
 ### Added
