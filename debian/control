@@ -19,7 +19,7 @@ XS-Go-Import-Path: github.com/skroutz/mistry
 Package: mistry-server
 Architecture: any
 Depends: adduser,
-         docker-ce || docker.io,
+         docker-ce | docker.io,
          ${misc:Depends},
          ${shlibs:Depends},
 Built-Using: ${misc:Built-Using},
