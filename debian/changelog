@@ -1,3 +1,11 @@
+mistry (0.0.2-4) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * debian: godep in verbose mode
+  * debian: create data/project dirs postinst
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Thu, 26 Jul 2018 16:55:39 +0300
+
 mistry (0.0.2-3) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
