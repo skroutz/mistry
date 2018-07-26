@@ -1,3 +1,10 @@
+mistry (0.0.2-3) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * debian: fix package post inst
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Thu, 26 Jul 2018 16:25:51 +0300
+
 mistry (0.0.2-2) stretch; urgency=medium
 
   [ Christos Trochalakis ]
