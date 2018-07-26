@@ -19,8 +19,9 @@ case "$1" in
             usermod -a -G docker mistry >/dev/null 2>/dev/null || :
         fi
 
-	mkdir -p /var/lib/mistry
-	chown mistry:mistry /var/lib/mistry
+	mkdir /var/lib/mistry/data /var/lib/mistry/projects
+	chown -R mistry:mistry /var/lib/mistry
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
