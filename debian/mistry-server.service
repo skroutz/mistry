@@ -1,11 +1,13 @@
 [Unit]
-Description=Powerful building service
+Description=mistry build server
 After=network.target
 Documentation=https://github.com/skroutz/mistry
+Wants=docker.service
+After=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/mistryd --config /etc/mistry/config.json --filesystem btrfs
+ExecStart=/usr/bin/mistryd --config /etc/mistry/config.json
 Restart=on-failure
 User=mistry
 Group=mistry
