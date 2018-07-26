@@ -22,23 +22,20 @@ Depends: adduser,
          ${misc:Depends},
          ${shlibs:Depends},
 Built-Using: ${misc:Built-Using},
-Description: Mistry Buider Service
- Mistry is a service that builds things so you don't have to.
+Description: mistry build server
+ mistry executes user-provided jobs inside pre-defined, isolated environments
+ and makes the results available for later consumption.
  .
- Mistry executes user-provided build jobs inside pre-defined, isolated
- environments and makes the results available for later consumption.
- .
- It enables fast workflows by employing caching techniques and incremental
+ mistry enables fast workflows by employing caching techniques and incremental
  builds due to its copy-on-write snapshotting features.
  .
  Features include:
  .
   o running arbitrary commands inside isolated environments
-  o providing the build environments as Docker images
-  o incremental building (using Btrfs snapshotting)
-  o caching and reusing build results
+  o build caching & incremental building
+  o a simple JSON API for interacting with the server (scheduling jobs etc.)
+  o a web view for inspecting the progress of builds
   o efficient use of disk space due to copy-on-write semantics
-  o a simple JSON API for interacting with the service
 
 Package: mistry-client
 Architecture: any
@@ -46,7 +43,4 @@ Depends: adduser,
          ${misc:Depends},
          ${shlibs:Depends},
 Built-Using: ${misc:Built-Using},
-Description: Mistry command line client
- Mistry is a builder service.
- .
- This package contains the command line client.
+Description: command-line client for mistry server
