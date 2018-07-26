@@ -11,7 +11,7 @@ ARCH := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 override_dh_auto_configure:
 	dh_auto_configure --buildsystem=golang
-	cd $(CURDIR)/obj-${ARCH}/src/${DH_GOPKG} && GOPATH=$(CURDIR)/obj-${ARCH} dep ensure
+	cd $(CURDIR)/obj-${ARCH}/src/${DH_GOPKG} && GOPATH=$(CURDIR)/obj-${ARCH} dep ensure -v
 
 # Disabling tests during build as they require a docker service
 override_dh_auto_test:
