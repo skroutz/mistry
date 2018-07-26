@@ -10,12 +10,13 @@ case "$1" in
     configure|reconfigure)
         if ! getent passwd mistry >/dev/null; then
             adduser \
-                --system \
                 --group \
                 --home /var/lib/mistry \
                 --gecos "Mistry Server" \
                 --shell /bin/false \
                 mistry >/dev/null 2>/dev/null || :
+
+            usermod -a -G docker mistry >/dev/null 2>/dev/null || :
         fi
 
 	mkdir -p /var/lib/mistry
