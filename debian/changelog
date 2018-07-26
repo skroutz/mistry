@@ -1,3 +1,16 @@
+mistry (0.0.2-2) stretch; urgency=medium
+
+  [ Christos Trochalakis ]
+  * config loc
+
+  [ Agis Anastasopoulos ]
+  * systemd service file improvements
+  * debian: update package description
+  * debian: server depends on docker
+  * debian: add mistry user to docker group
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Thu, 26 Jul 2018 15:22:40 +0300
+
 mistry (0.0.2-1) stretch; urgency=low
 
   * Initial debian packaging.
