@@ -1,3 +1,10 @@
+mistry (0.0.2-5) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * Remove ssh bind from sample config
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Fri, 27 Jul 2018 12:22:22 +0300
+
 mistry (0.0.2-4) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
