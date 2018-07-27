@@ -1,3 +1,11 @@
+mistry (0.0.2-6) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * debian: suggest btrfs-progs with mistry-server
+  * debian: use mkdir -p for data and project paths
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Fri, 27 Jul 2018 17:25:20 +0300
+
 mistry (0.0.2-5) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
