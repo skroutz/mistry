@@ -22,6 +22,7 @@ Depends: adduser,
          docker-ce | docker.io,
          ${misc:Depends},
          ${shlibs:Depends},
+Suggests: btrfs-progs
 Built-Using: ${misc:Built-Using},
 Description: mistry build server
  mistry executes user-provided jobs inside pre-defined, isolated environments
