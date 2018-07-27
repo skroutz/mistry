@@ -19,7 +19,7 @@ case "$1" in
             usermod -a -G docker mistry >/dev/null 2>/dev/null || :
         fi
 
-	mkdir /var/lib/mistry/data /var/lib/mistry/projects
+	mkdir -p /var/lib/mistry/data /var/lib/mistry/projects
 	chown -R mistry:mistry /var/lib/mistry
 
     ;;
