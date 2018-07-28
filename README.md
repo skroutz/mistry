@@ -164,6 +164,6 @@ For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/conf
 
 
 
-Credits
+License
 -------------------------------------------------
 mistry is released under the GNU General Public License version 3. See [COPYING](COPYING).
