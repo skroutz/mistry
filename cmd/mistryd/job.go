@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -111,6 +112,12 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	// compute ID
 	keys := []string{}
 	for k := range params {
+		// params opaque to the build are not taken into account
+		// when calculating a job's ID
+		if strings.HasPrefix(k, "_") {
+			continue
+		}
+
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
