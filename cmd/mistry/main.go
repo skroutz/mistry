@@ -74,11 +74,12 @@ JOB PARAMETERS:
 EXAMPLES:
 	1. Schedule a job with a group and some parameters and put artifacts under
 		/tmp/yarn using rsync. Prefixing a file name with @ will cause the contents
-		of yarn.lock to be sent as parameters.
+		of yarn.lock to be sent as parameters. Parameters prepended with '_' are opaque
+		and do not affect the build result.
 
 		$ {{.HelpName}} --host example.org --port 9090 --project yarn \
 			--group group_name --transport rsync --target /tmp/yarn \
-			-- --lockfile=@yarn.lock --foo=bar
+			-- --lockfile=@yarn.lock --foo=bar --_ignored=true
 
 	2. Schedule a build and exit early without waiting for the result by setting
 		the no-wait flag.
