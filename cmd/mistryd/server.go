@@ -1,4 +1,3 @@
-//go:generate statik -src=./public -f
 package main
 
 import (
@@ -22,11 +21,13 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-units"
-	"github.com/rakyll/statik/fs"
-	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
 	"github.com/skroutz/mistry/pkg/types"
 )
+
+func staticFs() (http.FileSystem, error) {
+	return http.Dir("./cmd/mistryd/public"), nil
+}
 
 // Server is the component that performs the actual work (builds images, runs
 // commands etc.). It also exposes the JSON API by which users interact with
@@ -63,11 +64,16 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s := new(Server)
 	mux := http.NewServeMux()
 
-	s.fs, err = fs.New()
-	if err != nil {
-		logger.Fatal(err)
-	}
+	//	s.fs, err = fs.New()
+	//	if err != nil {
+	//		logger.Fatal(err)
+	//	}
 
+	fs, err := staticFs()
+	if err != nil {
+		panic(err)
+	}
+	s.fs = fs
 	mux.Handle("/", http.StripPrefix("/", http.FileServer(s.fs)))
 	mux.HandleFunc("/jobs", s.HandleNewJob)
 	mux.HandleFunc("/index/", s.HandleIndex)

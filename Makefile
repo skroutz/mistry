@@ -10,7 +10,7 @@ install: fmt test
 
 build: mistryd mistry
 
-mistryd: generate
+mistryd:
 	$(BUILDCMD) -o $(SERVER) cmd/mistryd/*.go
 
 mistry:
