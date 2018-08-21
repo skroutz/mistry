@@ -13,7 +13,7 @@ Environment=MISTRY_ADDR=0.0.0.0:8462
 Environment=MISTRY_CONFIG=/etc/mistry/config.json
 Environment=MISTRY_FS=plain
 EnvironmentFile=-/etc/default/mistry
-ExecStart=/usr/bin/mistryd --addr=${MISTRY_ADDR} --config=${MISTRY_CFG} --filesystem=${MISTRY_FS}
+ExecStart=/usr/bin/mistryd --addr=${MISTRY_ADDR} --config=${MISTRY_CONFIG} --filesystem=${MISTRY_FS}
 Restart=on-failure
 
 [Install]
