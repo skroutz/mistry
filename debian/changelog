@@ -1,3 +1,10 @@
+mistry (0.0.2-7) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * debian: read args from environment
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Tue, 21 Aug 2018 14:41:02 +0300
+
 mistry (0.0.2-6) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
