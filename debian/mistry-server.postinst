@@ -20,7 +20,7 @@ case "$1" in
         fi
 
 	mkdir -p /var/lib/mistry/data /var/lib/mistry/projects
-	chown -R mistry:mistry /var/lib/mistry
+	chown mistry:mistry /var/lib/mistry /var/lib/mistry/data /var/lib/mistry/projects
 
     ;;
 
