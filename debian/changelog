@@ -1,3 +1,10 @@
+mistry (0.0.2-8) stretch; urgency=medium
+
+  [ Agis Anastasopoulos ]
+  * debian: no recursive chown
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Wed, 22 Aug 2018 13:36:50 +0300
+
 mistry (0.0.2-7) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
