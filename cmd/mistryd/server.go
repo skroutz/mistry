@@ -177,7 +177,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(jobs)
 	if err != nil {
-		s.Log.Print("cannot marshal jobs '%#v'; %s", jobs, err)
+		s.Log.Printf("cannot marshal jobs '%#v'; %s", jobs, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -187,7 +187,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(resp)
 	if err != nil {
-		s.Log.Print("cannot write response %s", err)
+		s.Log.Printf("cannot write response %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
