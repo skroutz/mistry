@@ -21,7 +21,7 @@ import (
 
 	"github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rakyll/statik/fs"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
