@@ -4,6 +4,11 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+### Added
+
+- Support for opaque parameters [[#97](https://github.com/skroutz/mistry/pull/97)]
+
+
 ### Fixed
 
 - server: Socket FDs to docker were never closed [[b079128](b079128c018f145f013a5a2f2e3a51cfe37926e3)]
