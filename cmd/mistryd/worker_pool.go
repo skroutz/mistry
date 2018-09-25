@@ -97,7 +97,7 @@ func work(s *Server, id int, queue <-chan workItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logPrefix := fmt.Sprintf("[worker %d]", id)
 	for item := range queue {
-		s.Log.Printf("%s received work item %#v", logPrefix, item)
+		s.Log.Printf("%s received work item %v", logPrefix, item)
 		buildInfo, err := s.Work(context.Background(), item.job)
 
 		select {

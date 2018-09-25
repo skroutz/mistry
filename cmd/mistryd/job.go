@@ -418,7 +418,8 @@ func ReadJobLogs(jobPath string) ([]byte, error) {
 	return log, nil
 }
 
-// ReadJobBuildInfo returns the BuildInfo found at jobPath
+// ReadJobBuildInfo returns a BuildInfo from the given path. If logs is true,
+// BuildInfo.Log will contain the build logs.
 func ReadJobBuildInfo(path string, logs bool) (*types.BuildInfo, error) {
 	buildInfoPath := filepath.Join(path, BuildInfoFname)
 	buildInfo := types.NewBuildInfo()

@@ -23,18 +23,22 @@ import (
 func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, err error) {
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
+
+	// result cache
 	_, err = os.Stat(j.ReadyBuildPath)
 	if err == nil {
 		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
 		if err != nil {
 			return nil, err
 		} else if buildInfo.ExitCode != 0 {
-			// previous build failed, remove its build dir to restart it
+			// previous build failed, remove its build dir to
+			// restart it
+			// TODO: if it's a latest link?
 			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
 			if err != nil {
 				return buildInfo, workErr("could not remove existing failed build", err)
 			}
-		} else {
+		} else { // if a successful result exists already, return it
 			buildInfo.Cached = true
 			return buildInfo, err
 		}
@@ -53,8 +57,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	added := s.jq.Add(j)
 	if added {
 		defer s.jq.Delete(j)
-	} else {
+	} else { // build coalescing
 		t := time.NewTicker(2 * time.Second)
+		defer t.Stop()
 		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
 		for {
 			select {
@@ -72,6 +77,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 					buildInfo.Coalesced = true
 					return buildInfo, err
 				}
+
 				if os.IsNotExist(err) {
 					continue
 				} else {
