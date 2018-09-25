@@ -7,6 +7,7 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 ### Added
 
 - Support for opaque parameters [[#97](https://github.com/skroutz/mistry/pull/97)]
+- server: Version flag `--version/-v` [[5c20927](https://github.com/skroutz/mistry/commit/5c209278bd6bf1032a1958eb252098b9e1ae228a)]
 
 
 ### Fixed
