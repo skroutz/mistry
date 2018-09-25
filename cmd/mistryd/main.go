@@ -68,7 +68,8 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "mistry"
 	app.Usage = "A powerful building service"
-	app.HideVersion = true
+	app.HideVersion = false
+	app.Version = "0.2.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "addr, a",
