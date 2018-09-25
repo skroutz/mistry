@@ -11,7 +11,7 @@ install: fmt test
 build: mistryd mistry
 
 mistryd: generate
-	$(BUILDCMD) -o $(SERVER) cmd/mistryd/*.go
+	$(BUILDCMD) -ldflags '-X main.VersionSuffix=$(shell git rev-parse HEAD)' -o $(SERVER) cmd/mistryd/*.go
 
 mistry:
 	$(BUILDCMD) -o $(CLIENT) cmd/mistry/*.go
