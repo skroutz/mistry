@@ -144,10 +144,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	if err != nil {
-		return
-	}
-
 	for k, v := range j.Params {
 		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
 		if err != nil {
