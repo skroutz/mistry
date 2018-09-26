@@ -54,6 +54,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.Params = j.Params
 	j.BuildInfo.StartedAt = j.StartedAt
 	j.BuildInfo.URL = getJobURL(j)
+	j.BuildInfo.Group = j.Group
 
 	added := s.jq.Add(j)
 	if added {

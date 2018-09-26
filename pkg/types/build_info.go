@@ -15,6 +15,9 @@ type BuildInfo struct {
 	// Params are the job build parameters
 	Params Params
 
+	// Group is the job group
+	Group string
+
 	// Path is the absolute path where the build artifacts are located.
 	Path string
 
