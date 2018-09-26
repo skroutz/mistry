@@ -6,6 +6,8 @@
 /mistry
 /mistryd
 
+cmd/mistry/mistry
+cmd/mistryd/mistryd
 cmd/mistryd/statik
 config.json
 fabfile.py
