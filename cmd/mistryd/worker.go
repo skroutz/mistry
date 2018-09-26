@@ -61,7 +61,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	} else { // build coalescing
 		t := time.NewTicker(2 * time.Second)
 		defer t.Stop()
-		log.Printf("Waiting for %s to complete...", j.PendingBuildPath)
+		log.Printf("Coalescing with %s...", j.PendingBuildPath)
 		for {
 			select {
 			case <-ctx.Done():
@@ -105,8 +105,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	log.Printf("Creating new build directory...")
-	err = j.BootstrapBuildDir(s.cfg.FileSystem, log)
+	err = j.BootstrapBuildDir(s.cfg.FileSystem)
 	if err != nil {
 		err = workErr("could not bootstrap build dir", err)
 	}
