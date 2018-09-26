@@ -109,6 +109,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	err = j.BootstrapBuildDir(s.cfg.FileSystem)
 	if err != nil {
 		err = workErr("could not bootstrap build dir", err)
+		return
 	}
 
 	// moves the pending directory to the ready one
