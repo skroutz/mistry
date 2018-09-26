@@ -34,16 +34,17 @@ import (
 type Server struct {
 	Log *log.Logger
 
+	fs         http.FileSystem
 	srv        *http.Server
 	jq         *JobQueue
-	pq         *ProjectQueue
 	cfg        *Config
 	workerPool *WorkerPool
 
-	// web-view related
+	// synchronizes access to the filesystem on a per-project basis
+	pq *ProjectQueue
 
+	// web-view related
 	br *broker.Broker
-	fs http.FileSystem
 }
 
 // NewServer accepts a non-nil configuration and an optional logger, and

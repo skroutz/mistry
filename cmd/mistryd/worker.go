@@ -31,9 +31,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		if err != nil {
 			return nil, err
 		} else if buildInfo.ExitCode != 0 {
-			// previous build failed, remove its build dir to
-			// restart it
-			// TODO: if it's a latest link?
+			// Previous build failed, remove its build dir to
+			// restart it. We know it's not pointed to by a
+			// latest link since we only symlink successful builds
 			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
 			if err != nil {
 				return buildInfo, workErr("could not remove existing failed build", err)
@@ -66,7 +66,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		for {
 			select {
 			case <-ctx.Done():
-				err = workErr("context cancelled while waiting for pending build", nil)
+				err = workErr("context cancelled while coalescing", nil)
 				return
 			case <-t.C:
 				_, err = os.Stat(j.ReadyBuildPath)
@@ -83,7 +83,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				if os.IsNotExist(err) {
 					continue
 				} else {
-					err = workErr("could not wait for ready build", err)
+					err = workErr("could not coalesce", err)
 					return
 				}
 			}
@@ -112,7 +112,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	// moves the pending directory to the ready one
+	// move from pending to ready when finished
 	defer func() {
 		rerr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
 		if rerr != nil {
@@ -124,9 +124,17 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			}
 		}
 
-		// When there are no errors the LatestBuildPath can be updated
-		// to point to the last build. Otherwise it remains unchanged.
+		// if the build was successful, symlink it to the 'latest'
+		// path
 		if err == nil {
+			// eliminate concurrent filesystem operations since
+			// they could result in a corrupted state (eg. if
+			// jobs of the same project simultaneously finish
+			// successfully)
+
+			s.pq.Lock(j.Project)
+			defer s.pq.Unlock(j.Project)
+
 			_, err = os.Lstat(j.LatestBuildPath)
 			if err == nil {
 				err = os.Remove(j.LatestBuildPath)
@@ -138,6 +146,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				err = workErr("could not stat the latest build link", err)
 				return
 			}
+
 			err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
 			if err != nil {
 				err = workErr("could not create latest build link", err)
@@ -175,6 +184,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		err = workErr("could not serialize build info", err)
 		return
 	}
+
 	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
 	if err != nil {
 		err = workErr("could not write build info to file", err)
@@ -211,7 +221,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	// fill the buildInfo Log from the freshly written log
 	err = out.Sync()
 	if err != nil {
 		err = workErr("could not flush the output log", err)
