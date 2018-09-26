@@ -213,17 +213,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	biJSON, err = json.Marshal(j.BuildInfo)
-	if err != nil {
-		err = workErr("could not serialize build info", err)
-		return
-	}
-	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
-	if err != nil {
-		err = workErr("could not write build info to file", err)
-		return
-	}
-
 	// fill the buildInfo Log from the freshly written log
 	err = out.Sync()
 	if err != nil {
@@ -239,8 +228,20 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 
 	j.BuildInfo.Log = string(finalLog)
 	j.BuildInfo.ErrLog = outErr.String()
+	j.BuildInfo.Duration = time.Now().Sub(start).Truncate(time.Millisecond)
 
-	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
+	biJSON, err = json.Marshal(j.BuildInfo)
+	if err != nil {
+		err = workErr("could not serialize build info", err)
+		return
+	}
+	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
+	if err != nil {
+		err = workErr("could not write build info to file", err)
+		return
+	}
+
+	log.Println("Finished after", j.BuildInfo.Duration)
 	return
 }
 

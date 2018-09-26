@@ -51,6 +51,7 @@
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
     jobInfo.innerHTML += "Started At: ".big() + new Date({{.BuildInfo.StartedAt}}) + "<br>";
+    jobInfo.innerHTML += "Duration: ".big() + {{.BuildInfo.Duration}} + "<br>";
     jobInfo.innerHTML += "Path: ".big() + {{.BuildInfo.Path}} + "<br>";
     jobInfo.innerHTML += "Params: ".big() + JSON.stringify({{.BuildInfo.Params}}) + "<br>";
     jobInfo.innerHTML += "Cached: ".big() + {{.BuildInfo.Cached}} + "<br>";

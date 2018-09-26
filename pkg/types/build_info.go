@@ -44,6 +44,12 @@ type BuildInfo struct {
 	// StartedAt is the date and time when the build started.
 	StartedAt time.Time
 
+	// Duration is how much the build took to complete. If it cannot be
+	// calculated yet, the value will be -1 seconds.
+	//
+	// NOTE: if Cached is true, this refers to the original build.
+	Duration time.Duration
+
 	// Log contains the stdout/stderr of the build.
 	Log string
 
@@ -63,6 +69,7 @@ func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
 	bi.ExitCode = ContainerFailureExitCode
+	bi.Duration = -1 * time.Second
 
 	return bi
 }
