@@ -154,6 +154,36 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
+	// populate j.BuildInfo.Err with any error that occured during the
+	// build
+	defer func() {
+		j.BuildInfo.ErrBuild = err.Error()
+
+		biJSON, err := json.Marshal(j.BuildInfo)
+		if err != nil {
+			err = workErr("could not serialize build info", err)
+			return
+		}
+
+		err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
+		if err != nil {
+			err = workErr("could not write build info to file", err)
+			return
+		}
+	}()
+
+	biJSON, err := json.Marshal(j.BuildInfo)
+	if err != nil {
+		err = workErr("could not serialize build info", err)
+		return
+	}
+
+	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
+	if err != nil {
+		err = workErr("could not write build info to file", err)
+		return
+	}
+
 	for k, v := range j.Params {
 		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
 		if err != nil {
@@ -179,7 +209,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	biJSON, err := json.Marshal(j.BuildInfo)
+	biJSON, err = json.Marshal(j.BuildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return

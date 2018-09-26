@@ -60,6 +60,7 @@
     jobInfo.innerHTML += "Incremental: ".big() + {{.BuildInfo.Incremental}} + "<br>";
     jobInfo.innerHTML += "ExitCode: ".big() + {{.BuildInfo.ExitCode}} + "<br>";
     jobInfo.innerHTML += "Transport method: ".big() + {{.BuildInfo.TransportMethod}} + "<br>";
+    jobInfo.innerHTML += "Error: ".big() + {{.BuildInfo.ErrBuild}} + "<br>";
 
     jobLog.innerHTML += logs.split('\n').join('<br>')
 

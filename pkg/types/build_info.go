@@ -37,8 +37,14 @@ type BuildInfo struct {
 	// NOTE: irrelevant if Coalesced is true.
 	ExitCode int
 
-	// Err contains any errors that occured during the build.
-	Err error
+	// ErrBuild contains any errors that occured during the build.
+	//
+	// TODO: It might contain errors internal to the server, that the
+	// user can do nothing about. This should be fixed
+	ErrBuild string
+
+	// Errlog contains the stderr of the container.
+	ErrLog string
 
 	// TransportMethod is the method with which the build artifacts can be
 	// fetched.
@@ -55,9 +61,6 @@ type BuildInfo struct {
 
 	// Log contains the stdout/stderr of the build.
 	Log string
-
-	// Errlog contains the stderr of the build.
-	ErrLog string
 
 	// URL is the relative URL at which the build log is available.
 	URL string
