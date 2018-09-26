@@ -46,7 +46,6 @@ latest development version:
 ```shell
 # server
 $ go get -u github.com/skroutz/mistry/cmd/mistryd
-
 # client
 $ go get -u github.com/skroutz/mistry/cmd/mistry
 ```
@@ -160,6 +159,20 @@ The following settings are currently supported:
 | `mounts` (object{string:string}) |  The paths from the host machine that should be mounted inside the execution containers     |    {} |
 
 For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/config.sample.json).
+
+
+
+Development
+---------------------------------------------------
+
+To run the tests, the [Docker daemon](https://docs.docker.com/install/) is assumed to be running.
+
+```shell
+$ make test
+```
+
+Note: the command above may take more time the first time it's run,
+since some Docker images will have to be fetched from the internet.
 
 
 
