@@ -309,6 +309,7 @@ func cliBuildJobArgs(cliArgs CliCommonArgs, args ...string) (string, string, err
 	}
 	args = append([]string{
 		clientPath, "build",
+		"--verbose",
 		"--host", cliArgs.host,
 		"--port", cliArgs.port,
 		"--target", cliArgs.target,

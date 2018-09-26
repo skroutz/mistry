@@ -48,11 +48,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	buildInfo = types.NewBuildInfo()
-	buildInfo.Path = filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir)
-	buildInfo.TransportMethod = types.Rsync
-	buildInfo.Params = j.Params
-	buildInfo.StartedAt = j.StartedAt
-	buildInfo.URL = getJobURL(j)
+	j.BuildInfo = buildInfo
+	j.BuildInfo.Path = filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir)
+	j.BuildInfo.TransportMethod = types.Rsync
+	j.BuildInfo.Params = j.Params
+	j.BuildInfo.StartedAt = j.StartedAt
+	j.BuildInfo.URL = getJobURL(j)
 
 	added := s.jq.Add(j)
 	if added {
@@ -71,11 +72,11 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				if err == nil {
 					i, err := ExitCode(j)
 					if err != nil {
-						return buildInfo, err
+						return j.BuildInfo, err
 					}
-					buildInfo.ExitCode = i
-					buildInfo.Coalesced = true
-					return buildInfo, err
+					j.BuildInfo.ExitCode = i
+					j.BuildInfo.Coalesced = true
+					return j.BuildInfo, err
 				}
 
 				if os.IsNotExist(err) {
@@ -172,7 +173,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	biJSON, err := json.Marshal(buildInfo)
+	biJSON, err := json.Marshal(j.BuildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return
@@ -207,13 +208,13 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	var outErr strings.Builder
-	buildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out, &outErr)
+	j.BuildInfo.ExitCode, err = j.StartContainer(ctx, s.cfg, client, out, &outErr)
 	if err != nil {
 		err = workErr("could not start docker container", err)
 		return
 	}
 
-	biJSON, err = json.Marshal(buildInfo)
+	biJSON, err = json.Marshal(j.BuildInfo)
 	if err != nil {
 		err = workErr("could not serialize build info", err)
 		return
@@ -237,8 +238,8 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	buildInfo.Log = string(finalLog)
-	buildInfo.ErrLog = outErr.String()
+	j.BuildInfo.Log = string(finalLog)
+	j.BuildInfo.ErrLog = outErr.String()
 
 	log.Println("Finished after", time.Now().Sub(start).Truncate(time.Millisecond))
 	return

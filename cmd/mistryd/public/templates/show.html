@@ -55,6 +55,7 @@
     jobInfo.innerHTML += "Params: ".big() + JSON.stringify({{.BuildInfo.Params}}) + "<br>";
     jobInfo.innerHTML += "Cached: ".big() + {{.BuildInfo.Cached}} + "<br>";
     jobInfo.innerHTML += "Coalesced: ".big() + {{.BuildInfo.Coalesced}} + "<br>";
+    jobInfo.innerHTML += "Incremental: ".big() + {{.BuildInfo.Incremental}} + "<br>";
     jobInfo.innerHTML += "ExitCode: ".big() + {{.BuildInfo.ExitCode}} + "<br>";
     jobInfo.innerHTML += "Transport method: ".big() + {{.BuildInfo.TransportMethod}} + "<br>";
 

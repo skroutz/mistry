@@ -51,6 +51,8 @@ func TestBuildCache(t *testing.T) {
 	assertNotEq(result1.Path, result2.Path, t)
 	assert(result1.ExitCode, 0, t)
 	assert(result2.ExitCode, 0, t)
+	assert(result1.Incremental, false, t)
+	assert(result2.Incremental, true, t)
 }
 
 func TestFailedPendingBuildCleanup(t *testing.T) {

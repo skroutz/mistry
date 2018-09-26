@@ -337,12 +337,9 @@ func GetState(path, project, id string) (string, error) {
 	return "", fmt.Errorf("job with id=%s not found error", id)
 }
 
-// CloneSrcPath determines if we should use the build cache and return the path that
-// should be used.
-//
-// Using the build cache should happen when
-// 1. the job is invoked with a group
-// 2. the symlink pointing to the latest build is valid
+// CloneSrcPath returns the build path that should be used as the base
+// point for j (ie. incremental building) or an empty string if none should
+// be used.
 func (j *Job) CloneSrcPath(log *log.Logger) string {
 	cloneSrc := ""
 	if j.Group != "" {
@@ -372,6 +369,7 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) error
 		err = fs.Create(j.PendingBuildPath)
 	} else {
 		err = fs.Clone(cloneSrc, j.PendingBuildPath)
+		j.BuildInfo.Incremental = true
 	}
 	if err != nil {
 		return workErr("could not create pending build path", err)
@@ -397,7 +395,6 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) error
 		if err != nil {
 			return workErr("could not ensure directory exists", err)
 		}
-		log.Printf("created dir: %s", dir)
 	}
 	return err
 }
