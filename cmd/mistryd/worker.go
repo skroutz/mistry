@@ -112,6 +112,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
+	err = persistBuildInfo(j)
+	if err != nil {
+		err = workErr("could not persist build info", err)
+		return
+	}
+
 	// move from pending to ready when finished
 	defer func() {
 		rerr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
@@ -154,35 +160,19 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	// populate j.BuildInfo.Err with any error that occured during the
-	// build
+	// populate j.BuildInfo.Err and persist it build_info file one last
+	// time
 	defer func() {
-		j.BuildInfo.ErrBuild = err.Error()
-
-		biJSON, err := json.Marshal(j.BuildInfo)
 		if err != nil {
-			err = workErr("could not serialize build info", err)
-			return
+			j.BuildInfo.ErrBuild = err.Error()
 		}
 
-		err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
+		err := persistBuildInfo(j)
 		if err != nil {
-			err = workErr("could not write build info to file", err)
+			err = workErr("could not persist build info", err)
 			return
 		}
 	}()
-
-	biJSON, err := json.Marshal(j.BuildInfo)
-	if err != nil {
-		err = workErr("could not serialize build info", err)
-		return
-	}
-
-	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
-	if err != nil {
-		err = workErr("could not write build info to file", err)
-		return
-	}
 
 	for k, v := range j.Params {
 		err = ioutil.WriteFile(filepath.Join(j.PendingBuildPath, DataDir, ParamsDir, k), []byte(v), 0644)
@@ -208,18 +198,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			}
 		}
 	}()
-
-	biJSON, err = json.Marshal(j.BuildInfo)
-	if err != nil {
-		err = workErr("could not serialize build info", err)
-		return
-	}
-
-	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
-	if err != nil {
-		err = workErr("could not write build info to file", err)
-		return
-	}
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
@@ -257,26 +235,15 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
-	finalLog, err := ReadJobLogs(j.PendingBuildPath)
+	stdouterr, err := ReadJobLogs(j.PendingBuildPath)
 	if err != nil {
 		err = workErr("could not read the job logs", err)
 		return
 	}
 
-	j.BuildInfo.Log = string(finalLog)
+	j.BuildInfo.ContainerStdouterr = string(stdouterr)
 	j.BuildInfo.ContainerStderr = outErr.String()
 	j.BuildInfo.Duration = time.Now().Sub(start).Truncate(time.Millisecond)
-
-	biJSON, err = json.Marshal(j.BuildInfo)
-	if err != nil {
-		err = workErr("could not serialize build info", err)
-		return
-	}
-	err = ioutil.WriteFile(j.BuildInfoFilePath, biJSON, 0666)
-	if err != nil {
-		err = workErr("could not write build info to file", err)
-		return
-	}
 
 	log.Println("Finished after", j.BuildInfo.Duration)
 	return
@@ -329,4 +296,25 @@ func workErr(s string, e error) error {
 		s += "; " + e.Error()
 	}
 	return errors.New(s)
+}
+
+// persistBuildInfo persists the JSON-serialized version of j.BuildInfo
+// to disk.
+func persistBuildInfo(j *Job) error {
+	// we don't want to persist the whole build logs in the build_info file
+	bi := *j.BuildInfo
+	bi.ContainerStdouterr = ""
+	bi.ContainerStderr = ""
+
+	out, err := json.Marshal(bi)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(j.BuildInfoFilePath, out, 0666)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

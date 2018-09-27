@@ -280,7 +280,7 @@ EXAMPLES:
 				if verbose {
 					fmt.Printf(
 						"\nResult:\nStarted at: %s ExitCode: %v Params: %s Cached: %v Coalesced: %v\n\nLogs:\n%s\n",
-						bi.StartedAt, bi.ExitCode, bi.Params, bi.Cached, bi.Coalesced, bi.Log)
+						bi.StartedAt, bi.ExitCode, bi.Params, bi.Cached, bi.Coalesced, bi.ContainerStdouterr)
 				}
 
 				if jsonResult {
@@ -288,8 +288,8 @@ EXAMPLES:
 				}
 
 				if bi.ExitCode != 0 {
-					if bi.ErrLog != "" {
-						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ErrLog)
+					if bi.ContainerStderr != "" {
+						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ContainerStderr)
 					} else {
 						fmt.Fprintln(os.Stderr, "There are no container error logs.")
 					}

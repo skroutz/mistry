@@ -42,7 +42,10 @@ type BuildInfo struct {
 	// user can do nothing about. This should be fixed
 	ErrBuild string
 
-	// Errlog contains the stderr of the container.
+	// ContainerStdouterr contains the stdout/stderr of the container.
+	ContainerStdouterr string
+
+	// ContainerStderr contains the stderr of the container.
 	ContainerStderr string
 
 	// TransportMethod is the method with which the build artifacts can be
@@ -57,9 +60,6 @@ type BuildInfo struct {
 	//
 	// NOTE: if Cached is true, this refers to the original build.
 	Duration time.Duration
-
-	// Log contains the stdout/stderr of the build.
-	Log string
 
 	// URL is the relative URL at which the build log is available.
 	URL string

@@ -322,7 +322,7 @@ func TestLogs(t *testing.T) {
 		t.Fatalf("failed to read job log: err: %#v", err)
 	}
 
-	assertEq(br.Log, string(log), t)
+	assertEq(br.ContainerStdouterr, string(log), t)
 }
 
 func TestLogsNotJson(t *testing.T) {

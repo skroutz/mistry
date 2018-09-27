@@ -439,7 +439,7 @@ func ReadJobBuildInfo(path string, logs bool) (*types.BuildInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		buildInfo.Log = string(log)
+		buildInfo.ContainerStdouterr = string(log)
 	}
 
 	return buildInfo, nil
