@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -44,7 +43,7 @@ type BuildInfo struct {
 	ErrBuild string
 
 	// Errlog contains the stderr of the container.
-	ErrLog string
+	ContainerStderr string
 
 	// TransportMethod is the method with which the build artifacts can be
 	// fetched.
@@ -66,11 +65,6 @@ type BuildInfo struct {
 	URL string
 }
 
-type ErrImageBuild struct {
-	Image string
-	Err   error
-}
-
 func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
@@ -78,8 +72,4 @@ func NewBuildInfo() *BuildInfo {
 	bi.Duration = -1 * time.Second
 
 	return bi
-}
-
-func (e ErrImageBuild) Error() string {
-	return fmt.Sprintf("could not build docker image '%s': %s", e.Image, e.Err)
 }

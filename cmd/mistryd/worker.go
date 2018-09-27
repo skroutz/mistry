@@ -264,7 +264,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	}
 
 	j.BuildInfo.Log = string(finalLog)
-	j.BuildInfo.ErrLog = outErr.String()
+	j.BuildInfo.ContainerStderr = outErr.String()
 	j.BuildInfo.Duration = time.Now().Sub(start).Truncate(time.Millisecond)
 
 	biJSON, err = json.Marshal(j.BuildInfo)
