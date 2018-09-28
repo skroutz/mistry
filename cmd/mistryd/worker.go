@@ -311,10 +311,5 @@ func persistBuildInfo(j *Job) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(j.BuildInfoFilePath, out, 0666)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(j.BuildInfoFilePath, out, 0666)
 }

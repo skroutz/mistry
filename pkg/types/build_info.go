@@ -43,10 +43,10 @@ type BuildInfo struct {
 	ErrBuild string
 
 	// ContainerStdouterr contains the stdout/stderr of the container.
-	ContainerStdouterr string
+	ContainerStdouterr string `json:",omitempty"`
 
 	// ContainerStderr contains the stderr of the container.
-	ContainerStderr string
+	ContainerStderr string `json:",omitempty"`
 
 	// TransportMethod is the method with which the build artifacts can be
 	// fetched.
