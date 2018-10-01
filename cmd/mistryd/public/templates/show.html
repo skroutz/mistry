@@ -44,7 +44,7 @@
 
   <script type="text/javascript">
     const jobLog = document.getElementById('js-job-log');
-    const logs = {{.BuildInfo.Log}};
+    const logs = {{.BuildInfo.ContainerStdouterr}};
     const jobInfo = document.getElementById('js-job-info');
     const state = {{.State}};
 
