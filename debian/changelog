@@ -1,3 +1,60 @@
+mistry (0.1.0-1) stretch; urgency=medium
+
+  [ Apostolis Stergiou ]
+  * Makefile: Ignore vendor when using golint
+  * webview: update show page's DOM periodically (#87)
+  * client: Use imperative mood for the examples doc
+  * README: Add licence badge (#88)
+
+  [ Agis Anastasopoulos ]
+  * Add goreportcard badge
+
+  [ Apostolis Stergiou ]
+  * work: Ensure that docker Client is closed (#92)
+
+  [ Agis Anastasopoulos ]
+  * Update CHANGELOG.md
+  * travis: Update Slack webhook URL
+  * travis: Only build master branch
+  * Remove ssh bind from sample config
+  * Update changelog with #76
+  * Change 'Credits' section to 'License'
+
+  [ Dimitris Bachtis ]
+  * Add support for parameters opaque to the build process.
+  * Helptext: Include opaque param example
+
+  [ Agis Anastasopoulos ]
+  * Fix vet failures
+  * mistryd: Fix import path
+  * Add go.mod file
+  * go mod tidy
+  * travis: Also build 'debian/stretch' branch
+  * Update changelog for #97
+  * mitsryd: Add version flag
+  * Update changelog
+  * Append git head sha1 to version
+  * Release ticker resources when it's finished
+  * Don't track executables
+  * Add 'Incremental' field to BuildInfo
+  * Add Log field to Job
+  * Add 'Duration' field to BuildInfo
+  * Add Group field to BuildInfo
+  * Remove redundant error check
+  * Return early on build bootstrap errors
+  * Synchronize filesystem access when symlinking
+  * server: Only rebuild valid projects
+  * Add test instructions to readme
+  * Populate BuildInfo.ErrBuild when possible
+  * Rename BuildInfo.Errlog -> ContainerStderr
+  * Do not persist BuildInfo if not needed
+  * BuildInfo: Omit empty container stdout/err fields
+  * Update changelog for #107
+  * webview: fix build log rendering
+  * Prepare for 0.1.0
+
+ -- Agis Anastasopoulos <agis.anast@gmail.com>  Mon, 01 Oct 2018 18:22:06 +0300
+
 mistry (0.0.2-8) stretch; urgency=medium
 
   [ Agis Anastasopoulos ]
