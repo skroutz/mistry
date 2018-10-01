@@ -63,6 +63,8 @@ type Job struct {
 
 	BuildInfo *types.BuildInfo
 	State     string
+
+	Log *log.Logger
 }
 
 // NewJobFromRequest returns a new Job from the JobRequest
@@ -142,6 +144,7 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.StartedAt = time.Now()
 	j.BuildInfo = new(types.BuildInfo)
 	j.State = "pending"
+	j.Log = log.New(os.Stderr, fmt.Sprintf("[%s] ", j), log.Ldate|log.Ltime)
 
 	return j, nil
 }
@@ -337,24 +340,21 @@ func GetState(path, project, id string) (string, error) {
 	return "", fmt.Errorf("job with id=%s not found error", id)
 }
 
-// CloneSrcPath determines if we should use the build cache and return the path that
-// should be used.
-//
-// Using the build cache should happen when
-// 1. the job is invoked with a group
-// 2. the symlink pointing to the latest build is valid
-func (j *Job) CloneSrcPath(log *log.Logger) string {
+// CloneSrcPath returns the build path that should be used as the base
+// point for j (ie. incremental building) or an empty string if none should
+// be used.
+func (j *Job) CloneSrcPath() string {
 	cloneSrc := ""
 	if j.Group != "" {
 		var symlinkErr error
 		cloneSrc, symlinkErr = filepath.EvalSymlinks(j.LatestBuildPath)
 		if symlinkErr != nil {
-			// dont clone anything if we get an error reading the symlink
 			cloneSrc = ""
+			s := "skipping build cache"
 			if os.IsNotExist(symlinkErr) {
-				log.Printf("no latest build was found: %s", symlinkErr)
+				j.Log.Printf("latest link doesn't exist, %s", s)
 			} else {
-				log.Printf("could not read latest build link, error: %s", symlinkErr)
+				j.Log.Printf("error reading latest link: %s, %s", symlinkErr, s)
 			}
 		}
 	}
@@ -363,15 +363,16 @@ func (j *Job) CloneSrcPath(log *log.Logger) string {
 
 // BootstrapBuildDir creates all required build directories. Cleans the
 // pending directory if there were any errors.
-func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) error {
+func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem) error {
 	var err error
 
-	cloneSrc := j.CloneSrcPath(log)
+	cloneSrc := j.CloneSrcPath()
 
 	if cloneSrc == "" {
 		err = fs.Create(j.PendingBuildPath)
 	} else {
 		err = fs.Clone(cloneSrc, j.PendingBuildPath)
+		j.BuildInfo.Incremental = true
 	}
 	if err != nil {
 		return workErr("could not create pending build path", err)
@@ -397,7 +398,6 @@ func (j *Job) BootstrapBuildDir(fs filesystem.FileSystem, log *log.Logger) error
 		if err != nil {
 			return workErr("could not ensure directory exists", err)
 		}
-		log.Printf("created dir: %s", dir)
 	}
 	return err
 }
@@ -418,7 +418,8 @@ func ReadJobLogs(jobPath string) ([]byte, error) {
 	return log, nil
 }
 
-// ReadJobBuildInfo returns the BuildInfo found at jobPath
+// ReadJobBuildInfo returns a BuildInfo from the given path. If logs is true,
+// BuildInfo.Log will contain the build logs.
 func ReadJobBuildInfo(path string, logs bool) (*types.BuildInfo, error) {
 	buildInfoPath := filepath.Join(path, BuildInfoFname)
 	buildInfo := types.NewBuildInfo()
@@ -438,7 +439,7 @@ func ReadJobBuildInfo(path string, logs bool) (*types.BuildInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		buildInfo.Log = string(log)
+		buildInfo.ContainerStdouterr = string(log)
 	}
 
 	return buildInfo, nil

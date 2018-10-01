@@ -2,7 +2,7 @@ package main
 
 import "sync"
 
-// ProjectQueue provides a goroutine-safe mutex per project
+// ProjectQueue provides a per-project mutex.
 type ProjectQueue struct {
 	mu sync.Mutex
 	p  map[string]*sync.Mutex
