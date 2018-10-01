@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -9,54 +8,68 @@ import (
 // before even running the container
 const ContainerFailureExitCode = -999
 
+// BuildInfo contains various information regarding the outcome of a
+// particular build.
 type BuildInfo struct {
-	// Job parameters
+	// Params are the job build parameters
 	Params Params
 
-	// The path where the build artifacts are located.
+	// Group is the job group
+	Group string
+
+	// Path is the absolute path where the build artifacts are located.
 	Path string
 
-	// True if the result was returned from the result cache.
+	// Cached is true if the build artifacts were retrieved from the cache.
 	Cached bool
 
-	// True if the result was returned from another pending build.
+	// Coalesced is true if the build was returned from another pending
+	// build.
 	Coalesced bool
 
-	// The exit code status of the container command.
+	// Incremental is true if the results of a previous build were
+	// used as the base for this build (ie. build cache).
+	Incremental bool
+
+	// ExitCode is the exit code of the container command.
 	//
 	// NOTE: irrelevant if Coalesced is true.
 	ExitCode int
 
-	Err error
+	// ErrBuild contains any errors that occured during the build.
+	//
+	// TODO: It might contain errors internal to the server, that the
+	// user can do nothing about. This should be fixed
+	ErrBuild string
 
-	// The method by which the build artifacts can be fetched.
+	// ContainerStdouterr contains the stdout/stderr of the container.
+	ContainerStdouterr string `json:",omitempty"`
+
+	// ContainerStderr contains the stderr of the container.
+	ContainerStderr string `json:",omitempty"`
+
+	// TransportMethod is the method with which the build artifacts can be
+	// fetched.
 	TransportMethod TransportMethod
 
+	// StartedAt is the date and time when the build started.
 	StartedAt time.Time
 
-	// Contains the stdout and stderr as output by the container
-	Log string
+	// Duration is how much the build took to complete. If it cannot be
+	// calculated yet, the value will be -1 seconds.
+	//
+	// NOTE: if Cached is true, this refers to the original build.
+	Duration time.Duration
 
-	// Contains the stderr output by the container
-	ErrLog string
-
-	// The relative URL (excluding hostname) at which the job logs are available
+	// URL is the relative URL at which the build log is available.
 	URL string
-}
-
-type ErrImageBuild struct {
-	Image string
-	Err   error
 }
 
 func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
 	bi.ExitCode = ContainerFailureExitCode
+	bi.Duration = -1 * time.Second
 
 	return bi
-}
-
-func (e ErrImageBuild) Error() string {
-	return fmt.Sprintf("could not build docker image '%s': %s", e.Image, e.Err)
 }

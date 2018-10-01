@@ -214,7 +214,7 @@ func TestBuildRemoveTarget(t *testing.T) {
 	cliArgs.target = target
 
 	// run the job with remove-target
-	cmdout, cmderr, err := cliBuildJobArgs(cliArgs, "--project", "simple", "--verbose", "--clear-target")
+	cmdout, cmderr, err := cliBuildJobArgs(cliArgs, "--project", "simple", "--clear-target")
 	if err != nil {
 		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
 	}
@@ -322,7 +322,7 @@ func TestLogs(t *testing.T) {
 		t.Fatalf("failed to read job log: err: %#v", err)
 	}
 
-	assertEq(br.Log, string(log), t)
+	assertEq(br.ContainerStdouterr, string(log), t)
 }
 
 func TestLogsNotJson(t *testing.T) {

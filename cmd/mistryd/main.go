@@ -56,9 +56,14 @@ const (
 	// Docker images/containers created by mistry.
 	ImgCntPrefix = "mistry-"
 
-	// DateFmt the date format
+	// DateFmt is the date format used throughout build dates.
 	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
+
+const Version = "0.1.0"
+
+// populated at build-time with -ldflags
+var VersionSuffix string
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -68,7 +73,11 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "mistry"
 	app.Usage = "A powerful building service"
-	app.HideVersion = true
+	app.HideVersion = false
+	app.Version = Version
+	if VersionSuffix != "" {
+		app.Version = Version + "-" + VersionSuffix[:7]
+	}
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "addr, a",

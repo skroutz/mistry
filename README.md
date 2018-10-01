@@ -1,6 +1,8 @@
 mistry
 ====================================
 [![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
+[![Go report](https://goreportcard.com/badge/github.com/skroutz/mistry)](https://goreportcard.com/report/github.com/skroutz/mistry)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 *mistry* executes user-provided jobs inside pre-defined, isolated
 environments and makes the results available for later consumption.
@@ -44,7 +46,6 @@ latest development version:
 ```shell
 # server
 $ go get -u github.com/skroutz/mistry/cmd/mistryd
-
 # client
 $ go get -u github.com/skroutz/mistry/cmd/mistry
 ```
@@ -116,12 +117,12 @@ See `mistry build -h` for more options.
 $ curl -X POST /jobs \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
-    -d '{"project": "foo"}' 
+    -d '{"project": "foo"}'
 ```
 
 ```js
 {
-    "Params": {"foo": "xzv"}, 
+    "Params": {"foo": "xzv"},
     "Path": "<artifact path>",
     "Cached": true,
     "Coalesced": false,
@@ -161,7 +162,21 @@ For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/conf
 
 
 
+Development
+---------------------------------------------------
 
-Credits
+To run the tests, the [Docker daemon](https://docs.docker.com/install/) is assumed to be running.
+
+```shell
+$ make test
+```
+
+Note: the command above may take more time the first time it's run,
+since some Docker images will have to be fetched from the internet.
+
+
+
+
+License
 -------------------------------------------------
 mistry is released under the GNU General Public License version 3. See [COPYING](COPYING).

@@ -4,6 +4,42 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+
+
+
+
+
+
+
+
+
+
+## 0.1.0 (2018-10-01)
+
+### Added
+
+- Support for opaque parameters [[#97](https://github.com/skroutz/mistry/pull/97)]
+- server: Version flag `--version/-v` [[5c20927](https://github.com/skroutz/mistry/commit/5c209278bd6bf1032a1958eb252098b9e1ae228a)]
+
+
+### Fixed
+
+- server: Synchronize filesystem operations when symlinking [[502a42b](https://github.com/skroutz/mistry/commit/502a42b)]
+- server: Errors on the build bootstrap phase would not abort the build [[828eddc](https://github.com/skroutz/mistry/commit/828eddc)]
+- server: Socket FDs to docker were never closed [[b079128](b079128c018f145f013a5a2f2e3a51cfe37926e3)]
+- webview: improve render performance [[#76](https://github.com/skroutz/mistry/issues/76)]
+
+### Changed
+
+- server: build info contains information about build errors [[7a3427](https://github.com/skroutz/mistry/commit/7a3427)]
+- server: build info contains information about build cache usage [[93fd733](https://github.com/skroutz/mistry/commit/93fd733)]
+- server: build info contains information about group [[5ff4cb1](https://github.com/skroutz/mistry/commit/5ff4cb1)]
+- server: build info contains information about build time [[65b3ef2](https://github.com/skroutz/mistry/commit/65b3ef2)]
+
+
+
+
+
 ## 0.0.2 (2018-05-15)
 
 ### Added

@@ -11,7 +11,7 @@ install: fmt test
 build: mistryd mistry
 
 mistryd: generate
-	$(BUILDCMD) -o $(SERVER) cmd/mistryd/*.go
+	$(BUILDCMD) -ldflags '-X main.VersionSuffix=$(shell git rev-parse HEAD)' -o $(SERVER) cmd/mistryd/*.go
 
 mistry:
 	$(BUILDCMD) -o $(CLIENT) cmd/mistry/*.go
@@ -26,7 +26,7 @@ deps:
 	dep ensure -v
 
 lint:
-	golint ./...
+	golint `go list ./... | grep -v /vendor/`
 
 fmt:
 	! go fmt ./... 2>&1 | tee /dev/tty | read

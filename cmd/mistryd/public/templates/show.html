@@ -43,25 +43,31 @@
   </div>
 
   <script type="text/javascript">
-    const jobLog = document.getElementById('js-job-log')
-    const logs = {{.BuildInfo.Log}};
+    const jobLog = document.getElementById('js-job-log');
+    const logs = {{.BuildInfo.ContainerStdouterr}};
     const jobInfo = document.getElementById('js-job-info');
-    const state = {{.State}}
+    const state = {{.State}};
 
     jobInfo.innerHTML += "Project: ".big() + {{.Project}} + "<br>";
+    jobInfo.innerHTML += "Group: ".big() + {{.BuildInfo.Group}} + "<br>";
     jobInfo.innerHTML += "State: ".big() + {{.State}} + "<br>";
     jobInfo.innerHTML += "Started At: ".big() + new Date({{.BuildInfo.StartedAt}}) + "<br>";
+    jobInfo.innerHTML += "Duration: ".big() + {{.BuildInfo.Duration}} + "<br>";
     jobInfo.innerHTML += "Path: ".big() + {{.BuildInfo.Path}} + "<br>";
     jobInfo.innerHTML += "Params: ".big() + JSON.stringify({{.BuildInfo.Params}}) + "<br>";
     jobInfo.innerHTML += "Cached: ".big() + {{.BuildInfo.Cached}} + "<br>";
     jobInfo.innerHTML += "Coalesced: ".big() + {{.BuildInfo.Coalesced}} + "<br>";
+    jobInfo.innerHTML += "Incremental: ".big() + {{.BuildInfo.Incremental}} + "<br>";
     jobInfo.innerHTML += "ExitCode: ".big() + {{.BuildInfo.ExitCode}} + "<br>";
     jobInfo.innerHTML += "Transport method: ".big() + {{.BuildInfo.TransportMethod}} + "<br>";
+    jobInfo.innerHTML += "Error: ".big() + {{.BuildInfo.ErrBuild}} + "<br>";
 
     jobLog.innerHTML += logs.split('\n').join('<br>')
 
     if (state == "pending") {
+      let logsFragment = document.createDocumentFragment();
       setInterval(checkState, 3000);
+      setInterval(updateJobLogs, 500);
 
       function checkState() {
         let jHeaders = new Headers();
@@ -76,9 +82,15 @@
           })
       }
 
+      function updateJobLogs() {
+        jobLog.appendChild(logsFragment);
+      }
+
       const source = new EventSource('/log/{{.Project}}/{{.ID}}');
       source.onmessage = function(e) {
-        jobLog.innerHTML += e.data + "</br>"
+        let logLine = document.createElement("div");
+        logLine.innerHTML = e.data + "</br>";
+        logsFragment.appendChild(logLine);
       };
 
       source.onerror = function(e) {

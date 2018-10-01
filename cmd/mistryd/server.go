@@ -21,7 +21,7 @@ import (
 
 	"github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rakyll/statik/fs"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
@@ -34,16 +34,17 @@ import (
 type Server struct {
 	Log *log.Logger
 
+	fs         http.FileSystem
 	srv        *http.Server
 	jq         *JobQueue
-	pq         *ProjectQueue
 	cfg        *Config
 	workerPool *WorkerPool
 
-	// web-view related
+	// synchronizes access to the filesystem on a per-project basis
+	pq *ProjectQueue
 
+	// web-view related
 	br *broker.Broker
-	fs http.FileSystem
 }
 
 // NewServer accepts a non-nil configuration and an optional logger, and
@@ -177,7 +178,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(jobs)
 	if err != nil {
-		s.Log.Print("cannot marshal jobs '%#v'; %s", jobs, err)
+		s.Log.Printf("cannot marshal jobs '%#v'; %s", jobs, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -187,7 +188,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(resp)
 	if err != nil {
-		s.Log.Print("cannot write response %s", err)
+		s.Log.Printf("cannot write response %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -384,7 +385,7 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, stopErr, ver
 	var err error
 	r := RebuildResult{}
 	if len(projects) == 0 {
-		projects, err = getProjects(cfg.ProjectsPath)
+		projects, err = getProjects(cfg)
 		if err != nil {
 			return r, err
 		}
@@ -472,7 +473,7 @@ func dockerPruneUnused(ctx context.Context, c *docker.Client) (pruneResult, erro
 
 // PruneZombieBuilds removes any pending builds from the filesystem.
 func PruneZombieBuilds(cfg *Config) error {
-	projects, err := getProjects(cfg.ProjectsPath)
+	projects, err := getProjects(cfg)
 	if err != nil {
 		return err
 	}
@@ -493,29 +494,50 @@ func PruneZombieBuilds(cfg *Config) error {
 	return nil
 }
 
-func getProjects(path string) ([]string, error) {
-	folders, err := ioutil.ReadDir(path)
+func getProjects(cfg *Config) ([]string, error) {
+	root := cfg.ProjectsPath
+	folders, err := ioutil.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
+
 	projects := []string{}
+
 	for _, f := range folders {
-		if f.IsDir() {
-			projects = append(projects, f.Name())
+		if !f.IsDir() {
+			continue
 		}
+
+		_, err := os.Stat(filepath.Join(root, f.Name(), "Dockerfile"))
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Println(filepath.Join(root, f.Name(), "Dockerfile"), "doesn't exist")
+				continue
+			}
+			return nil, err
+		}
+
+		projects = append(projects, f.Name())
 	}
+
 	return projects, nil
 }
 
 // getJobs returns all pending and ready jobs.
 func (s *Server) getJobs() ([]Job, error) {
-	var jobs []Job
-	var pendingJobs []os.FileInfo
-	var readyJobs []os.FileInfo
+	var pendingJobs, readyJobs []os.FileInfo
+	jobs := []Job{}
+	projects := []string{}
 
-	projects, err := getProjects(s.cfg.BuildPath)
+	// find projects
+	folders, err := ioutil.ReadDir(s.cfg.BuildPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot scan projects; %s", err)
+	}
+	for _, f := range folders {
+		if f.IsDir() {
+			projects = append(projects, f.Name())
+		}
 	}
 
 	for _, p := range projects {

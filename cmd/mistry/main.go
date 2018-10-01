@@ -74,14 +74,15 @@ JOB PARAMETERS:
 EXAMPLES:
 	1. Schedule a job with a group and some parameters and put artifacts under
 		/tmp/yarn using rsync. Prefixing a file name with @ will cause the contents
-		of yarn.lock to be sent as parameters.
+		of yarn.lock to be sent as parameters. Parameters prepended with '_' are opaque
+		and do not affect the build result.
 
 		$ {{.HelpName}} --host example.org --port 9090 --project yarn \
 			--group group_name --transport rsync --target /tmp/yarn \
-			-- --lockfile=@yarn.lock --foo=bar
+			-- --lockfile=@yarn.lock --foo=bar --_ignored=true
 
-	2. Schedules a build and exits early without waiting for the result by setting
-		the no-wait flag
+	2. Schedule a build and exit early without waiting for the result by setting
+		the no-wait flag.
 
 		$ {{.HelpName}} --host example.org --port 9090 --project yarn --no-wait
 `, cli.CommandHelpTemplate)
@@ -279,7 +280,7 @@ EXAMPLES:
 				if verbose {
 					fmt.Printf(
 						"\nResult:\nStarted at: %s ExitCode: %v Params: %s Cached: %v Coalesced: %v\n\nLogs:\n%s\n",
-						bi.StartedAt, bi.ExitCode, bi.Params, bi.Cached, bi.Coalesced, bi.Log)
+						bi.StartedAt, bi.ExitCode, bi.Params, bi.Cached, bi.Coalesced, bi.ContainerStdouterr)
 				}
 
 				if jsonResult {
@@ -287,8 +288,8 @@ EXAMPLES:
 				}
 
 				if bi.ExitCode != 0 {
-					if bi.ErrLog != "" {
-						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ErrLog)
+					if bi.ContainerStderr != "" {
+						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ContainerStderr)
 					} else {
 						fmt.Fprintln(os.Stderr, "There are no container error logs.")
 					}
