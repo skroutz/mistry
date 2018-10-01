@@ -60,7 +60,7 @@ const (
 	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
 
-const Version = "0.2.0"
+const Version = "0.1.0"
 
 // populated at build-time with -ldflags
 var VersionSuffix string

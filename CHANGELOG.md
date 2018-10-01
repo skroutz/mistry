@@ -4,6 +4,18 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+
+
+
+
+
+
+
+
+
+
+## 0.1.0 (2018-10-01)
+
 ### Added
 
 - Support for opaque parameters [[#97](https://github.com/skroutz/mistry/pull/97)]
