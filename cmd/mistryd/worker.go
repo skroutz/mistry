@@ -25,16 +25,21 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	start := time.Now()
 
 	// result cache
+	s.pq.Lock(j.Project)
 	_, err = os.Stat(j.ReadyBuildPath)
+	s.pq.Unlock(j.Project)
 	if err == nil {
 		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
 		if err != nil {
 			return nil, err
 		} else if buildInfo.ExitCode != 0 {
+
 			// Previous build failed, remove its build dir to
 			// restart it. We know it's not pointed to by a
 			// latest link since we only symlink successful builds
+			s.pq.Lock(j.Project)
 			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
+			s.pq.Unlock(j.Project)
 			if err != nil {
 				return buildInfo, workErr("could not remove existing failed build", err)
 			}
@@ -69,7 +74,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				err = workErr("context cancelled while coalescing", nil)
 				return
 			case <-t.C:
+				s.pq.Lock(j.Project)
 				_, err = os.Stat(j.ReadyBuildPath)
+				s.pq.Unlock(j.Project)
 				if err == nil {
 					i, err := ExitCode(j)
 					if err != nil {
@@ -106,13 +113,17 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		return
 	}
 
+	s.pq.Lock(j.Project)
 	err = j.BootstrapBuildDir(s.cfg.FileSystem)
+	s.pq.Unlock(j.Project)
 	if err != nil {
 		err = workErr("could not bootstrap build dir", err)
 		return
 	}
 
+	s.pq.Lock(j.Project)
 	err = persistBuildInfo(j)
+	s.pq.Unlock(j.Project)
 	if err != nil {
 		err = workErr("could not persist build info", err)
 		return
@@ -120,6 +131,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 
 	// move from pending to ready when finished
 	defer func() {
+		s.pq.Lock(j.Project)
+		defer s.pq.Unlock(j.Project)
+
 		rerr := os.Rename(j.PendingBuildPath, j.ReadyBuildPath)
 		if rerr != nil {
 			errstr := "could not move pending path"
@@ -137,9 +151,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			// they could result in a corrupted state (eg. if
 			// jobs of the same project simultaneously finish
 			// successfully)
-
-			s.pq.Lock(j.Project)
-			defer s.pq.Unlock(j.Project)
 
 			_, err = os.Lstat(j.LatestBuildPath)
 			if err == nil {
@@ -163,6 +174,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	// populate j.BuildInfo.Err and persist it build_info file one last
 	// time
 	defer func() {
+		s.pq.Lock(j.Project)
+		defer s.pq.Unlock(j.Project)
+
 		if err != nil {
 			j.BuildInfo.ErrBuild = err.Error()
 		}
