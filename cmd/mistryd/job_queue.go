@@ -16,7 +16,7 @@ func NewJobQueue() *JobQueue {
 }
 
 // Add registers j to the list of pending jobs currently in the queue.
-// It returns false an identical job is already enqueued.
+// It returns false if an identical job is already enqueued.
 func (q *JobQueue) Add(j *Job) bool {
 	q.Lock()
 	defer q.Unlock()

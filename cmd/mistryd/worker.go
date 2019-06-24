@@ -24,39 +24,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
 
-	// result cache
-	s.pq.Lock(j.Project)
-	_, err = os.Stat(j.ReadyBuildPath)
-	s.pq.Unlock(j.Project)
-	if err == nil {
-		log.Print("entering result cache...")
-		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
-		if err != nil {
-			log.Printf("resultcache: error reading job build info: %s", err)
-			return nil, err
-		} else if buildInfo.ExitCode != 0 {
-			log.Print("resultcache: previous build failed")
-			// Previous build failed, remove its build dir to
-			// restart it. We know it's not pointed to by a
-			// latest link since we only symlink successful builds
-			s.pq.Lock(j.Project)
-			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
-			s.pq.Unlock(j.Project)
-			if err != nil {
-				log.Printf("resultcache: could not remove existing failed build: %s", err)
-				return buildInfo, workErr("could not remove existing failed build", err)
-			}
-		} else { // if a successful result exists already, return it
-			buildInfo.Cached = true
-			log.Print("resultcache: returning successful result")
-			return buildInfo, err
-		}
-	} else if !os.IsNotExist(err) {
-		err = workErr("could not check for ready path", err)
-		log.Printf("resultcache: could not check for ready path: %s", err)
-		return
-	}
-
 	buildInfo = types.NewBuildInfo()
 	j.BuildInfo = buildInfo
 	j.BuildInfo.Path = filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir)
@@ -66,10 +33,11 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.URL = getJobURL(j)
 	j.BuildInfo.Group = j.Group
 
+	// build coalescing
 	added := s.jq.Add(j)
 	if added {
 		defer s.jq.Delete(j)
-	} else { // build coalescing
+	} else {
 		t := time.NewTicker(2 * time.Second)
 		defer t.Stop()
 		log.Printf("Coalescing with %s...", j.PendingBuildPath)
@@ -101,6 +69,39 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				}
 			}
 		}
+	}
+
+	// build result cache
+	s.pq.Lock(j.Project)
+	_, err = os.Stat(j.ReadyBuildPath)
+	s.pq.Unlock(j.Project)
+	if err == nil {
+		log.Print("entering result cache...")
+		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
+		if err != nil {
+			log.Printf("resultcache: error reading job build info: %s", err)
+			return nil, err
+		} else if buildInfo.ExitCode != 0 {
+			log.Print("resultcache: previous build failed")
+			// Previous build failed, remove its build dir to
+			// restart it. We know it's not pointed to by a
+			// latest link since we only symlink successful builds
+			s.pq.Lock(j.Project)
+			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
+			s.pq.Unlock(j.Project)
+			if err != nil {
+				log.Printf("resultcache: could not remove existing failed build: %s", err)
+				return buildInfo, workErr("could not remove existing failed build", err)
+			}
+		} else { // if a successful result exists already, return it
+			buildInfo.Cached = true
+			log.Print("resultcache: returning successful result")
+			return buildInfo, err
+		}
+	} else if !os.IsNotExist(err) {
+		err = workErr("could not check for ready path", err)
+		log.Printf("resultcache: could not check for ready path: %s", err)
+		return
 	}
 
 	_, err = os.Stat(filepath.Join(s.cfg.ProjectsPath, j.Project))
