@@ -24,29 +24,6 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	log := log.New(os.Stderr, fmt.Sprintf("[worker] [%s] ", j), log.LstdFlags)
 	start := time.Now()
 
-	// result cache
-	_, err = os.Stat(j.ReadyBuildPath)
-	if err == nil {
-		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
-		if err != nil {
-			return nil, err
-		} else if buildInfo.ExitCode != 0 {
-			// Previous build failed, remove its build dir to
-			// restart it. We know it's not pointed to by a
-			// latest link since we only symlink successful builds
-			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
-			if err != nil {
-				return buildInfo, workErr("could not remove existing failed build", err)
-			}
-		} else { // if a successful result exists already, return it
-			buildInfo.Cached = true
-			return buildInfo, err
-		}
-	} else if !os.IsNotExist(err) {
-		err = workErr("could not check for ready path", err)
-		return
-	}
-
 	buildInfo = types.NewBuildInfo()
 	j.BuildInfo = buildInfo
 	j.BuildInfo.Path = filepath.Join(j.ReadyBuildPath, DataDir, ArtifactsDir)
@@ -56,10 +33,11 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.URL = getJobURL(j)
 	j.BuildInfo.Group = j.Group
 
+	// build coalescing
 	added := s.jq.Add(j)
 	if added {
 		defer s.jq.Delete(j)
-	} else { // build coalescing
+	} else {
 		t := time.NewTicker(2 * time.Second)
 		defer t.Stop()
 		log.Printf("Coalescing with %s...", j.PendingBuildPath)
@@ -88,6 +66,29 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				}
 			}
 		}
+	}
+
+	// build result cache
+	_, err = os.Stat(j.ReadyBuildPath)
+	if err == nil {
+		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
+		if err != nil {
+			return nil, err
+		} else if buildInfo.ExitCode != 0 {
+			// Previous build failed, remove its build dir to
+			// restart it. We know it's not pointed to by a
+			// latest link since we only symlink successful builds
+			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
+			if err != nil {
+				return buildInfo, workErr("could not remove existing failed build", err)
+			}
+		} else { // if a successful result already exists, use that
+			buildInfo.Cached = true
+			return buildInfo, err
+		}
+	} else if !os.IsNotExist(err) {
+		err = workErr("could not check for ready path", err)
+		return
 	}
 
 	_, err = os.Stat(filepath.Join(s.cfg.ProjectsPath, j.Project))
