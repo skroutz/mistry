@@ -277,9 +277,15 @@ func randomHexString() string {
 }
 
 func (j *Job) String() string {
-	return fmt.Sprintf(
-		"{project=%s group=%s id=%s, params=%s}",
-		j.Project, j.Group, j.ID[:7], j.Params)
+	if j.Project == "bundler-yogurt" {
+		return fmt.Sprintf(
+			"{project=%s group=%s id=%s}",
+			j.Project, j.Group, j.ID[:7])
+	} else {
+		return fmt.Sprintf(
+			"{project=%s group=%s id=%s, params=%s}",
+			j.Project, j.Group, j.ID[:7], j.Params)
+	}
 }
 
 // MarshalJSON serializes the Job to JSON
