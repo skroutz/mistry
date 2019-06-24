@@ -29,11 +29,13 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	_, err = os.Stat(j.ReadyBuildPath)
 	s.pq.Unlock(j.Project)
 	if err == nil {
+		log.Print("entering result cache...")
 		buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, true)
 		if err != nil {
+			log.Printf("resultcache: error reading job build info: %s", err)
 			return nil, err
 		} else if buildInfo.ExitCode != 0 {
-
+			log.Print("resultcache: previous build failed")
 			// Previous build failed, remove its build dir to
 			// restart it. We know it's not pointed to by a
 			// latest link since we only symlink successful builds
@@ -41,14 +43,17 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			err = s.cfg.FileSystem.Remove(j.ReadyBuildPath)
 			s.pq.Unlock(j.Project)
 			if err != nil {
+				log.Printf("resultcache: could not remove existing failed build: %s", err)
 				return buildInfo, workErr("could not remove existing failed build", err)
 			}
 		} else { // if a successful result exists already, return it
 			buildInfo.Cached = true
+			log.Print("resultcache: returning successful result")
 			return buildInfo, err
 		}
 	} else if !os.IsNotExist(err) {
 		err = workErr("could not check for ready path", err)
+		log.Printf("resultcache: could not check for ready path: %s", err)
 		return
 	}
 
@@ -90,6 +95,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 				if os.IsNotExist(err) {
 					continue
 				} else {
+					log.Print("could not coalesce" + err.Error())
 					err = workErr("could not coalesce", err)
 					return
 				}
@@ -147,6 +153,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		// if the build was successful, symlink it to the 'latest'
 		// path
 		if err == nil {
+			log.Print("err is nil, symlinking to latest")
 			// eliminate concurrent filesystem operations since
 			// they could result in a corrupted state (eg. if
 			// jobs of the same project simultaneously finish
@@ -167,6 +174,8 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			err = os.Symlink(j.ReadyBuildPath, j.LatestBuildPath)
 			if err != nil {
 				err = workErr("could not create latest build link", err)
+			} else {
+				log.Printf("symlinked %s to %s", j.ReadyBuildPath, j.LatestBuildPath)
 			}
 		}
 	}()
@@ -259,7 +268,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.ContainerStderr = outErr.String()
 	j.BuildInfo.Duration = time.Now().Sub(start).Truncate(time.Millisecond)
 
-	log.Println("Finished after", j.BuildInfo.Duration)
+	log.Println("Finished after", j.BuildInfo.Duration, "with err: ", err)
 	return
 }
 

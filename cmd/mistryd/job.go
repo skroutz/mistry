@@ -355,14 +355,7 @@ func (j *Job) CloneSrcPath() string {
 			if os.IsNotExist(symlinkErr) {
 				j.Log.Printf("latest link doesn't exist, %s (path: %s) (err: %#v)", s, j.LatestBuildPath, symlinkErr)
 
-				x, err := os.Readlink(j.LatestBuildPath)
-				if err != nil {
-					j.Log.Printf("os.Readlink err: %s", err)
-				} else {
-					j.Log.Printf("os.Readlink success: %s", x)
-				}
-
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 
 				x2, err := filepath.EvalSymlinks(j.LatestBuildPath)
 				if err != nil {
