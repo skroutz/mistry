@@ -131,14 +131,12 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			}
 		}
 
-		// if the build was successful, symlink it to the 'latest'
-		// path
-		if err == nil {
+		// if build was successful, point 'latest' link to it
+		if err == nil && j.BuildInfo.ExitCode == types.ExitSuccess {
 			// eliminate concurrent filesystem operations since
 			// they could result in a corrupted state (eg. if
 			// jobs of the same project simultaneously finish
 			// successfully)
-
 			s.pq.Lock(j.Project)
 			defer s.pq.Unlock(j.Project)
 
