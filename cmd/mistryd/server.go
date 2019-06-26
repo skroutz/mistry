@@ -134,7 +134,7 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 		s.Log.Printf("Scheduled %s", j)
 		w.WriteHeader(http.StatusCreated)
 	} else {
-		s.Log.Printf("Waiting for result of %s...", j)
+		s.Log.Printf("Scheduled %s and waiting for result...", j)
 		s.writeWorkResult(j, future.Wait(), w)
 	}
 }
