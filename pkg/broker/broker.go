@@ -98,8 +98,6 @@ func (br *Broker) ListenForClients() {
 					br.Log.Printf("[broker] Could not start the tailer for file %s", client.Extra)
 				}
 				go func() {
-					br.Log.Printf("[tailer] Starting for %s", client.ID)
-
 					s := bufio.NewScanner(tl)
 					for s.Scan() {
 						br.Notifier <- &Event{Msg: []byte(s.Text()), ID: client.ID}
@@ -107,14 +105,12 @@ func (br *Broker) ListenForClients() {
 				}()
 				go func() {
 					<-br.CloseClientC[client.ID]
-					br.Log.Printf("[tailer] Exiting for: %s", client.ID)
 					err = tl.Close()
 					if err != nil {
 						br.Log.Print(err)
 					}
 				}()
 			}
-			br.Log.Printf("[broker] Client added. %d registered clients", len(br.clients))
 		case client := <-br.ClosingClients:
 			close(client.Data)
 			delete(br.clients, client)
@@ -123,7 +119,6 @@ func (br *Broker) ListenForClients() {
 			if !ok {
 				br.Log.Printf("got data of type %T but wanted int", val)
 			}
-			br.Log.Printf("[broker] Removed client. %d registered clients", len(br.clients))
 			newVal := cc - 1
 			br.clientsCount.Store(client.ID, newVal)
 			if newVal == 0 {
