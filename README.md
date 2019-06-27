@@ -94,33 +94,37 @@ supported features).
 
 #### Client
 
-##### Schedule a new job, wait for completion, and fetch the artifacts
+Schedule a build and download the artifacts.
 
 ```sh
-$ mistry build --project foo --target .
+$ mistry build --project foo --target /tmp/foo
 ```
-This will place the artifacts and the target directory.
 
-##### Schedule a new job without waiting
+The above will block until the build is complete and then download the build
+artifacts to `/tmp/foo/`.
+
+
+Schedule a build without fetching the artifacts:
 
 ```sh
 $ mistry build --project foo --async
 ```
 
-See `mistry build -h` for more options.
+The above will just schedule the build; it will not wait for it to complete
+and will not fetch the artifacts.
+
+Use `mistry build -h` for examples and complete usage information.
 
 #### HTTP Endpoints
 
-##### Schedule a new job
+Schedule a new build without fetching artifacts (this is equivalent to passing
+`--async` when using the client):
 
-```sh
+```
 $ curl -X POST /jobs \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{"project": "foo"}'
-```
-
-```js
 {
     "Params": {"foo": "xzv"},
     "Path": "<artifact path>",
@@ -135,7 +139,7 @@ $ curl -X POST /jobs \
 
 ### Web view
 
-*mistry* comes with a web view where progress and logs of each job can be
+mistry comes with a web view where progress and logs of each job can be
 inspected.
 
 Browse to http://0.0.0.0:8462 (or whatever address the server listens to).
@@ -154,9 +158,11 @@ The following settings are currently supported:
 
 | Setting        | Description           | Default  |
 | ------------- |:-------------:| -----:|
-| `projects_path` (string)      | The path where project folders are located | "" |
-| `build_path` (string)      | The root path where artifacts will be placed       |   "" |
-| `mounts` (object{string:string}) |  The paths from the host machine that should be mounted inside the execution containers     |    {} |
+| `projects_path` (string) | The path where project folders are located | "" |
+| `build_path` (string) | The root path where artifacts will be placed       |   "" |
+| `mounts` (object{string:string}) | The paths from the host machine that should be mounted inside the execution containers     |    {} |
+| `job_concurrency` (int) | Maximum number of builds that may run in parallel | (logical-cpu-count) |
+| `job_backlog` (int) | Used for back-pressure - maximum number of outstanding build requests. If exceeded subsequent build requests will fail | (job_concurrency * 2) |
 
 For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/config.sample.json).
 
@@ -165,7 +171,7 @@ For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/conf
 Development
 ---------------------------------------------------
 
-To run the tests, the [Docker daemon](https://docs.docker.com/install/) is assumed to be running.
+To run the tests, the [Docker daemon](https://docs.docker.com/install/) should be running and SSH access to localhost should be configured.
 
 ```shell
 $ make test
