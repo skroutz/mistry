@@ -208,17 +208,7 @@ EXAMPLES:
 					return fmt.Errorf("invalid transport argument (%v)", transport)
 				}
 
-				// Normalize dynamic arguments by trimming the `--` and
-				// creating the params map with the result.
-				var dynamicArgs []string
-				for _, v := range c.Args() {
-					dynamicArgs = append(dynamicArgs, strings.TrimLeft(v, "--"))
-				}
-				params := make(map[string]string)
-				for _, v := range dynamicArgs {
-					arg := strings.Split(v, "=")
-					params[arg[0]] = arg[1]
-				}
+				params := parseDynamicArgs(c.Args())
 
 				// Dynamic arguments starting with `@` are considered actual
 				// files in the filesystem.
@@ -344,4 +334,26 @@ func sendRequest(url string, reqBody []byte, verbose bool, timeout time.Duration
 func isTimeout(err error) bool {
 	urlErr, ok := err.(*url.Error)
 	return ok && urlErr.Timeout()
+}
+
+func parseDynamicArgs(args cli.Args) map[string]string {
+	parsed := make(map[string]string)
+
+	for i := 0; i < len(args); {
+		arg := strings.TrimLeft(args[i], "--")
+
+		if strings.Contains(arg, "=") {
+			parts := strings.Split(arg, "=")
+			parsed[parts[0]] = parts[1]
+			i++
+		} else if i+1 < len(args) {
+			parsed[arg] = args[i+1]
+			i = i + 2
+		} else {
+			i++
+
+		}
+	}
+
+	return parsed
 }
