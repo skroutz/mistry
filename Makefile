@@ -24,6 +24,9 @@ test: generate mistry
 testall: test
 	$(TESTCMD) --filesystem btrfs
 
+test-cli:
+	$(TESTCLICMD)
+
 deps:
 	dep ensure -v
 

@@ -129,7 +129,7 @@ $ mistry build --project foo --no-wait
 The above will just schedule the build; it will not wait for it to complete
 and will not fetch the artifacts.
 
-Use `mistry build -h` for examples and complete usage information.
+For more info refer to the [README](/cmd/mistry/README.md).
 
 #### HTTP Endpoints
 
