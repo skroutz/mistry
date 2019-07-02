@@ -225,6 +225,30 @@ EXAMPLES:
 					}
 				}
 
+				// Ensure target exists and is a directory
+				//
+				// strip trailing slashes
+				if os.IsPathSeparator(target[len(target)-1]) {
+					target = target[:len(target)-1]
+				}
+				fi, err := os.Stat(target)
+				if err != nil {
+					if os.IsNotExist(err) {
+						if verbose {
+							fmt.Printf("Target path (%s) does not exist. Creating it..", target)
+						}
+						err = os.MkdirAll(target, os.ModePerm)
+						if err != nil {
+							return fmt.Errorf("Error creating target path (%s): %s", target, err)
+						}
+					} else {
+						return fmt.Errorf("Error checking for target path (%s): %s", target, err)
+					}
+				} else if !fi.IsDir() {
+					return fmt.Errorf("Target path (%s) is not a directory. Aborting.", target)
+
+				}
+
 				baseURL := fmt.Sprintf("http://%s:%s", host, port)
 				url := baseURL + "/" + JobsPath
 				if noWait {
