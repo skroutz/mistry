@@ -68,3 +68,41 @@ func TestFailedPendingBuildCleanup(t *testing.T) {
 		}
 	}
 }
+
+// regression test for incremental building bug
+func TestBuildCacheWhenFailed(t *testing.T) {
+	group := "ppp"
+
+	// a successful build - it'll be symlinked
+	_, err := postJob(
+		types.JobRequest{Project: "failed-build-link",
+			Params: types.Params{"_exitcode": "0"},
+			Group:  group})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// a failed build - it should NOT be symlinked
+	_, err = postJob(
+		types.JobRequest{Project: "failed-build-link",
+			Params: types.Params{"_exitcode": "1", "foo": "bar"},
+			Group:  group})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// repeat the previous failed build - it
+	// SHOULD be incremental
+	buildInfo, err := postJob(
+		types.JobRequest{Project: "failed-build-link",
+			Params: types.Params{"_exitcode": "1", "foo": "bar"},
+			Group:  group})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !buildInfo.Incremental {
+		t.Fatal("build should be incremental, but it isn't")
+	}
+
+}

@@ -8,6 +8,9 @@ import (
 // before even running the container
 const ContainerFailureExitCode = -999
 
+// ExitSuccess indicates that the build was successful.
+const ExitSuccess = 0
+
 // BuildInfo contains various information regarding the outcome of a
 // particular build.
 type BuildInfo struct {

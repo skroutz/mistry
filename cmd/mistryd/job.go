@@ -142,7 +142,7 @@ func NewJob(project string, params types.Params, group string, cfg *Config) (*Jo
 	j.Container = ImgCntPrefix + j.ID
 
 	j.StartedAt = time.Now()
-	j.BuildInfo = new(types.BuildInfo)
+	j.BuildInfo = types.NewBuildInfo()
 	j.State = "pending"
 	j.Log = log.New(os.Stderr, fmt.Sprintf("[%s] ", j), log.Ldate|log.Ltime)
 
