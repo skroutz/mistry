@@ -41,11 +41,6 @@ For more information visit the [wiki](https://github.com/skroutz/mistry/wiki).
 
 
 
-Status
--------------------------------------------------
-mistry project is still in alpha and is not yet recommended for use in
-production environments until we reach the 1.x series.
-
 
 
 
