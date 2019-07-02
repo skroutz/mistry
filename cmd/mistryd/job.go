@@ -39,6 +39,8 @@ type Job struct {
 	Project string
 	Params  types.Params
 	Group   string
+
+	// Rebuild indicates if Docker image cache will be bypassed.
 	Rebuild bool
 
 	RootBuildPath    string

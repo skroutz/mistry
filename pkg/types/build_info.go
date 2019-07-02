@@ -4,15 +4,14 @@ import (
 	"time"
 )
 
-// ContainerFailureExitCode is the exit code that signifies a failure
-// before even running the container
+// ContainerFailureExitCode is the initial value of BuildInfo.ExitCode and is
+// updated after the container runs.
 const ContainerFailureExitCode = -999
 
 // ExitSuccess indicates that the build was successful.
 const ExitSuccess = 0
 
-// BuildInfo contains various information regarding the outcome of a
-// particular build.
+// BuildInfo contains information regarding the outcome of an executed job.
 type BuildInfo struct {
 	// Params are the job build parameters
 	Params Params
@@ -36,7 +35,12 @@ type BuildInfo struct {
 
 	// ExitCode is the exit code of the container command.
 	//
-	// NOTE: irrelevant if Coalesced is true.
+	// It is initialized to ContainerFailureExitCode and is updated upon
+	// build completion. If ExitCode is still set to ContainerFailureExitCode
+	// after the build is finished, it indicates an error somewhere along
+	// the path.
+	//
+	// It is irrelevant and should be ignored if Coalesced is true.
 	ExitCode int
 
 	// ErrBuild contains any errors that occured during the build.

@@ -4,19 +4,35 @@ mistry
 [![Go report](https://goreportcard.com/badge/github.com/skroutz/mistry)](https://goreportcard.com/report/github.com/skroutz/mistry)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-*mistry* executes user-provided jobs inside pre-defined, isolated
-environments and makes the results available for later consumption.
+*mistry* enables fast workflows by employing artifact caching and efficient
+incremental building techniques.
 
-*mistry* enables fast workflows by employing caching techniques and incremental
-builds due to its copy-on-write snapshotting features.
+mistry executes user-defined commands inside isolated environments (containers)
+and serves the build results (aka. artifacts) available for later consumption.
 
-Features include:
+For example, at Skroutz we use mistry to speed our development and deployment
+pipelines:
 
-- running arbitrary commands inside isolated environments (provided as Docker images)
-- build caching & incremental building (see [*"Build cache"*](https://github.com/skroutz/mistry/wiki/Build-cache))
-- a simple JSON API for interacting with the server (scheduling jobs etc.)
+- Rails asset compilation (`bin/rails assets:precompile`)
+- Bundler dependency resolution and download (`bundle install`)
+- Yarn dependency resolution and download (`yarn install`)
+
+In the above use cases, mistry executes these commands once they are needed for
+the first time and caches the results. Then, when anyone else executes the same
+commands (i.e.  application servers, developer workstations, CI server etc.)
+they instantly get the results back.
+
+Features:
+
+- execute user-defined build steps in pre-defined environments, provided as Docker images
+- build artifact caching
+- incremental building (see [*"Build cache"*](https://github.com/skroutz/mistry/wiki/Build-cache))
+- [CLI client](cmd/mistry/README.md) for interacting with the server (scheduling jobs etc.)
+  via a JSON API
 - a web view for inspecting the progress of builds (see [*"Web view"*](#web-view))
 - efficient use of disk space due to copy-on-write semantics (using [Btrfs snapshotting](https://en.wikipedia.org/wiki/Btrfs#Subvolumes_and_snapshots))
+
+
 
 For more information visit the [wiki](https://github.com/skroutz/mistry/wiki).
 
@@ -107,7 +123,7 @@ artifacts to `/tmp/foo/`.
 Schedule a build without fetching the artifacts:
 
 ```sh
-$ mistry build --project foo --async
+$ mistry build --project foo --no-wait
 ```
 
 The above will just schedule the build; it will not wait for it to complete
