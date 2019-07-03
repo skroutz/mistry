@@ -69,16 +69,6 @@ type Job struct {
 	Log *log.Logger
 }
 
-// NewJobFromRequest returns a new Job from the JobRequest
-func NewJobFromRequest(jr types.JobRequest, cfg *Config) (*Job, error) {
-	j, err := NewJob(jr.Project, jr.Params, jr.Group, cfg)
-	if err != nil {
-		return nil, err
-	}
-	j.Rebuild = jr.Rebuild
-	return j, nil
-}
-
 // NewJob returns a new Job for the given project. project and cfg cannot be
 // empty.
 func NewJob(project string, params types.Params, group string, cfg *Config) (*Job, error) {

@@ -106,12 +106,13 @@ func (s *Server) HandleNewJob(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	j, err := NewJobFromRequest(jr, s.cfg)
+	j, err := NewJob(jr.Project, jr.Params, jr.Group, s.cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating new job %v: %s", jr, err),
 			http.StatusInternalServerError)
 		return
 	}
+	j.Rebuild = jr.Rebuild
 
 	// send the work item to the worker pool
 	future, err := s.workerPool.SendWork(j)
