@@ -4,6 +4,7 @@ CLIENT=mistry
 SERVER=mistryd
 BUILDCMD=go build -v
 TESTCMD=MISTRY_CLIENT_PATH="$(shell pwd)/$(CLIENT)" go test -v -race cmd/mistryd/*.go
+TESTCLICMD=go test -v -race cmd/mistry/*.go
 
 install: fmt test
 	go install -v ./...
@@ -18,9 +19,13 @@ mistry:
 
 test: generate mistry
 	$(TESTCMD) --filesystem plain
+	$(TESTCLICMD)
 
 testall: test
 	$(TESTCMD) --filesystem btrfs
+
+test-cli:
+	$(TESTCLICMD)
 
 deps:
 	dep ensure -v

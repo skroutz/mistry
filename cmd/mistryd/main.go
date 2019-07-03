@@ -19,6 +19,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -70,6 +71,12 @@ func init() {
 }
 
 func main() {
+	availableFS := []string{}
+	for fs := range filesystem.Registry {
+		availableFS = append(availableFS, fs)
+	}
+	fs := "[" + strings.Join(availableFS, ", ") + "]"
+
 	app := cli.NewApp()
 	app.Name = "mistry"
 	app.Usage = "A powerful building service"
@@ -92,7 +99,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "filesystem",
 			Value: "plain",
-			Usage: "Which filesystem adapter to use",
+			Usage: "Which filesystem adapter to use. Options: " + fs,
 		},
 	}
 	app.Action = func(c *cli.Context) error {

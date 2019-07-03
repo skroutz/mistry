@@ -10,7 +10,7 @@ import (
 	"github.com/skroutz/mistry/pkg/types"
 )
 
-// WorkResult contains the result of a job, either a buildinfo or an error
+// WorkResult contains the result of a build, either a BuildInfo or an error
 type WorkResult struct {
 	BuildInfo *types.BuildInfo
 	Err       error
@@ -22,12 +22,12 @@ type FutureWorkResult struct {
 	result <-chan WorkResult
 }
 
-// Wait waits for the result to become available and returns it
+// Wait waits for WorkResult to become available and returns it
 func (f FutureWorkResult) Wait() WorkResult {
 	r, ok := <-f.result
 	if !ok {
-		// this should never happen, reading from the result channel is exclusive to
-		// this future
+		// this should never happen, reading from the result channel
+		// is exclusive to this future
 		panic("Failed to read from result channel")
 	}
 	return r
@@ -40,7 +40,7 @@ type workItem struct {
 	result chan<- WorkResult
 }
 
-// WorkerPool implements a fixed-size pool of worker goroutines that can be sent
+// WorkerPool implements a fixed-size pool of workers that build jobs
 // build jobs and communicate their result
 type WorkerPool struct {
 	// the fixed amount of goroutines that will be handling running jobs
@@ -54,7 +54,8 @@ type WorkerPool struct {
 	wg    sync.WaitGroup
 }
 
-// NewWorkerPool creates a new worker pool
+// NewWorkerPool initializes and starts a new worker pool, waiting for incoming
+// jobs.
 func NewWorkerPool(s *Server, concurrency, backlog int, logger *log.Logger) *WorkerPool {
 	p := new(WorkerPool)
 	p.concurrency = concurrency
@@ -75,9 +76,10 @@ func (p *WorkerPool) Stop() {
 	p.wg.Wait()
 }
 
-// SendWork schedules work on p and returns a FutureWorkResult. The actual result can be
-// obtained by FutureWorkResult.Wait(). An error is returned if the backlog is full and
-// cannot accept any new work items
+// SendWork schedules the work j on p and returns a FutureWorkResult.
+// The actual result can be obtained by calling FutureWorkResult.Wait().
+//
+// An error is returned if the work backlog is full.
 func (p *WorkerPool) SendWork(j *Job) (FutureWorkResult, error) {
 	resultQueue := make(chan WorkResult, 1)
 	wi := workItem{j, resultQueue}

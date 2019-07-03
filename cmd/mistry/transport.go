@@ -11,11 +11,22 @@ import (
 	"github.com/skroutz/mistry/pkg/utils"
 )
 
+// Transport is the interface that wraps the basic Copy method, facilitating
+// downloading build artifacts from a mistry server.
 type Transport interface {
-	// Copy copies from src to dst, clearing the destination if clearDst is true
+	// Copy downloads to dst the build artifacts from src. The value of
+	// src depends on the underlying implementation. dst denotes a path
+	// on the local filesystem. host is the hostname of the server. user
+	// is an opaque field that depends on the underlying implementation.
+	//
+	// If clearDst is true the contents of dst (if any) should be removed
+	// before downloading artifacts.
 	Copy(user, host, project, src, dst string, clearDst bool) (string, error)
 }
 
+// Scp uses scp(1) to fetch build artifacts from the server via SSH.
+//
+// See man 1 scp.
 type Scp struct{}
 
 // Copy runs 'scp user@host:src dst'. If clearDst is set, all contents of dst will be
@@ -45,6 +56,11 @@ func removeDirContents(dir string) error {
 	return nil
 }
 
+// Rsync uses rsync(1) and the rsync protocol to fetch build artifacts from
+// the server. It is more efficient than Scp and the recommended transport
+// for production systems.
+//
+// See man 1 rsync.
 type Rsync struct{}
 
 // Copy runs 'rsync -rtlp user@host::mistry/src dst'. If clearDst is true, the --delete flag
