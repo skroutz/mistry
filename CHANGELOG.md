@@ -4,11 +4,20 @@ Breaking changes are prefixed with a "[BREAKING]" label.
 
 ## master (unreleased)
 
+### Added
+
+- [server] `mistryd --help` now displays the available filesystem adapters [[628ff12](https://github.com/skroutz/mistry/commit/628ff120062599ddb5bb0f2d41cc4d2ae47890ab)]
+
+### Changed
+
+- [server] Removed debug logs coming from the web view [[28e9743](https://github.com/skroutz/mistry/commit/28e97433293fdddbf62089c1514bb15c7efbd829)]
 
 
+### Fixed
 
-
-
+- [server] We would erroneously consider failed builds as successful, which resulted in some builds starting with cold caches instead of being incremental [[ab5ba18](https://github.com/skroutz/mistry/commit/ab5ba18b59ffd579834abd69e83c756263e4c858)]
+- [client] The client now accepts dynamic arguments in the form of `--foo bar` (in addition to `--foo=bar`). Previously, it would panic [[f209061](https://github.com/skroutz/mistry/commit/f209061cd16274e4a198ec7d3c8be05718874b93)]
+- [client] If the path passed to `--target` did not exist, it was erroneously created as a file [[1bfdeb4](https://github.com/skroutz/mistry/commit/1bfdeb4fccab06910be760d90d8bdef246fb4a3f)]
 
 
 
