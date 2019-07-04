@@ -301,7 +301,7 @@ EXAMPLES:
 					fmt.Printf("%s\n", body)
 				}
 
-				if bi.ExitCode != types.ExitSuccess {
+				if bi.ExitCode != types.ContainerSuccessExitCode {
 					if bi.ContainerStderr != "" {
 						fmt.Fprintln(os.Stderr, "Container error logs:\n", bi.ContainerStderr)
 					} else {

@@ -4,12 +4,14 @@ import (
 	"time"
 )
 
-// ContainerFailureExitCode is the initial value of BuildInfo.ExitCode and is
-// updated after the container runs.
-const ContainerFailureExitCode = -999
+const (
+	// ContainerPendingExitCode is the zero value of BuildInfo.ExitCode
+	// and is updated after the container finishes running.
+	ContainerPendingExitCode = -999
 
-// ExitSuccess indicates that the build was successful.
-const ExitSuccess = 0
+	// ContainerSuccessExitCode indicates that the build was successful.
+	ContainerSuccessExitCode = 0
+)
 
 // BuildInfo contains information regarding the outcome of an executed job.
 type BuildInfo struct {
@@ -75,7 +77,7 @@ type BuildInfo struct {
 func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
-	bi.ExitCode = ContainerFailureExitCode
+	bi.ExitCode = ContainerPendingExitCode
 	bi.Duration = -1 * time.Second
 
 	return bi
