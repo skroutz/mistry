@@ -349,9 +349,12 @@ func sendRequest(url string, reqBody []byte, verbose bool, timeout time.Duration
 		fmt.Printf("Server response: %#v\n", resp)
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("Error creating job: %s, http code: %v", respBody, resp.StatusCode)
+	if resp.StatusCode == http.StatusServiceUnavailable {
+		return nil, fmt.Errorf("(error: %d) Server is overloaded; try again later", resp.StatusCode)
+	} else if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("(error: %d) Error scheduling build: %s", resp.StatusCode, respBody)
 	}
+
 	return respBody, nil
 }
 
