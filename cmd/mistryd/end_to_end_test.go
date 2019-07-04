@@ -297,7 +297,7 @@ func TestImageBuildFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
-	assertEq(bi.ExitCode, types.ContainerFailureExitCode, t)
+	assertEq(bi.ExitCode, types.ContainerPendingExitCode, t)
 }
 
 func TestLogs(t *testing.T) {

@@ -132,7 +132,7 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 
 		// if build was successful, point 'latest' link to it
-		if err == nil && j.BuildInfo.ExitCode == types.ExitSuccess {
+		if err == nil && j.BuildInfo.ExitCode == types.ContainerSuccessExitCode {
 			// eliminate concurrent filesystem operations since
 			// they could result in a corrupted state (eg. if
 			// jobs of the same project simultaneously finish
@@ -284,7 +284,7 @@ func (s *Server) BootstrapProject(j *Job) error {
 func ExitCode(j *Job) (int, error) {
 	buildInfo, err := ReadJobBuildInfo(j.ReadyBuildPath, false)
 	if err != nil {
-		return types.ContainerFailureExitCode, err
+		return types.ContainerPendingExitCode, err
 	}
 	return buildInfo.ExitCode, nil
 }
