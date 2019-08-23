@@ -4,16 +4,19 @@ mistry
 [![Go report](https://goreportcard.com/badge/github.com/skroutz/mistry)](https://goreportcard.com/report/github.com/skroutz/mistry)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-*mistry* enables fast workflows by employing artifact caching and efficient
-incremental building techniques.
+*mistry* is a general-purpose build server that enables fast workflows by
+employing artifact caching and incremental building techniques.
 
-mistry executes user-defined commands inside isolated environments (containers)
-and serves the build results (aka. artifacts) available for later consumption.
+mistry executes user-defined build steps inside isolated environments
+and saves build artifacts for later consumption.
 
-For example, at Skroutz we use mistry to speed our development and deployment
-pipelines:
+Refer to the introductory blog post, *[Speeding Up Our Build Pipelines](https://engineering.skroutz.gr/blog/speeding-up-build-pipelines-with-mistry/)*,
+for more information.
 
-- Rails asset compilation (`bin/rails assets:precompile`)
+At Skroutz we use mistry to speed our development and deployment
+processes:
+
+- Rails asset compilation (`rails assets:precompile`)
 - Bundler dependency resolution and download (`bundle install`)
 - Yarn dependency resolution and download (`yarn install`)
 
