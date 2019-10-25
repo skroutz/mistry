@@ -367,6 +367,19 @@ func TestExitCode(t *testing.T) {
 	assert(br.ExitCode, 77, t)
 }
 
+func TestCopyDir(t *testing.T) {
+	cmdout, cmderr, err := cliBuildJob("--json-result", "--project", "copy-folder")
+	if err != nil {
+		t.Fatalf("mistry-cli stdout: %s, stderr: %s, err: %#v", cmdout, cmderr, err)
+	}
+	br, err := parseClientJSON(cmdout)
+	if err != nil {
+		panic(err)
+	}
+
+	assert(br.ExitCode, 0, t)
+}
+
 func TestSameGroupDifferentParams(t *testing.T) {
 	cmdout1, cmderr1, err := cliBuildJob("--project", "result-cache", "--group", "foo", "--", "--foo=bar")
 	if err != nil {

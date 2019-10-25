@@ -74,6 +74,12 @@ func Tar(root string) ([]byte, error) {
 			return err
 		}
 
+		// Preserve directory structure when docker "untars" the build context
+		hdr.Name, err = filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+
 		err = tw.WriteHeader(hdr)
 		if err != nil {
 			return err
