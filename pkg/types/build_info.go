@@ -45,7 +45,7 @@ type BuildInfo struct {
 	// It is irrelevant and should be ignored if Coalesced is true.
 	ExitCode int
 
-	// ErrBuild contains any errors that occured during the build.
+	// ErrBuild contains any errors that occurred during the build.
 	//
 	// TODO: It might contain errors internal to the server, that the
 	// user can do nothing about. This should be fixed

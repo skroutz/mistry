@@ -456,7 +456,7 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, stopErr, ver
 
 // dockerPruneUnused prunes stopped containers and unused images
 func dockerPruneUnused(ctx context.Context, c *docker.Client) (pruneResult, error) {
-	// prune containters before images, this will allow more images to be eligible for clean up
+	// prune containers before images, this will allow more images to be eligible for clean up
 	noFilters := filters.NewArgs()
 	cr, err := c.ContainersPrune(ctx, noFilters)
 	if err != nil {
