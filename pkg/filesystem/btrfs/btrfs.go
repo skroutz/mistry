@@ -17,14 +17,17 @@ func init() {
 	filesystem.Registry["btrfs"] = Btrfs{}
 }
 
+// Create creates a new subvolume named path.
 func (fs Btrfs) Create(path string) error {
 	return runCmd([]string{"btrfs", "subvolume", "create", path})
 }
 
+// Clone creates a Btrfs snapshot of subvolume src to a new subvolume, dst.
 func (fs Btrfs) Clone(src, dst string) error {
 	return runCmd([]string{"btrfs", "subvolume", "snapshot", src, dst})
 }
 
+// Remove deletes the subvolume with name path.
 func (fs Btrfs) Remove(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {

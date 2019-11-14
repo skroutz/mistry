@@ -61,9 +61,12 @@ const (
 	DateFmt = "Mon, 02 Jan 2006 15:04:05"
 )
 
+// Version contains the release version of the server, adhering to SemVer.
 const Version = "0.1.0"
 
-// populated at build-time with -ldflags
+// VersionSuffix is populated at build-time with -ldflags and typically
+// contains the Git SHA1 of the tip that the binary is build from. It is then
+// appended to Version.
 var VersionSuffix string
 
 func init() {

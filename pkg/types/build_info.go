@@ -74,6 +74,8 @@ type BuildInfo struct {
 	URL string
 }
 
+// NewBuildInfo initializes a new BuildInfo with its StartedAt set to the
+// current time.
 func NewBuildInfo() *BuildInfo {
 	bi := new(BuildInfo)
 	bi.StartedAt = time.Now()
