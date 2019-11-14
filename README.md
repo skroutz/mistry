@@ -1,5 +1,7 @@
-mistry
-====================================
+![mistry logo](logo.png)
+
+------------------------------------------------------------------------------
+
 [![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
 [![Go report](https://goreportcard.com/badge/github.com/skroutz/mistry)](https://goreportcard.com/report/github.com/skroutz/mistry)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -214,3 +216,5 @@ since some Docker images will have to be fetched from the internet.
 License
 -------------------------------------------------
 mistry is released under the GNU General Public License version 3. See [COPYING](COPYING).
+
+mistry [logo](logo.png) contributed by @cyfugr
