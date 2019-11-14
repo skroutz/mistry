@@ -242,7 +242,10 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jData)
+		_, err = w.Write(jData)
+		if err != nil {
+			s.Log.Printf("HandleShowJob: error writing Content-Type header: %s", err)
+		}
 		return
 	}
 
@@ -342,7 +345,11 @@ func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			break
 		}
-		fmt.Fprintf(w, "data: %s\n\n", msg)
+		_, err := fmt.Fprintf(w, "data: %s\n\n", msg)
+		if err != nil {
+			s.Log.Printf("HandleServerPush: error writing log data to client: %s", err)
+		}
+
 		flusher.Flush()
 	}
 }
