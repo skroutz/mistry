@@ -483,6 +483,11 @@ func PruneZombieBuilds(cfg *Config) error {
 	for _, p := range projects {
 		pendingPath := filepath.Join(cfg.BuildPath, p, "pending")
 		pendingBuilds, err := ioutil.ReadDir(pendingPath)
+		if err != nil {
+			l.Printf("error reading pending builds; skipping project (%s): %s", p, err)
+			continue
+		}
+
 		for _, pending := range pendingBuilds {
 			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
 			err = cfg.FileSystem.Remove(pendingBuildPath)
