@@ -1,5 +1,7 @@
-mistry
-====================================
+![mistry logo](logo.png)
+
+------------------------------------------------------------------------------
+
 [![Build Status](https://api.travis-ci.org/skroutz/mistry.svg?branch=master)](https://travis-ci.org/skroutz/mistry)
 [![Go report](https://goreportcard.com/badge/github.com/skroutz/mistry)](https://goreportcard.com/report/github.com/skroutz/mistry)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -10,7 +12,7 @@ employing artifact caching and incremental building techniques.
 mistry executes user-defined build steps inside isolated environments
 and saves build artifacts for later consumption.
 
-Refer to the introductory blog post, *[Speeding Up Our Build Pipelines](https://engineering.skroutz.gr/blog/speeding-up-build-pipelines-with-mistry/)*,
+Refer to the introductory blog post *[Speeding Up Our Build Pipelines](https://engineering.skroutz.gr/blog/speeding-up-build-pipelines-with-mistry/)*
 for more information.
 
 At Skroutz we use mistry to speed our development and deployment
@@ -25,7 +27,11 @@ the first time and caches the results. Then, when anyone else executes the same
 commands (i.e.  application servers, developer workstations, CI server etc.)
 they instantly get the results back.
 
-Features:
+
+
+
+Features
+------------------------------------------------------------------------------
 
 - execute user-defined build steps in pre-defined environments, provided as Docker images
 - build artifact caching
@@ -55,11 +61,17 @@ You can get the binaries from the
 [latest releases](https://github.com/skroutz/mistry/releases).
 
 Alternatively, if you have Go 1.10 or later you can get the
-latest development version:
+latest development version.
+
+NOTE: [statik](https://github.com/rakyll/statik) is a build-time dependency,
+so it should be installed in your system and present in your PATH.
 
 ```shell
+$ go get github.com/rakyll/statik
+
 # server
 $ go get -u github.com/skroutz/mistry/cmd/mistryd
+
 # client
 $ go get -u github.com/skroutz/mistry/cmd/mistry
 ```
@@ -70,30 +82,27 @@ $ go get -u github.com/skroutz/mistry/cmd/mistry
 
 Usage
 --------------------------------------------------
-To boot the server, a configuration file is needed:
+To boot the server a configuration file is needed:
 
 ```shell
 $ mistryd --config config.json
 ```
 
-You can use [`config.sample.json`](cmd/mistryd/config.sample.json)
-as a starting point.
-
-The paths denoted by `projects_path` and `build_path` settings should already
-be created and writable.
+You can use the [sample config](cmd/mistryd/config.sample.json) as a starting
+point.
 
 Use `mistryd --help` for more info.
 
 
 
-
 ### Adding projects
 
-The `projects_path` path should contain all the projects known to mistry.
-These are the projects for which jobs can be built.
+Projects are essentially directories with at minimum a `Dockerfile` at their
+root. Each project directory should be placed in the path denoted by
+`projects_path` (see [*Configuration*](#configuration).
 
-Refer to [File system layout - Projects directory](https://github.com/skroutz/mistry/wiki/File-system-layout#projects-directory) for more info.
-
+Refer to [*File system layout - Projects directory*](https://github.com/skroutz/mistry/wiki/File-system-layout#projects-directory)
+for more info.
 
 
 
@@ -101,22 +110,22 @@ Refer to [File system layout - Projects directory](https://github.com/skroutz/mi
 
 ### API
 
-Interacting with mistry is done in two ways: (1) using `mistry` or (2)
-using the JSON API directly. We recommended using `mistry` whenever possible
-(although it may occasionally lag behind the server in terms of
-supported features).
+Interacting with mistry (scheduling builds etc.) can be done in two ways:
+(1) using the [client](cmd/mistry/README.md) and (2)
+using the HTTP API directly (see below).
+
+We recommended using the client whenever possible.
 
 #### Client
 
-Schedule a build and download the artifacts.
+Schedule a build for project *foo* and download the artifacts:
 
 ```sh
 $ mistry build --project foo --target /tmp/foo
 ```
 
-The above will block until the build is complete and then download the build
-artifacts to `/tmp/foo/`.
-
+The above command will block until the build is complete and then download the
+resulting artifacts to `/tmp/foo/`.
 
 Schedule a build without fetching the artifacts:
 
@@ -124,17 +133,17 @@ Schedule a build without fetching the artifacts:
 $ mistry build --project foo --no-wait
 ```
 
-The above will just schedule the build; it will not wait for it to complete
-and will not fetch the artifacts.
+The above will just schedule the build and return immediately - it will not
+wait for it to complete and will not fetch the artifacts.
 
-For more info refer to the [README](/cmd/mistry/README.md).
+For more info refer to the client's [README](cmd/mistry/README.md).
 
 #### HTTP Endpoints
 
 Schedule a new build without fetching artifacts (this is equivalent to passing
-`--async` when using the client):
+`--no-wait` when using the client):
 
-```
+```shell
 $ curl -X POST /jobs \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
@@ -153,7 +162,7 @@ $ curl -X POST /jobs \
 
 ### Web view
 
-mistry comes with a web view where progress and logs of each job can be
+mistry comes with a web view where progress and logs of each build can be
 inspected.
 
 Browse to http://0.0.0.0:8462 (or whatever address the server listens to).
@@ -168,7 +177,8 @@ Browse to http://0.0.0.0:8462 (or whatever address the server listens to).
 
 Configuration
 -------------------------------------------------
-The following settings are currently supported:
+Configuration is provided in JSON format. The following settings are currently
+supported:
 
 | Setting        | Description           | Default  |
 | ------------- |:-------------:| -----:|
@@ -178,14 +188,20 @@ The following settings are currently supported:
 | `job_concurrency` (int) | Maximum number of builds that may run in parallel | (logical-cpu-count) |
 | `job_backlog` (int) | Used for back-pressure - maximum number of outstanding build requests. If exceeded subsequent build requests will fail | (job_concurrency * 2) |
 
-For a sample configuration file refer to [`config.sample.json`](cmd/mistryd/config.sample.json).
+The paths denoted by `projects_path` and `build_path` should be
+present and writable by the user running the server.
+
+For an example refer to the [sample config](cmd/mistryd/config.sample.json).
+
+
 
 
 
 Development
 ---------------------------------------------------
 
-To run the tests, the [Docker daemon](https://docs.docker.com/install/) should be running and SSH access to localhost should be configured.
+To run the tests, the [Docker daemon](https://docs.docker.com/install/) should
+be running and SSH access to localhost should be configured.
 
 ```shell
 $ make test
@@ -200,3 +216,5 @@ since some Docker images will have to be fetched from the internet.
 License
 -------------------------------------------------
 mistry is released under the GNU General Public License version 3. See [COPYING](COPYING).
+
+mistry [logo](logo.png) contributed by @cyfugr

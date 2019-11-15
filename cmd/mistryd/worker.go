@@ -159,16 +159,16 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 		}
 	}()
 
-	// populate j.BuildInfo.Err and persist it build_info file one last
+	// populate j.BuildInfo.Err and persist build_info file one last
 	// time
 	defer func() {
 		if err != nil {
 			j.BuildInfo.ErrBuild = err.Error()
 		}
 
-		err := persistBuildInfo(j)
-		if err != nil {
-			err = workErr("could not persist build info", err)
+		biErr := persistBuildInfo(j)
+		if biErr != nil {
+			err = workErr("could not persist build info", biErr)
 			return
 		}
 	}()

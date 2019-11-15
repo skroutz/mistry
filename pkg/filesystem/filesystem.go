@@ -12,7 +12,7 @@ type FileSystem interface {
 	// Create creates a new directory in the given path.
 	Create(path string) error
 
-	// Clone copies the src directory and its contents to the dst.
+	// Clone copies the src path and its contents to dst.
 	Clone(src, dst string) error
 
 	// Remove removes path and its children.

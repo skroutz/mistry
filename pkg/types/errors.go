@@ -2,6 +2,7 @@ package types
 
 import "fmt"
 
+// ErrImageBuild indicates an error occurred while building a Docker image.
 type ErrImageBuild struct {
 	Image string
 	Err   error

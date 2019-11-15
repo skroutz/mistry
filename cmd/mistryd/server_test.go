@@ -99,7 +99,7 @@ func TestHandleIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(body), expected) {
-		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
+		t.Errorf("Expected body to contain %v, got %v", expected, string(body))
 	}
 }
 
@@ -152,7 +152,7 @@ func TestHandleShowJob(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(body), expected) {
-		t.Errorf("Expeced body to contain %v, got %v", expected, string(body))
+		t.Errorf("Expected body to contain %v, got %v", expected, string(body))
 	}
 }
 

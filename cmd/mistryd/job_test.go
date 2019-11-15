@@ -33,6 +33,9 @@ func TestJobID(t *testing.T) {
 
 	// group seeding
 	j4, err := NewJob(project, params, "c", testcfg)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assertNotEq(j1.ID, j4.ID, t)
 
 	// project seeding (new empty file)

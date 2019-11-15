@@ -242,7 +242,10 @@ func (s *Server) HandleShowJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jData)
+		_, err = w.Write(jData)
+		if err != nil {
+			s.Log.Printf("HandleShowJob: error writing Content-Type header: %s", err)
+		}
 		return
 	}
 
@@ -342,7 +345,11 @@ func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			break
 		}
-		fmt.Fprintf(w, "data: %s\n\n", msg)
+		_, err := fmt.Fprintf(w, "data: %s\n\n", msg)
+		if err != nil {
+			s.Log.Printf("HandleServerPush: error writing log data to client: %s", err)
+		}
+
 		flusher.Flush()
 	}
 }
@@ -456,7 +463,7 @@ func RebuildImages(cfg *Config, log *log.Logger, projects []string, stopErr, ver
 
 // dockerPruneUnused prunes stopped containers and unused images
 func dockerPruneUnused(ctx context.Context, c *docker.Client) (pruneResult, error) {
-	// prune containters before images, this will allow more images to be eligible for clean up
+	// prune containers before images, this will allow more images to be eligible for clean up
 	noFilters := filters.NewArgs()
 	cr, err := c.ContainersPrune(ctx, noFilters)
 	if err != nil {
@@ -483,6 +490,11 @@ func PruneZombieBuilds(cfg *Config) error {
 	for _, p := range projects {
 		pendingPath := filepath.Join(cfg.BuildPath, p, "pending")
 		pendingBuilds, err := ioutil.ReadDir(pendingPath)
+		if err != nil {
+			l.Printf("error reading pending builds; skipping project (%s): %s", p, err)
+			continue
+		}
+
 		for _, pending := range pendingBuilds {
 			pendingBuildPath := filepath.Join(pendingPath, pending.Name())
 			err = cfg.FileSystem.Remove(pendingBuildPath)
