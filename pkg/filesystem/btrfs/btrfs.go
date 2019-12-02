@@ -30,10 +30,10 @@ func (fs Btrfs) Clone(src, dst string) error {
 // Remove deletes the subvolume with name path.
 func (fs Btrfs) Remove(path string) error {
 	_, err := os.Stat(path)
-	if err == nil {
-		return runCmd([]string{"btrfs", "subvolume", "delete", path})
+	if err != nil {
+		return err
 	}
-	return nil
+	return runCmd([]string{"btrfs", "subvolume", "delete", path})
 }
 
 func runCmd(args []string) error {
