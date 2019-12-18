@@ -34,5 +34,6 @@ func (q *JobQueue) Add(j *Job) bool {
 func (q *JobQueue) Delete(j *Job) {
 	q.Lock()
 	defer q.Unlock()
-	q.jobs[j.ID] = false
+
+	delete(q.jobs, j.ID)
 }
