@@ -4,15 +4,16 @@ import (
 	"sync"
 )
 
-// JobQueue holds the jobs that are enqueued currently in the server.
+// JobQueue holds the jobs that are enqueued currently in the server. It allows
+// used as a means to do build coalescing.
 type JobQueue struct {
 	sync.Mutex
-	j map[string]bool
+	jobs map[string]bool
 }
 
 // NewJobQueue returns a new JobQueue ready for use.
 func NewJobQueue() *JobQueue {
-	return &JobQueue{j: make(map[string]bool)}
+	return &JobQueue{jobs: make(map[string]bool)}
 }
 
 // Add registers j to the list of pending jobs currently in the queue.
@@ -21,11 +22,11 @@ func (q *JobQueue) Add(j *Job) bool {
 	q.Lock()
 	defer q.Unlock()
 
-	if q.j[j.ID] {
+	if q.jobs[j.ID] {
 		return false
 	}
 
-	q.j[j.ID] = true
+	q.jobs[j.ID] = true
 	return true
 }
 
@@ -33,5 +34,5 @@ func (q *JobQueue) Add(j *Job) bool {
 func (q *JobQueue) Delete(j *Job) {
 	q.Lock()
 	defer q.Unlock()
-	q.j[j.ID] = false
+	q.jobs[j.ID] = false
 }
