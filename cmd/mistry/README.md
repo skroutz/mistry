@@ -11,6 +11,11 @@ For usage examples and information use `mistry build -h`.
 
 ## Development
 
+Before anything, make sure you install the dependencies:
+```shell
+make deps
+```
+
 To build the client, execute the following from the repository root:
 ```sh
 $ make mistry

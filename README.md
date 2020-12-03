@@ -200,6 +200,19 @@ For an example refer to the [sample config](cmd/mistryd/config.sample.json).
 Development
 ---------------------------------------------------
 
+Before anything, make sure you install the dependencies:
+```shell
+make deps
+```
+
+The tests will attempt to ssh to localhost. You will need to add your
+public key to the authorized keys as if you were setting this up to a remote
+host.
+
+```shell
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+```
+
 To run the tests, the [Docker daemon](https://docs.docker.com/install/) should
 be running and SSH access to localhost should be configured.
 
@@ -209,8 +222,6 @@ $ make test
 
 Note: the command above may take more time the first time it's run,
 since some Docker images will have to be fetched from the internet.
-
-
 
 
 License
