@@ -89,7 +89,7 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s.pq = NewProjectQueue()
 	s.br = broker.NewBroker(s.Log)
 	s.workerPool = NewWorkerPool(s, cfg.Concurrency, cfg.Backlog, logger)
-	s.metrics = metrics.NewRecorder()
+	s.metrics = metrics.NewRecorder(logger)
 	return s, nil
 }
 
@@ -368,6 +368,14 @@ func (s *Server) HandleServerPush(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListenAndServe() error {
 	s.Log.Printf("Configuration: %#v", s.cfg)
 	go s.br.ListenForClients()
+
+	go func() {
+		for {
+			s.metrics.RecordHostedBuilds(s.cfg.BuildPath, s.cfg.ProjectsPath)
+			time.Sleep(5 * time.Minute)
+		}
+	}()
+
 	return s.srv.ListenAndServe()
 }
 
