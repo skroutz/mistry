@@ -23,9 +23,12 @@ import (
 	docker "github.com/docker/docker/client"
 	units "github.com/docker/go-units"
 	"github.com/rakyll/statik/fs"
+	"github.com/skroutz/mistry/cmd/mistryd/metrics"
 	_ "github.com/skroutz/mistry/cmd/mistryd/statik"
 	"github.com/skroutz/mistry/pkg/broker"
 	"github.com/skroutz/mistry/pkg/types"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Server is the component that performs the actual work (builds images, runs
@@ -45,6 +48,9 @@ type Server struct {
 
 	// web-view related
 	br *broker.Broker
+
+	// related to prometheus
+	metrics *metrics.Recorder
 }
 
 // NewServer accepts a non-nil configuration and an optional logger, and
@@ -74,6 +80,7 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	mux.HandleFunc("/index/", s.HandleIndex)
 	mux.HandleFunc("/job/", s.HandleShowJob)
 	mux.HandleFunc("/log/", s.HandleServerPush)
+	mux.Handle("/metrics", promhttp.Handler())
 
 	s.srv = &http.Server{Handler: mux, Addr: cfg.Addr}
 	s.cfg = cfg
@@ -82,6 +89,7 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s.pq = NewProjectQueue()
 	s.br = broker.NewBroker(s.Log)
 	s.workerPool = NewWorkerPool(s, cfg.Concurrency, cfg.Backlog, logger)
+	s.metrics = metrics.NewRecorder()
 	return s, nil
 }
 
