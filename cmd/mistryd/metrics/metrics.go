@@ -21,6 +21,7 @@ type Recorder struct {
 	BuildsProcessedIncrementally *prometheus.CounterVec
 	BuildsSucceeded              *prometheus.HistogramVec
 	BuildsFailed                 *prometheus.HistogramVec
+	CacheUtilization             *prometheus.CounterVec
 }
 
 const namespace = "mistry"
@@ -99,6 +100,15 @@ func NewRecorder(logger *log.Logger) *Recorder {
 		[]string{"project"},
 	)
 
+	r.CacheUtilization = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "cache_utilization",
+			Help:      "Build result cache utilization",
+		},
+		[]string{"project"},
+	)
+
 	return r
 }
 
@@ -157,4 +167,9 @@ func (r *Recorder) RecordBuildFinished(
 	} else {
 		r.BuildsFailed.With(labels).Observe(duration.Seconds())
 	}
+}
+
+// RecordCacheUtilization records a project build's cache utilization.
+func (r *Recorder) RecordCacheUtilization(project string) {
+	r.CacheUtilization.With(prometheus.Labels{"project": project}).Inc()
 }

@@ -89,6 +89,8 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			}
 		} else { // if a successful result already exists, use that
 			buildInfo.Cached = true
+			s.metrics.RecordCacheUtilization(j.Project)
+
 			return buildInfo, err
 		}
 	} else if !os.IsNotExist(err) {
