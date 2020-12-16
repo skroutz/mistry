@@ -33,7 +33,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.URL = getJobURL(j)
 	j.BuildInfo.Group = j.Group
 
-	s.metrics.RecordBuildStarted(j.Project)
+	if s.metrics != nil {
+		s.metrics.RecordBuildStarted(j.Project)
+	}
 
 	// build coalescing
 	added := s.jq.Add(j)
@@ -58,7 +60,9 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 					j.BuildInfo.ExitCode = i
 					j.BuildInfo.Coalesced = true
 
-					s.metrics.RecordBuildCoalesced(j.Project)
+					if s.metrics != nil {
+						s.metrics.RecordBuildCoalesced(j.Project)
+					}
 
 					return j.BuildInfo, err
 				}
@@ -89,7 +93,10 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 			}
 		} else { // if a successful result already exists, use that
 			buildInfo.Cached = true
-			s.metrics.RecordCacheUtilization(j.Project)
+
+			if s.metrics != nil {
+				s.metrics.RecordCacheUtilization(j.Project)
+			}
 
 			return buildInfo, err
 		}
@@ -251,12 +258,14 @@ func (s *Server) Work(ctx context.Context, j *Job) (buildInfo *types.BuildInfo, 
 	j.BuildInfo.ContainerStderr = outErr.String()
 	j.BuildInfo.Duration = time.Now().Sub(start).Truncate(time.Millisecond)
 
-	s.metrics.RecordBuildFinished(
-		j.Project,
-		j.BuildInfo.ExitCode == types.ContainerSuccessExitCode,
-		j.BuildInfo.Incremental,
-		j.BuildInfo.Duration,
-	)
+	if s.metrics != nil {
+		s.metrics.RecordBuildFinished(
+			j.Project,
+			j.BuildInfo.ExitCode == types.ContainerSuccessExitCode,
+			j.BuildInfo.Incremental,
+			j.BuildInfo.Duration,
+		)
+	}
 
 	log.Println("Finished after", j.BuildInfo.Duration)
 	return

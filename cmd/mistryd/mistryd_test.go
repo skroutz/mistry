@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 
 	logger = log.New(os.Stderr, "[http] ", log.LstdFlags)
 
-	server, err = NewServer(testcfg, logger)
+	server, err = NewServer(testcfg, logger, false)
 	if err != nil {
 		panic(err)
 	}

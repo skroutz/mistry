@@ -190,7 +190,7 @@ func parseConfigFromCli(c *cli.Context) (*Config, error) {
 // StartServer sets up and spawns starts the HTTP server
 func StartServer(cfg *Config) error {
 	var wg sync.WaitGroup
-	s, err := NewServer(cfg, log.New(os.Stderr, "[http] ", log.LstdFlags))
+	s, err := NewServer(cfg, log.New(os.Stderr, "[http] ", log.LstdFlags), true)
 	if err != nil {
 		return err
 	}

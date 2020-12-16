@@ -56,7 +56,7 @@ type Server struct {
 // NewServer accepts a non-nil configuration and an optional logger, and
 // returns a new Server.
 // If logger is nil, server logs are disabled.
-func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
+func NewServer(cfg *Config, logger *log.Logger, enableMetrics bool) (*Server, error) {
 	var err error
 
 	if cfg == nil {
@@ -89,7 +89,11 @@ func NewServer(cfg *Config, logger *log.Logger) (*Server, error) {
 	s.pq = NewProjectQueue()
 	s.br = broker.NewBroker(s.Log)
 	s.workerPool = NewWorkerPool(s, cfg.Concurrency, cfg.Backlog, logger)
-	s.metrics = metrics.NewRecorder(logger)
+
+	if enableMetrics {
+		s.metrics = metrics.NewRecorder(logger)
+	}
+
 	return s, nil
 }
 

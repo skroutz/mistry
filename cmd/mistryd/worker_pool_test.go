@@ -56,7 +56,7 @@ func setupQueue(t *testing.T, workers, backlog int) (*WorkerPool, *Config) {
 	cfg.Concurrency = workers
 	cfg.Backlog = backlog
 
-	s, err := NewServer(cfg, nil)
+	s, err := NewServer(cfg, nil, false)
 	failIfError(err, t)
 	return s.workerPool, cfg
 }
