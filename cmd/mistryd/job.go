@@ -190,7 +190,7 @@ func (j *Job) StartContainer(ctx context.Context, cfg *Config, c *docker.Client,
 	hostConfig := container.HostConfig{Mounts: mnts, AutoRemove: false, NetworkMode: "host"}
 
 	err := renameIfExists(ctx, c, j.Container)
-	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, j.Container)
+	res, err := c.ContainerCreate(ctx, &config, &hostConfig, nil, nil, j.Container)
 	if err != nil {
 		return 0, err
 	}

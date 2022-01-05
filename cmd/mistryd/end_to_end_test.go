@@ -183,7 +183,7 @@ func TestExistingContainer(t *testing.T) {
 		context.TODO(),
 		&container.Config{User: testcfg.UID, Image: j.Image},
 		&container.HostConfig{NetworkMode: "host"},
-		nil, j.Container)
+		nil, nil, j.Container)
 	failIfError(err, t)
 
 	cmdout, cmderr, err := cliBuildJob("--project", project, "--", toCli(params)[0])
